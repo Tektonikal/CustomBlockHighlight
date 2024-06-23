@@ -2,87 +2,70 @@ package tektonikal.customblockhighlight.mixin;
 
 import net.minecraft.block.*;
 import net.minecraft.block.enums.BedPart;
-import net.minecraft.block.enums.ChestType;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import tektonikal.customblockhighlight.Easing;
 import tektonikal.customblockhighlight.Renderer;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 
 import java.awt.*;
 
-import static java.lang.Math.sin;
 import static net.minecraft.block.enums.ChestType.SINGLE;
 
 @Mixin(WorldRenderer.class)
 public abstract class WorldRendererMixin {
-    @Shadow
-    @Nullable
-    private ClientWorld world;
     @Unique
     MinecraftClient mc = MinecraftClient.getInstance();
     @Unique
-    Box finalBox = new Box(0, 0, 0, 0, 0, 0);
-    @Unique
-    public BlockPos prevPos = new BlockPos(0, 0, 0);
-    @Unique
-    public BlockPos tempPos = new BlockPos(0, 0, 0);
-    @Unique
-    float itemp = 0;
+    Box easeBox = new Box(0, 0, 0, 0, 0, 0);
     @Unique
     boolean erm = false;
+    @Unique
+    Direction[] prevLineDirs;
+    @Unique
+    Direction[] prevFillDirs;
 
     @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/WorldRenderer;drawBlockOutline(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;Lnet/minecraft/entity/Entity;DDDLnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)V"))
     private void render_drawBlockOutline(WorldRenderer worldRenderer, MatrixStack ms, VertexConsumer vertexConsumer, Entity entity, double d, double e, double f, BlockPos blockPos, BlockState blockState) {
         float width = BlockHighlightConfig.INSTANCE.getConfig().width; // thickness
-        int fill = BlockHighlightConfig.INSTANCE.getConfig().fillOpacity; //opacity
         BlockPos pos = ((BlockHitResult) mc.crosshairTarget).getBlockPos();
         BlockState state = mc.world.getBlockState(pos);
-        Color col;
-        Color col1;
+        int[] lineCol;
+        int[] fillCol;
         try {
-            col = BlockHighlightConfig.INSTANCE.getConfig().lineCol;
-            col1 = BlockHighlightConfig.INSTANCE.getConfig().fillCol1;
+            lineCol = new int[]{BlockHighlightConfig.INSTANCE.getConfig().lineCol.getRed(), BlockHighlightConfig.INSTANCE.getConfig().lineCol.getGreen(), BlockHighlightConfig.INSTANCE.getConfig().lineCol.getBlue(), BlockHighlightConfig.INSTANCE.getConfig().lineAlpha};
+            fillCol = new int[]{BlockHighlightConfig.INSTANCE.getConfig().fillCol.getRed(), BlockHighlightConfig.INSTANCE.getConfig().fillCol.getGreen(), BlockHighlightConfig.INSTANCE.getConfig().fillCol.getBlue(), BlockHighlightConfig.INSTANCE.getConfig().fillOpacity};
         } catch (Exception ex) {
-            col = new Color(255, 0, 0);
-            col1 = new Color(255, 0, 0);
+            fillCol = new int[]{255, 0, 0, 0};
+            lineCol = new int[]{255, 0, 0, 0};
         }
-        int[] color = {col.getRed(), col.getGreen(), col.getBlue(), BlockHighlightConfig.INSTANCE.getConfig().lineAlpha};
-        int[] color1 = {col1.getRed(), col1.getGreen(), col1.getBlue(), fill};
-        Box box;
+        Box targetBox;
         try {
-            box = state.getOutlineShape(mc.world, pos).getBoundingBox().offset(pos);
+            targetBox = state.getOutlineShape(mc.world, pos).getBoundingBox().offset(pos);
         } catch (UnsupportedOperationException ex) {
             //if there is no actual outline, like for light blocks, just get a box around their coordinates.
-            box = new Box(((BlockHitResult) mc.crosshairTarget).getBlockPos());
+            targetBox = new Box(((BlockHitResult) mc.crosshairTarget).getBlockPos());
         }
         if ((!(mc.crosshairTarget instanceof BlockHitResult)) || state.getBlock() == Blocks.AIR || !mc.world.getWorldBorder().contains(pos)) {
             return;
         }
 /*
 TODO:
-1. make color chroma options / gradients
-2. screen-space outline
+2. screen-space outline / shader based
 3. advanced outline models
-4. more rendering modes? fancy stuff?
-5. fix the fucking easing because i'm doing it in the worst way possible
+4. blending
+4. 1.21 update (surely it's trivial :clueless:)
 6. backend rewrite because this code is just nasty man
-7. crystal placement indication! !!
  */
         //get connected blocks
         //i don't know how i'm gonna make the AIR_EXPOSED flag work with connected outlines without looking jank, since i can only exclude faces from a box, and i'm rendering a single box.
@@ -92,7 +75,7 @@ TODO:
                 BlockPos tempPos = ((BlockHitResult) mc.crosshairTarget).getBlockPos().offset(facing);
                 BlockState tempState = mc.world.getBlockState(tempPos);
                 if (tempState.getBlock() instanceof ChestBlock) {
-                    box = box.union(tempState.getOutlineShape(mc.world, tempPos).getBoundingBox().offset(tempPos));
+                    targetBox = targetBox.union(tempState.getOutlineShape(mc.world, tempPos).getBoundingBox().offset(tempPos));
                 }
             }
             if (state.getBlock() instanceof DoorBlock) {
@@ -106,7 +89,7 @@ TODO:
                 BlockPos otherPos = pos.offset(otherDirection);
                 BlockState otherState = mc.world.getBlockState(otherPos);
                 if (otherState.getBlock() instanceof DoorBlock && otherState.get(DoorBlock.HALF) != half) {
-                    box = box.union(otherState.getOutlineShape(mc.world, otherPos).getBoundingBox().offset(otherPos));
+                    targetBox = targetBox.union(otherState.getOutlineShape(mc.world, otherPos).getBoundingBox().offset(otherPos));
                 }
             }
             if (state.getBlock() instanceof BedBlock) {
@@ -118,7 +101,7 @@ TODO:
                 BlockPos oP = pos.offset(dir);
                 BlockState other = mc.world.getBlockState(oP);
                 if (other.getBlock() instanceof BedBlock && other.get(BedBlock.PART) != part) {
-                    box = box.union(other.getOutlineShape(mc.world, oP).getBoundingBox().offset(oP));
+                    targetBox = targetBox.union(other.getOutlineShape(mc.world, oP).getBoundingBox().offset(oP));
                 }
             }
             if (state.getBlock() instanceof TallPlantBlock) {
@@ -132,19 +115,18 @@ TODO:
                 BlockPos otherPos = pos.offset(direction);
                 BlockState otherState = mc.world.getBlockState(otherPos);
                 if (otherState.getBlock() instanceof TallPlantBlock) {
-                    box = box.union(otherState.getOutlineShape(mc.world, otherPos).getBoundingBox().offset(otherPos));
+                    targetBox = targetBox.union(otherState.getOutlineShape(mc.world, otherPos).getBoundingBox().offset(otherPos));
                 }
             }
         }
         if (BlockHighlightConfig.INSTANCE.getConfig().crystalHelper) {
             if (state.getBlock().equals(Blocks.OBSIDIAN) || state.getBlock().equals(Blocks.BEDROCK)) {
-                double pd = (double) pos.up().getX();
-                double pe = (double) pos.up().getY();
-                double pf = (double) pos.up().getZ();
-                if (!this.world.isAir(pos.up()) || !world.getOtherEntities((Entity) null, new Box(pd, pe, pf, pd + 1.0, pe + 2.0, pf + 1.0)).isEmpty()) {
+                double pd = pos.up().getX();
+                double pe = pos.up().getY();
+                double pf = pos.up().getZ();
+                if (!mc.world.isAir(pos.up()) || !mc.world.getOtherEntities(null, new Box(pd, pe, pf, pd + 1.0, pe + 2.0, pf + 1.0)).isEmpty()) {
                     erm = true;
-                }
-                else{
+                } else {
                     erm = false;
                 }
             } else {
@@ -160,52 +142,50 @@ TODO:
 
         //calculate where to render the block
         if (BlockHighlightConfig.INSTANCE.getConfig().doEasing) {
-            finalBox = new Box(
-                    ease(BlockHighlightConfig.INSTANCE.getConfig().easeSpeed, finalBox.minX, box.minX, BlockHighlightConfig.INSTANCE.getConfig().easing),
-                    ease(BlockHighlightConfig.INSTANCE.getConfig().easeSpeed, finalBox.minY, box.minY, BlockHighlightConfig.INSTANCE.getConfig().easing),
-                    ease(BlockHighlightConfig.INSTANCE.getConfig().easeSpeed, finalBox.minZ, box.minZ, BlockHighlightConfig.INSTANCE.getConfig().easing),
-                    ease(BlockHighlightConfig.INSTANCE.getConfig().easeSpeed, finalBox.maxX, box.maxX, BlockHighlightConfig.INSTANCE.getConfig().easing),
-                    ease(BlockHighlightConfig.INSTANCE.getConfig().easeSpeed, finalBox.maxY, box.maxY, BlockHighlightConfig.INSTANCE.getConfig().easing),
-                    ease(BlockHighlightConfig.INSTANCE.getConfig().easeSpeed, finalBox.maxZ, box.maxZ, BlockHighlightConfig.INSTANCE.getConfig().easing));
+            easeBox = new Box(
+                    ease(easeBox.minX, targetBox.minX),
+                    ease(easeBox.minY, targetBox.minY),
+                    ease(easeBox.minZ, targetBox.minZ),
+                    ease(easeBox.maxX, targetBox.maxX),
+                    ease(easeBox.maxY, targetBox.maxY),
+                    ease(easeBox.maxZ, targetBox.maxZ)
+            );
         } else {
-            finalBox = box;
+            easeBox = targetBox;
         }
         //render the fill first, we don't want it drawn over the outline
         if (BlockHighlightConfig.INSTANCE.getConfig().fillEnabled) {
-            Renderer.drawBoxFill(ms, finalBox.expand(BlockHighlightConfig.INSTANCE.getConfig().fillExpand), BlockHighlightConfig.INSTANCE.getConfig().fillRainbow ? getRainbowCol(true) : erm ? new int[]{255, 0, 0, BlockHighlightConfig.INSTANCE.getConfig().fillOpacity} : color1, BlockHighlightConfig.INSTANCE.getConfig().fillType, ((BlockHitResult) mc.crosshairTarget).getSide(), getAirDirs(pos));
+            Renderer.drawBoxFill(ms, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().fillExpand), BlockHighlightConfig.INSTANCE.getConfig().fillRainbow ? getRainbowCol(true) : erm ? new int[]{255, 0, 0, BlockHighlightConfig.INSTANCE.getConfig().fillOpacity} : fillCol, BlockHighlightConfig.INSTANCE.getConfig().fillType, ((BlockHitResult) mc.crosshairTarget).getSide(), prevFillDirs, getAirDirs(pos));
+            prevFillDirs = Renderer.getFillDirs();
         }
         //now the outline itself
         if (BlockHighlightConfig.INSTANCE.getConfig().outlineEnabled) {
-            Renderer.drawBoxOutline(ms, finalBox.expand(BlockHighlightConfig.INSTANCE.getConfig().expand), BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(false) : erm ? new int[]{255, 0, 0, BlockHighlightConfig.INSTANCE.getConfig().lineAlpha} : color1, width, BlockHighlightConfig.INSTANCE.getConfig().type, ((BlockHitResult) mc.crosshairTarget).getSide(), getAirDirs(pos));
-        }
-        //update the positions
-        if (!prevPos.equals(blockPos)) {
-            tempPos = prevPos;
-            prevPos = blockPos;
-        }
-        itemp += (10.0F * BlockHighlightConfig.INSTANCE.getConfig().rainbowSpeed) / mc.getCurrentFps();
-        //just in case
-        if (itemp > 360) {
-            itemp = itemp % 360;
+            Renderer.drawBoxOutline(ms, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().expand), BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(false) : erm ? new int[]{255, 0, 0, BlockHighlightConfig.INSTANCE.getConfig().lineAlpha} : lineCol, width, BlockHighlightConfig.INSTANCE.getConfig().type, ((BlockHitResult) mc.crosshairTarget).getSide(), prevLineDirs, getAirDirs(pos));
+            prevLineDirs = Renderer.getLineDirs();
         }
     }
 
     @Unique
     private int[] getRainbowCol(boolean tempb) {
         //fix the jank with opacity later
-        Color temp = new Color(MathHelper.hsvToRgb((itemp % 360) / 360.0F, 1, 1));
+        Color temp = getRainbow((System.currentTimeMillis() % 10000L / 10000.0f) * BlockHighlightConfig.INSTANCE.getConfig().rainbowSpeed, 128, 128, 128, 127, 127, 127);
         return new int[]{temp.getRed(), temp.getGreen(), temp.getBlue(), tempb ? BlockHighlightConfig.INSTANCE.getConfig().fillOpacity : BlockHighlightConfig.INSTANCE.getConfig().lineAlpha};
     }
-    /*
-    public static int getRainbow(float sat, float bri, double speed, int offset) {
-		double rainbowState = Math.ceil((System.currentTimeMillis() + offset) / speed) % 360;
-		return 0xff000000 | MathHelper.hsvToRgb((float) (rainbowState / 360.0), sat, bri);
-	}
-     */
+
+    //https://github.com/Splzh/ClearHitboxes/blob/main/src/main/java/splash/utils/ColorUtils.java !!
+    @Unique
+    private static Color getRainbow(double percent, int rMid, int gMid, int bMid, int rRange, int gRange, int bRange) {
+        double offset = Math.PI * 2 / 3;
+        double pos = percent * (Math.PI * 2);
+        float red = (float) ((Math.sin(pos) * rRange) + rMid);
+        float green = (float) ((Math.sin(pos + offset) * gRange) + gMid);
+        float blue = (float) ((Math.sin(pos + offset * 2) * bRange) + bMid);
+        return new Color((int) (red), (int) (green), (int) (blue), 255);
+    }
 
     @Unique
-    public double ease(double delta, double start, double end, Easing easing) {
-        return start + easing.eval((float) delta) * (end - start);
+    public double ease(double start, double end) {
+        return start + (end - start) * (1 - Math.exp(-(1.0F / mc.getCurrentFps()) * BlockHighlightConfig.INSTANCE.getConfig().easeSpeed));
     }
 
     @Unique
