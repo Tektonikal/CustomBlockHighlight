@@ -11,29 +11,60 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import org.apache.commons.lang3.ArrayUtils;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import tektonikal.customblockhighlight.OutlineType;
 import tektonikal.customblockhighlight.Renderer;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
 
 import static net.minecraft.block.enums.ChestType.SINGLE;
 
 @Mixin(WorldRenderer.class)
 public abstract class WorldRendererMixin {
     @Unique
-    MinecraftClient mc = MinecraftClient.getInstance();
+    private static final MinecraftClient mc = MinecraftClient.getInstance();
     @Unique
-    Box easeBox = new Box(0, 0, 0, 0, 0, 0);
+    private static Box easeBox = new Box(0, 0, 0, 0, 0, 0);
     @Unique
-    boolean erm = false;
+    private static Direction[] prevLineDirs = new Direction[5];
     @Unique
-    Direction[] prevLineDirs;
+    private static Direction[] prevFillDirs = new Direction[5];
     @Unique
-    Direction[] prevFillDirs;
+    private static Direction[] lineDirs = new Direction[5];
+    @Unique
+    private static Direction[] fillDirs = new Direction[5];
+
+    @Unique
+    private void setFillDirs(Direction[] dirs) {
+        if (!Arrays.equals(dirs, fillDirs)) {
+            prevFillDirs = fillDirs;
+            fillDirs = dirs;
+            prevFillAlpha = BlockHighlightConfig.INSTANCE.getConfig().fillOpacity;
+        }
+    }
+
+    @Unique
+    private void setLineDirs(Direction[] dirs) {
+        if (!Arrays.equals(dirs, lineDirs)) {
+            prevLineDirs = lineDirs;
+            lineDirs = dirs;
+            prevLineAlpha = BlockHighlightConfig.INSTANCE.getConfig().lineAlpha;
+        }
+    }
+
+    @Unique
+    float prevLineAlpha = BlockHighlightConfig.INSTANCE.getConfig().lineAlpha;
+    @Unique
+    float prevFillAlpha = BlockHighlightConfig.INSTANCE.getConfig().fillOpacity;
 
     @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/WorldRenderer;drawBlockOutline(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;Lnet/minecraft/entity/Entity;DDDLnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)V"))
     private void render_drawBlockOutline(WorldRenderer worldRenderer, MatrixStack ms, VertexConsumer vertexConsumer, Entity entity, double d, double e, double f, BlockPos blockPos, BlockState blockState) {
@@ -119,16 +150,13 @@ TODO:
                 }
             }
         }
+        boolean erm;
         if (BlockHighlightConfig.INSTANCE.getConfig().crystalHelper) {
             if (state.getBlock().equals(Blocks.OBSIDIAN) || state.getBlock().equals(Blocks.BEDROCK)) {
                 double pd = pos.up().getX();
                 double pe = pos.up().getY();
                 double pf = pos.up().getZ();
-                if (!mc.world.isAir(pos.up()) || !mc.world.getOtherEntities(null, new Box(pd, pe, pf, pd + 1.0, pe + 2.0, pf + 1.0)).isEmpty()) {
-                    erm = true;
-                } else {
-                    erm = false;
-                }
+                erm = !mc.world.isAir(pos.up()) || !mc.world.getOtherEntities(null, new Box(pd, pe, pf, pd + 1.0, pe + 2.0, pf + 1.0)).isEmpty();
             } else {
                 erm = false;
             }
@@ -155,19 +183,57 @@ TODO:
         }
         //render the fill first, we don't want it drawn over the outline
         if (BlockHighlightConfig.INSTANCE.getConfig().fillEnabled) {
-            Renderer.drawBoxFill(ms, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().fillExpand), BlockHighlightConfig.INSTANCE.getConfig().fillRainbow ? getRainbowCol(true) : erm ? new int[]{255, 0, 0, BlockHighlightConfig.INSTANCE.getConfig().fillOpacity} : fillCol, BlockHighlightConfig.INSTANCE.getConfig().fillType, ((BlockHitResult) mc.crosshairTarget).getSide(), prevFillDirs, getAirDirs(pos));
-            prevFillDirs = Renderer.getFillDirs();
+            switch (BlockHighlightConfig.INSTANCE.getConfig().fillType) {
+                case ALL, DEFAULT -> setFillDirs(Direction.values());
+                case LOOKAT -> setFillDirs(new Direction[]{((BlockHitResult) mc.crosshairTarget).getSide()});
+                case AIR_EXPOSED -> setFillDirs(invert(getAirDirs(pos)));
+                case CONCEALED -> setFillDirs(getAirDirs(pos));
+            }
+            int[] finalFillCol = BlockHighlightConfig.INSTANCE.getConfig().fillRainbow ? getRainbowCol(true) : erm ? new int[]{255, 0, 0, BlockHighlightConfig.INSTANCE.getConfig().fillOpacity} : fillCol;
+            Renderer.drawBoxFill(ms, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().fillExpand), finalFillCol, fillDirs);
+            if (prevFillAlpha > 0) {
+                Renderer.drawBoxFill(ms, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().fillExpand), new int[]{finalFillCol[0], finalFillCol[1], finalFillCol[2], (int) prevFillAlpha}, prevSides(fillDirs, prevFillDirs));
+                prevFillAlpha = (float) ease(prevFillAlpha, 0);
+            }
         }
         //now the outline itself
         if (BlockHighlightConfig.INSTANCE.getConfig().outlineEnabled) {
-            Renderer.drawBoxOutline(ms, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().expand), BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(false) : erm ? new int[]{255, 0, 0, BlockHighlightConfig.INSTANCE.getConfig().lineAlpha} : lineCol, width, BlockHighlightConfig.INSTANCE.getConfig().type, ((BlockHitResult) mc.crosshairTarget).getSide(), prevLineDirs, getAirDirs(pos));
-            prevLineDirs = Renderer.getLineDirs();
+            switch (BlockHighlightConfig.INSTANCE.getConfig().type) {
+                case ALL, DEFAULT -> setLineDirs(Direction.values());
+                case LOOKAT -> setLineDirs(new Direction[]{((BlockHitResult) mc.crosshairTarget).getSide()});
+                case AIR_EXPOSED -> setLineDirs(invert(getAirDirs(pos)));
+                case CONCEALED -> setLineDirs(getAirDirs(pos));
+            }
+            int[] finalLineCol = BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(false) : erm ? new int[]{255, 0, 0, BlockHighlightConfig.INSTANCE.getConfig().lineAlpha} : lineCol;
+            Renderer.drawBoxOutline(ms, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().expand), finalLineCol, width, lineDirs);
+            if (prevLineAlpha > 0) {
+                Renderer.drawBoxOutline(ms, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().expand), new int[]{finalLineCol[0], finalLineCol[1], finalLineCol[2], (int) prevLineAlpha}, width, prevSides(lineDirs, prevLineDirs));
+                prevLineAlpha = (float) ease(prevLineAlpha, 0);
+            }
         }
     }
 
     @Unique
+    private static Direction[] invert(Direction[] invertDirs) {
+        EnumSet<Direction> dirs = EnumSet.allOf(Direction.class);
+        for (Direction d : invertDirs) {
+            dirs.remove(d);
+        }
+        return dirs.toArray(Direction[]::new);
+    }
+
+    @Unique
+    private static Direction[] prevSides(Direction[] curr, Direction[] prev) {
+        ArrayList<Direction> prevList = new ArrayList<>(Arrays.asList(prev));
+        for (Direction d : curr) {
+            prevList.remove(d);
+        }
+        return prevList.toArray(Direction[]::new);
+    }
+
+    @Unique
     private int[] getRainbowCol(boolean tempb) {
-        //fix the jank with opacity later
+        //fix this jank !
         Color temp = getRainbow((System.currentTimeMillis() % 10000L / 10000.0f) * BlockHighlightConfig.INSTANCE.getConfig().rainbowSpeed, 128, 128, 128, 127, 127, 127);
         return new int[]{temp.getRed(), temp.getGreen(), temp.getBlue(), tempb ? BlockHighlightConfig.INSTANCE.getConfig().fillOpacity : BlockHighlightConfig.INSTANCE.getConfig().lineAlpha};
     }

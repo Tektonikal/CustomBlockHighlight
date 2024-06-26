@@ -60,6 +60,7 @@ public class BlockHighlightConfig {
     @ConfigEntry
     public boolean blending;
 
+
     public static Screen getConfigScreen(Screen parent) {
         return YetAnotherConfigLib.create(INSTANCE, ((defaults, config, builder) -> builder
                 .title(Text.literal("Custom Block Highlight"))
@@ -115,7 +116,7 @@ public class BlockHighlightConfig {
                                 .build())
                         .option(Option.createBuilder(OutlineType.class)
                                 .name(Text.of("Mode"))
-                                .binding(OutlineType.CONCEALED, () -> config.fillType, newVal -> config.fillType = newVal)
+                                .binding(OutlineType.AIR_EXPOSED, () -> config.fillType, newVal -> config.fillType = newVal)
                                 .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
                                 .build())
                         .option(Option.createBuilder(float.class)
@@ -147,15 +148,15 @@ public class BlockHighlightConfig {
                                         .binding(false, () -> config.outlineRainbow, newVal -> config.outlineRainbow = newVal)
                                         .controller(TickBoxControllerBuilder::create)
                                         .build())
-                                .option(Option.createBuilder(int.class)
-                                        .name(Text.of("Rainbow Speed"))
-                                        .binding(10, () -> config.rainbowSpeed, newVal -> config.rainbowSpeed = newVal)
-                                        .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 10).step(1))
-                                        .build())
                                 .option(Option.createBuilder(boolean.class)
                                         .name(Text.of("Rainbow Fill"))
                                         .binding(false, () -> config.fillRainbow, newVal -> config.fillRainbow = newVal)
                                         .controller(TickBoxControllerBuilder::create)
+                                        .build())
+                                .option(Option.createBuilder(int.class)
+                                        .name(Text.of("Rainbow Speed"))
+                                        .binding(10, () -> config.rainbowSpeed, newVal -> config.rainbowSpeed = newVal)
+                                        .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 10).step(1))
                                         .build())
                                 .build())
                         .group(OptionGroup.createBuilder()

@@ -6,8 +6,8 @@ import net.minecraft.text.Text;
 public enum OutlineType implements NameableEnum {
     DEFAULT,
     AIR_EXPOSED,
-    CONCEALED,
     ALL,
+    CONCEALED,
     LOOKAT;
 
     @Override

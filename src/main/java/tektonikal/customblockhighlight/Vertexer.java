@@ -15,36 +15,36 @@ public class Vertexer {
     public static final int CULL_FRONT = 1;
     public static final int CULL_NONE = 2;
 
-    public static void vertexBoxQuads(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, int[] quadColor, Direction... excludeDirs) {
+    public static void vertexBoxQuads(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, int[] quadColor, Direction... dirs) {
         float x1 = (float) box.minX;
         float y1 = (float) box.minY;
         float z1 = (float) box.minZ;
         float x2 = (float) box.maxX;
         float y2 = (float) box.maxY;
         float z2 = (float) box.maxZ;
-        int cullMode = excludeDirs.length == 0 ? CULL_BACK : CULL_NONE;
+        int cullMode = dirs.length == 0 ? CULL_BACK : CULL_NONE;
 
-        if (!ArrayUtils.contains(excludeDirs, Direction.DOWN)) {
+        if (ArrayUtils.contains(dirs, Direction.DOWN)) {
             vertexQuad(matrices, vertexConsumer, x1, y1, z1, x2, y1, z1, x2, y1, z2, x1, y1, z2, cullMode, quadColor);
         }
 
-        if (!ArrayUtils.contains(excludeDirs, Direction.WEST)) {
+        if (ArrayUtils.contains(dirs, Direction.WEST)) {
             vertexQuad(matrices, vertexConsumer, x1, y1, z2, x1, y2, z2, x1, y2, z1, x1, y1, z1, cullMode, quadColor);
         }
 
-        if (!ArrayUtils.contains(excludeDirs, Direction.EAST)) {
+        if (ArrayUtils.contains(dirs, Direction.EAST)) {
             vertexQuad(matrices, vertexConsumer, x2, y1, z1, x2, y2, z1, x2, y2, z2, x2, y1, z2, cullMode, quadColor);
         }
 
-        if (!ArrayUtils.contains(excludeDirs, Direction.NORTH)) {
+        if (ArrayUtils.contains(dirs, Direction.NORTH)) {
             vertexQuad(matrices, vertexConsumer, x1, y1, z1, x1, y2, z1, x2, y2, z1, x2, y1, z1, cullMode, quadColor);
         }
 
-        if (!ArrayUtils.contains(excludeDirs, Direction.SOUTH)) {
+        if (ArrayUtils.contains(dirs, Direction.SOUTH)) {
             vertexQuad(matrices, vertexConsumer, x2, y1, z2, x2, y2, z2, x1, y2, z2, x1, y1, z2, cullMode, quadColor);
         }
 
-        if (!ArrayUtils.contains(excludeDirs, Direction.UP)) {
+        if (ArrayUtils.contains(dirs, Direction.UP)) {
             vertexQuad(matrices, vertexConsumer, x1, y2, z2, x2, y2, z2, x2, y2, z1, x1, y2, z1, cullMode, quadColor);
         }
     }
@@ -65,57 +65,57 @@ public class Vertexer {
         }
     }
 
-    public static void vertexBoxLines(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, int[] cols, Direction... excludeDirs) {
+    public static void vertexBoxLines(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, int[] cols, Direction... dirs) {
         float x1 = (float) box.minX;
         float y1 = (float) box.minY;
         float z1 = (float) box.minZ;
         float x2 = (float) box.maxX;
         float y2 = (float) box.maxY;
         float z2 = (float) box.maxZ;
-        boolean exDown = ArrayUtils.contains(excludeDirs, Direction.DOWN);
-        boolean exWest = ArrayUtils.contains(excludeDirs, Direction.WEST);
-        boolean exEast = ArrayUtils.contains(excludeDirs, Direction.EAST);
-        boolean exNorth = ArrayUtils.contains(excludeDirs, Direction.NORTH);
-        boolean exSouth = ArrayUtils.contains(excludeDirs, Direction.SOUTH);
-        boolean exUp = ArrayUtils.contains(excludeDirs, Direction.UP);
+        boolean exDown = ArrayUtils.contains(dirs, Direction.DOWN);
+        boolean exWest = ArrayUtils.contains(dirs, Direction.WEST);
+        boolean exEast = ArrayUtils.contains(dirs, Direction.EAST);
+        boolean exNorth = ArrayUtils.contains(dirs, Direction.NORTH);
+        boolean exSouth = ArrayUtils.contains(dirs, Direction.SOUTH);
+        boolean exUp = ArrayUtils.contains(dirs, Direction.UP);
 
 
-        if (!exDown) {
+        if (exDown) {
             vertexLine(matrices, vertexConsumer, x1, y1, z1, x2, y1, z1, cols);
             vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y1, z2, cols);
             vertexLine(matrices, vertexConsumer, x2, y1, z2, x1, y1, z2, cols);
             vertexLine(matrices, vertexConsumer, x1, y1, z2, x1, y1, z1, cols);
         }
 
-        if (!exWest) {
-            if (exDown) vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y1, z2, cols);
+        if (exWest) {
+            if (!exDown) vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y1, z2, cols);
             vertexLine(matrices, vertexConsumer, x1, y1, z2, x1, y2, z2, cols);
             vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y2, z1, cols);
-            if (exUp) vertexLine(matrices, vertexConsumer, x1, y2, z1, x1, y2, z2, cols);
+            if (!exUp) vertexLine(matrices, vertexConsumer, x1, y2, z1, x1, y2, z2, cols);
         }
 
-        if (!exEast) {
-            if (exDown) vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y1, z2, cols);
+        if (exEast) {
+            if (!exDown) vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y1, z2, cols);
             vertexLine(matrices, vertexConsumer, x2, y1, z2, x2, y2, z2, cols);
             vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y2, z1, cols);
-            if (exUp) vertexLine(matrices, vertexConsumer, x2, y2, z1, x2, y2, z2, cols);
+            if (!exUp) vertexLine(matrices, vertexConsumer, x2, y2, z1, x2, y2, z2, cols);
         }
 
-        if (!exNorth) {
-            if (exDown) vertexLine(matrices, vertexConsumer, x1, y1, z1, x2, y1, z1, cols);
-            if (exEast) vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y2, z1, cols);
-            if (exWest) vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y2, z1, cols);
-            if (exUp) vertexLine(matrices, vertexConsumer, x1, y2, z1, x2, y2, z1, cols);
+        if (exNorth) {
+            if (!exDown) vertexLine(matrices, vertexConsumer, x1, y1, z1, x2, y1, z1, cols);
+            if (!exEast) vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y2, z1, cols);
+            if (!exWest) vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y2, z1, cols);
+            if (!exUp) vertexLine(matrices, vertexConsumer, x1, y2, z1, x2, y2, z1, cols);
         }
 
-        if (!exSouth) {
-            if (exDown) vertexLine(matrices, vertexConsumer, x1, y1, z2, x2, y1, z2, cols);
-            if (exEast) vertexLine(matrices, vertexConsumer, x2, y1, z2, x2, y2, z2, cols);
-            if (exWest) vertexLine(matrices, vertexConsumer, x1, y1, z2, x1, y2, z2, cols);
-            if (exUp) vertexLine(matrices, vertexConsumer, x1, y2, z2, x2, y2, z2, cols);
+        if (exSouth) {
+            if (!exDown) vertexLine(matrices, vertexConsumer, x1, y1, z2, x2, y1, z2, cols);
+            if (!exEast) vertexLine(matrices, vertexConsumer, x2, y1, z2, x2, y2, z2, cols);
+            if (!exWest) vertexLine(matrices, vertexConsumer, x1, y1, z2, x1, y2, z2, cols);
+            if (!exUp) vertexLine(matrices, vertexConsumer, x1, y2, z2, x2, y2, z2, cols);
         }
 
-        if (!exUp) {
+        if (exUp) {
             vertexLine(matrices, vertexConsumer, x1, y2, z1, x2, y2, z1, cols);
             vertexLine(matrices, vertexConsumer, x2, y2, z1, x2, y2, z2, cols);
             vertexLine(matrices, vertexConsumer, x2, y2, z2, x1, y2, z2, cols);
