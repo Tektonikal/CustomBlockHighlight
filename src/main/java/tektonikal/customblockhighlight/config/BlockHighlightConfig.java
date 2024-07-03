@@ -4,11 +4,9 @@ import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import dev.isxander.yacl3.config.ConfigEntry;
 import dev.isxander.yacl3.config.GsonConfigInstance;
-import dev.isxander.yacl3.impl.controller.TickBoxControllerBuilderImpl;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
-import tektonikal.customblockhighlight.Easing;
 import tektonikal.customblockhighlight.OutlineType;
 
 import java.awt.*;
@@ -24,6 +22,8 @@ public class BlockHighlightConfig {
     public OutlineType type = OutlineType.AIR_EXPOSED;
     @ConfigEntry
     public Color lineCol = Color.decode("#000000");
+    @ConfigEntry
+    public Color lineCol2 = Color.decode("#FFFFFF");
     @ConfigEntry
     public int width = 2;
     @ConfigEntry
@@ -50,15 +50,26 @@ public class BlockHighlightConfig {
     @ConfigEntry
     public float easeSpeed = 1F;
     @ConfigEntry
-    public boolean outlineRainbow;
+    public boolean outlineRainbow = false;
     @ConfigEntry
-    public boolean fillRainbow;
+    public boolean fillRainbow = false;
     @ConfigEntry
-    public int rainbowSpeed;
+    public int rainbowSpeed = 5;
     @ConfigEntry
-    public boolean crystalHelper;
+    public boolean crystalHelper = true;
+//TODO
+//    @ConfigEntry
+//    public boolean blending;
     @ConfigEntry
-    public boolean blending;
+    public boolean fillCulling = false;
+    @ConfigEntry
+    public boolean lineCulling = false;
+    @ConfigEntry
+    public float fadeSpeed = 8.0F;
+    @ConfigEntry
+    public boolean fadeOut = true;
+    @ConfigEntry
+    public boolean fadeIn = true;
 
 
     public static Screen getConfigScreen(Screen parent) {
@@ -76,6 +87,11 @@ public class BlockHighlightConfig {
                                 .binding(new Color(0, 0, 0), () -> config.lineCol, newVal -> config.lineCol = newVal)
                                 .controller(ColorControllerBuilder::create)
                                 .build())
+                        .option(Option.createBuilder(Color.class)
+                                .name(Text.of("Color 2"))
+                                .binding(new Color(0, 0, 0), () -> config.lineCol2, newVal -> config.lineCol2 = newVal)
+                                .controller(ColorControllerBuilder::create)
+                                .build())
                         .option(Option.createBuilder(int.class)
                                 .name(Text.of("Alpha"))
                                 .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1))
@@ -90,6 +106,11 @@ public class BlockHighlightConfig {
                                 .name(Text.of("Mode"))
                                 .binding(OutlineType.AIR_EXPOSED, () -> config.type, newVal -> config.type = newVal)
                                 .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
+                                .build())
+                        .option(Option.createBuilder(boolean.class)
+                                .name(Text.of("Culling"))
+                                .binding(false, () -> config.lineCulling, newVal -> config.lineCulling = newVal)
+                                .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .option(Option.createBuilder(float.class)
                                 .name(Text.of("Adjust Size By"))
@@ -119,6 +140,11 @@ public class BlockHighlightConfig {
                                 .binding(OutlineType.AIR_EXPOSED, () -> config.fillType, newVal -> config.fillType = newVal)
                                 .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
                                 .build())
+                        .option(Option.createBuilder(boolean.class)
+                                .name(Text.of("Culling"))
+                                .binding(false, () -> config.fillCulling, newVal -> config.fillCulling = newVal)
+                                .controller(TickBoxControllerBuilder::create)
+                                .build())
                         .option(Option.createBuilder(float.class)
                                 .name(Text.of("Adjust Size By"))
                                 .binding(0.002F, () -> config.fillExpand, newVal -> config.fillExpand = newVal)
@@ -136,8 +162,23 @@ public class BlockHighlightConfig {
                                         .build())
                                 .option(Option.createBuilder(float.class)
                                         .name(Text.of("Ease speed"))
-                                        .description(OptionDescription.of(Text.of("How fast to animate the block. Due to jank the speed of the animation depends on your game's current FPS, so it recommended to cap your FPS and mess around with this setting if it looks weird.")))
+                                        .description(OptionDescription.of(Text.of("How fast to animate the block. FPS independent !!")))
                                         .binding(3.5F, () -> config.easeSpeed, newVal -> config.easeSpeed = newVal)
+                                        .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0.01F, 10F).step(0.01F))
+                                        .build())
+                                .option(Option.createBuilder(boolean.class)
+                                        .name(Text.of("Fade in"))
+                                        .binding(true, () -> config.fadeIn, newVal -> config.fadeIn = newVal)
+                                        .controller(TickBoxControllerBuilder::create)
+                                        .build())
+                                .option(Option.createBuilder(boolean.class)
+                                        .name(Text.of("Fade out"))
+                                        .binding(true, () -> config.fadeOut, newVal -> config.fadeOut = newVal)
+                                        .controller(TickBoxControllerBuilder::create)
+                                        .build())
+                                .option(Option.createBuilder(float.class)
+                                        .name(Text.of("Fade speed"))
+                                        .binding(8.0F, () -> config.fadeSpeed, newVal -> config.fadeSpeed = newVal)
                                         .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0.01F, 10F).step(0.01F))
                                         .build())
                                 .build())
@@ -173,12 +214,12 @@ public class BlockHighlightConfig {
                                         .binding(true, () -> config.crystalHelper, newVal -> config.crystalHelper = newVal)
                                         .controller(TickBoxControllerBuilder::create)
                                         .build())
-                                .option(Option.createBuilder(boolean.class)
-                                        .name(Text.of("Blending"))
-                                        .description(OptionDescription.of(Text.of("Whether to blend overlaid colors.")))
-                                        .controller(TickBoxControllerBuilder::create)
-                                        .binding(true, () -> config.blending, newVal -> config.blending = newVal)
-                                        .build())
+//                                .option(Option.createBuilder(boolean.class)
+//                                        .name(Text.of("Blending"))
+//                                        .description(OptionDescription.of(Text.of("Whether to blend overlaid colors.")))
+//                                        .controller(TickBoxControllerBuilder::create)
+//                                        .binding(true, () -> config.blending, newVal -> config.blending = newVal)
+//                                        .build())
                                 .build())
                         .build())
         )).generateScreen(parent);

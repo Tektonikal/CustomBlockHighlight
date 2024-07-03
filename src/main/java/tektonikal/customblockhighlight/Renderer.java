@@ -6,22 +6,16 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.*;
-import org.apache.commons.lang3.ArrayUtils;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-
 public class Renderer {
-    static Direction[] lineDirs;
-    static Direction[] fillDirs;
     static Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
 
     public static void drawBoxFill(MatrixStack ms, Box box, int[] cols, Direction... excludeDirs) {
         ms.push();
         ms.translate(box.minX - camera.getPos().x, box.minY - camera.getPos().y, box.minZ - camera.getPos().z);
         setup();
-        if (BlockHighlightConfig.INSTANCE.getConfig().fillType.equals(OutlineType.DEFAULT)) {
+        if (BlockHighlightConfig.INSTANCE.getConfig().fillCulling) {
             RenderSystem.enableDepthTest();
         } else {
             RenderSystem.disableDepthTest();
@@ -41,7 +35,7 @@ public class Renderer {
         ms.push();
         ms.translate(box.minX - camera.getPos().x, box.minY - camera.getPos().y, box.minZ - camera.getPos().z);
         setup();
-        if (BlockHighlightConfig.INSTANCE.getConfig().type.equals(OutlineType.DEFAULT)) {
+        if (BlockHighlightConfig.INSTANCE.getConfig().lineCulling) {
             RenderSystem.enableDepthTest();
         } else {
             RenderSystem.disableDepthTest();
@@ -51,7 +45,7 @@ public class Renderer {
         BufferBuilder buffer = tessellator.getBuffer();
         RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
         buffer.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
-        Vertexer.vertexBoxLines(ms, buffer, moveToZero(box), color, excludeDirs);
+        Vertexer.vertexBoxLines(ms, buffer, moveToZero(box), color, new int[] {BlockHighlightConfig.INSTANCE.getConfig().lineCol2.getRed(), BlockHighlightConfig.INSTANCE.getConfig().lineCol2.getGreen(), BlockHighlightConfig.INSTANCE.getConfig().lineCol2.getBlue(), BlockHighlightConfig.INSTANCE.getConfig().lineAlpha}, excludeDirs);
         tessellator.draw();
         end();
         ms.pop();
