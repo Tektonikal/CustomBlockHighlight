@@ -1,76 +1,69 @@
 package tektonikal.customblockhighlight.config;
 
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import dev.isxander.yacl3.config.ConfigEntry;
 import dev.isxander.yacl3.config.GsonConfigInstance;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import tektonikal.customblockhighlight.OutlineType;
 
 import java.awt.*;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 
 public class BlockHighlightConfig {
 
-    public static GsonConfigInstance<BlockHighlightConfig> INSTANCE = GsonConfigInstance.createBuilder(BlockHighlightConfig.class).setPath(FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json")).build();
+    public static GsonConfigInstance<BlockHighlightConfig> INSTANCE = GsonConfigInstance.createBuilder(BlockHighlightConfig.class).setPath(FabricLoader.getInstance().getConfigDir().resolve("blockhighlight-new.json")).build();
+    public static Gson gson = new GsonBuilder()
+            .setFieldNamingPolicy(FieldNamingPolicy.IDENTITY)
+            .serializeNulls()
+            .registerTypeHierarchyAdapter(Color.class, new GsonConfigInstance.ColorTypeAdapter())
+            .setPrettyPrinting()
+            .create();
+    //@formatter:off
     //outline stuff
-    @ConfigEntry
-    public boolean outlineEnabled = true;
-    @ConfigEntry
-    public OutlineType type = OutlineType.AIR_EXPOSED;
-    @ConfigEntry
-    public Color lineCol = Color.decode("#000000");
-    @ConfigEntry
-    public Color lineCol2 = Color.decode("#FFFFFF");
-    @ConfigEntry
-    public int width = 2;
-    @ConfigEntry
-    public int lineAlpha = 128;
-    @ConfigEntry
-    public float expand = 0;
-    @ConfigEntry
-    public boolean connected = true;
+    @ConfigEntry public boolean outlineEnabled = true;
+        @ConfigEntry public Color lineCol = Color.decode("#000000");
+        @ConfigEntry public Color lineCol2 = Color.decode("#FFFFFF");
+        @ConfigEntry public int lineAlpha = 255;
+        @ConfigEntry public boolean outlineRainbow = true;
+        @ConfigEntry public OutlineType outlineType = OutlineType.AIR_EXPOSED;
+        @ConfigEntry public int lineWidth = 3;
+        @ConfigEntry public float lineExpand = 0;
+        @ConfigEntry public boolean lineDepthTest = false;
 
     //fill stuffs
-    @ConfigEntry
-    public OutlineType fillType = OutlineType.ALL;
-    @ConfigEntry
-    public Color fillCol = Color.decode("#000000");
-    @ConfigEntry
-    public int fillOpacity = 128;
-    @ConfigEntry
-    public boolean fillEnabled = true;
-    @ConfigEntry
-    public float fillExpand = 0;
-    //easings
-    @ConfigEntry
-    public boolean doEasing = true;
-    @ConfigEntry
-    public float easeSpeed = 1F;
-    @ConfigEntry
-    public boolean outlineRainbow = false;
-    @ConfigEntry
-    public boolean fillRainbow = false;
-    @ConfigEntry
-    public int rainbowSpeed = 5;
-    @ConfigEntry
-    public boolean crystalHelper = true;
-//TODO
-//    @ConfigEntry
-//    public boolean blending;
-    @ConfigEntry
-    public boolean fillCulling = false;
-    @ConfigEntry
-    public boolean lineCulling = false;
-    @ConfigEntry
-    public float fadeSpeed = 8.0F;
-    @ConfigEntry
-    public boolean fadeOut = true;
-    @ConfigEntry
-    public boolean fadeIn = true;
-
+    @ConfigEntry public boolean fillEnabled = true;
+        @ConfigEntry public Color fillCol = Color.decode("#000000");
+        @ConfigEntry public Color fillCol2 = Color.decode("#FFFFFF");
+        @ConfigEntry public int fillOpacity = 128;
+        @ConfigEntry public boolean fillRainbow = false;
+        @ConfigEntry public OutlineType fillType = OutlineType.AIR_EXPOSED;
+        @ConfigEntry public float fillExpand = 0.001F;
+        @ConfigEntry public boolean fillDepthTest = false;
+        @ConfigEntry public boolean invert = false;
+    //extras
+    @ConfigEntry public boolean doEasing = true;
+    @ConfigEntry public float easeSpeed = 10F;
+    @ConfigEntry public boolean fadeIn = true;
+    @ConfigEntry public boolean fadeOut = true;
+    @ConfigEntry public float fadeSpeed = 8.0F;
+    @ConfigEntry public int rainbowSpeed = 5;
+    @ConfigEntry public int delay = 250;
+    @ConfigEntry public boolean crystalHelper = true;
+    @ConfigEntry public boolean connected = true;
+    //@formatter:on
 
     public static Screen getConfigScreen(Screen parent) {
         return YetAnotherConfigLib.create(INSTANCE, ((defaults, config, builder) -> builder
@@ -89,7 +82,7 @@ public class BlockHighlightConfig {
                                 .build())
                         .option(Option.createBuilder(Color.class)
                                 .name(Text.of("Color 2"))
-                                .binding(new Color(0, 0, 0), () -> config.lineCol2, newVal -> config.lineCol2 = newVal)
+                                .binding(new Color(255, 255, 255), () -> config.lineCol2, newVal -> config.lineCol2 = newVal)
                                 .controller(ColorControllerBuilder::create)
                                 .build())
                         .option(Option.createBuilder(int.class)
@@ -97,25 +90,30 @@ public class BlockHighlightConfig {
                                 .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1))
                                 .binding(255, () -> config.lineAlpha, newVal -> config.lineAlpha = newVal)
                                 .build())
-                        .option(Option.createBuilder(int.class)
-                                .name(Text.of("Line Width"))
-                                .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 10).step(1))
-                                .binding(2, () -> config.width, newVal -> config.width = newVal)
+                        .option(Option.createBuilder(boolean.class)
+                                .name(Text.of("Rainbow Outline"))
+                                .binding(true, () -> config.outlineRainbow, newVal -> config.outlineRainbow = newVal)
+                                .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .option(Option.createBuilder(OutlineType.class)
                                 .name(Text.of("Mode"))
-                                .binding(OutlineType.AIR_EXPOSED, () -> config.type, newVal -> config.type = newVal)
+                                .binding(OutlineType.AIR_EXPOSED, () -> config.outlineType, newVal -> config.outlineType = newVal)
                                 .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
                                 .build())
-                        .option(Option.createBuilder(boolean.class)
-                                .name(Text.of("Culling"))
-                                .binding(false, () -> config.lineCulling, newVal -> config.lineCulling = newVal)
-                                .controller(TickBoxControllerBuilder::create)
+                        .option(Option.createBuilder(int.class)
+                                .name(Text.of("Line Width"))
+                                .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 10).step(1))
+                                .binding(3, () -> config.lineWidth, newVal -> config.lineWidth = newVal)
                                 .build())
                         .option(Option.createBuilder(float.class)
                                 .name(Text.of("Adjust Size By"))
-                                .binding(0F, () -> config.expand, newVal -> config.expand = newVal)
-                                .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-2F, 2F).step(0.1F))
+                                .binding(0F, () -> config.lineExpand, newVal -> config.lineExpand = newVal)
+                                .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F))
+                                .build())
+                        .option(Option.createBuilder(boolean.class)
+                                .name(Text.of("Depth Test"))
+                                .binding(false, () -> config.lineDepthTest, newVal -> config.lineDepthTest = newVal)
+                                .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .build())
                 .category(ConfigCategory.createBuilder()
@@ -130,25 +128,40 @@ public class BlockHighlightConfig {
                                 .binding(new Color(0, 0, 0), () -> config.fillCol, newVal -> config.fillCol = newVal)
                                 .controller(ColorControllerBuilder::create)
                                 .build())
+                        .option(Option.createBuilder(Color.class)
+                                .name(Text.of("Color 2"))
+                                .binding(new Color(255, 255, 255), () -> config.fillCol2, newVal -> config.fillCol2 = newVal)
+                                .controller(ColorControllerBuilder::create)
+                                .build())
                         .option(Option.createBuilder(int.class)
                                 .name(Text.of("Alpha"))
                                 .binding(128, () -> config.fillOpacity, newVal -> config.fillOpacity = newVal)
                                 .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 255).step(1))
+                                .build())
+                        .option(Option.createBuilder(boolean.class)
+                                .name(Text.of("Rainbow Fill"))
+                                .binding(false, () -> config.fillRainbow, newVal -> config.fillRainbow = newVal)
+                                .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .option(Option.createBuilder(OutlineType.class)
                                 .name(Text.of("Mode"))
                                 .binding(OutlineType.AIR_EXPOSED, () -> config.fillType, newVal -> config.fillType = newVal)
                                 .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
                                 .build())
-                        .option(Option.createBuilder(boolean.class)
-                                .name(Text.of("Culling"))
-                                .binding(false, () -> config.fillCulling, newVal -> config.fillCulling = newVal)
-                                .controller(TickBoxControllerBuilder::create)
-                                .build())
                         .option(Option.createBuilder(float.class)
                                 .name(Text.of("Adjust Size By"))
-                                .binding(0.002F, () -> config.fillExpand, newVal -> config.fillExpand = newVal)
-                                .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-2F, 2F).step(0.1F))
+                                .binding(0.001F, () -> config.fillExpand, newVal -> config.fillExpand = newVal)
+                                .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F))
+                                .build())
+                        .option(Option.createBuilder(boolean.class)
+                                .name(Text.of("Depth Test"))
+                                .binding(false, () -> config.fillDepthTest, newVal -> config.fillDepthTest = newVal)
+                                .controller(TickBoxControllerBuilder::create)
+                                .build())
+                        .option(Option.createBuilder(boolean.class)
+                                .name(Text.of("Invert"))
+                                .binding(false, () -> config.invert, newVal -> config.invert = newVal)
+                                .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .build())
                 .category(ConfigCategory.createBuilder()
@@ -163,8 +176,8 @@ public class BlockHighlightConfig {
                                 .option(Option.createBuilder(float.class)
                                         .name(Text.of("Ease speed"))
                                         .description(OptionDescription.of(Text.of("How fast to animate the block. FPS independent !!")))
-                                        .binding(3.5F, () -> config.easeSpeed, newVal -> config.easeSpeed = newVal)
-                                        .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0.01F, 10F).step(0.01F))
+                                        .binding(10F, () -> config.easeSpeed, newVal -> config.easeSpeed = newVal)
+                                        .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 15F).step(0.1F))
                                         .build())
                                 .option(Option.createBuilder(boolean.class)
                                         .name(Text.of("Fade in"))
@@ -179,25 +192,20 @@ public class BlockHighlightConfig {
                                 .option(Option.createBuilder(float.class)
                                         .name(Text.of("Fade speed"))
                                         .binding(8.0F, () -> config.fadeSpeed, newVal -> config.fadeSpeed = newVal)
-                                        .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0.01F, 10F).step(0.01F))
+                                        .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 15F).step(0.1F))
                                         .build())
                                 .build())
                         .group(OptionGroup.createBuilder()
                                 .name(Text.of("Rainbow / Chroma"))
-                                .option(Option.createBuilder(boolean.class)
-                                        .name(Text.of("Rainbow Outline"))
-                                        .binding(false, () -> config.outlineRainbow, newVal -> config.outlineRainbow = newVal)
-                                        .controller(TickBoxControllerBuilder::create)
-                                        .build())
-                                .option(Option.createBuilder(boolean.class)
-                                        .name(Text.of("Rainbow Fill"))
-                                        .binding(false, () -> config.fillRainbow, newVal -> config.fillRainbow = newVal)
-                                        .controller(TickBoxControllerBuilder::create)
-                                        .build())
                                 .option(Option.createBuilder(int.class)
                                         .name(Text.of("Rainbow Speed"))
-                                        .binding(10, () -> config.rainbowSpeed, newVal -> config.rainbowSpeed = newVal)
+                                        .binding(5, () -> config.rainbowSpeed, newVal -> config.rainbowSpeed = newVal)
                                         .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 10).step(1))
+                                        .build())
+                                .option(Option.createBuilder(int.class)
+                                        .name(Text.of("Rainbow Delay"))
+                                        .binding(250, () -> config.delay, newVal -> config.delay = newVal)
+                                        .controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(0, 750).step(1))
                                         .build())
                                 .build())
                         .group(OptionGroup.createBuilder()
@@ -214,12 +222,6 @@ public class BlockHighlightConfig {
                                         .binding(true, () -> config.crystalHelper, newVal -> config.crystalHelper = newVal)
                                         .controller(TickBoxControllerBuilder::create)
                                         .build())
-//                                .option(Option.createBuilder(boolean.class)
-//                                        .name(Text.of("Blending"))
-//                                        .description(OptionDescription.of(Text.of("Whether to blend overlaid colors.")))
-//                                        .controller(TickBoxControllerBuilder::create)
-//                                        .binding(true, () -> config.blending, newVal -> config.blending = newVal)
-//                                        .build())
                                 .build())
                         .build())
         )).generateScreen(parent);

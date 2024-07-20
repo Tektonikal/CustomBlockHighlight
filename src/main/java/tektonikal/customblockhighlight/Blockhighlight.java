@@ -8,4 +8,5 @@ public class Blockhighlight implements ModInitializer {
     public void onInitialize() {
         BlockHighlightConfig.INSTANCE.load();
     }
+
 }

@@ -1,142 +1,100 @@
 package tektonikal.customblockhighlight;
-import org.apache.commons.lang3.ArrayUtils;
+
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.Text;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
+import tektonikal.customblockhighlight.config.BlockHighlightConfig;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 public class Vertexer {
+    public static MinecraftClient mc = MinecraftClient.getInstance();
 
-    public static final int CULL_BACK = 0;
-    public static final int CULL_FRONT = 1;
-    public static final int CULL_NONE = 2;
+    public static void vertexBoxQuads(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, Color cols, Color col2, float[] alpha) {
+        Color firstThird = new Color(interp(cols.getRed(), col2.getRed(), 1), interp(cols.getGreen(), col2.getGreen(), 1), interp(cols.getBlue(), col2.getBlue(), 1), 255);
+        Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
+        ArrayList<Side> sides = new ArrayList<>();
+        for (int i = 0; i < alpha.length; i++) {
+            sides.add(new Side(getCenter(Direction.byId(i), new Box(((BlockHitResult) mc.crosshairTarget).getBlockPos())).toVector3f().distance(mc.player.getEyePos().toVector3f()), Direction.byId(i)));
+        }
+        if (BlockHighlightConfig.INSTANCE.getConfig().invert) {
+            sides.sort(Comparator.comparing(Side::getDistance));
+        } else {
+            sides.sort(Comparator.comparing(Side::getDistance).reversed());
+        }
+        for (int i = 0; i < alpha.length; i++) {
+            drawSide(matrices, vertexConsumer, box, cols, col2, firstThird, secondThird, alpha, sides.get(i).dir);
+        }
+    }
 
-    public static void vertexBoxQuads(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, int[] quadColor, Direction... dirs) {
+    private static Vec3d getCenter(Direction direction, Box box) {
+        switch (direction) {
+            case UP -> {
+                return new Vec3d((box.minX + box.maxX) / 2.0F, box.maxY, (box.minZ + box.maxZ) / 2.0F);
+            }
+            case DOWN -> {
+                return new Vec3d((box.minX + box.maxX) / 2.0F, box.minY, (box.minZ + box.maxZ) / 2.0F);
+            }
+            case EAST -> {
+                return new Vec3d(box.maxX, (box.minY + box.maxY) / 2.0F, (box.minZ + box.maxZ) / 2.0F);
+            }
+            case WEST -> {
+                return new Vec3d(box.minX, (box.minY + box.maxY) / 2.0F, (box.minZ + box.maxZ) / 2.0F);
+            }
+            case NORTH -> {
+                return new Vec3d((box.minX + box.maxX) / 2.0F, (box.minY + box.maxY) / 2.0F, box.minZ);
+            }
+            case SOUTH -> {
+                return new Vec3d((box.minX + box.maxX) / 2.0F, (box.minY + box.maxY) / 2.0F, box.maxZ);
+            }
+        }
+        return null;
+    }
+
+    public static void drawSide(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, Color cols, Color col2, Color firstThird, Color secondThird, float[] alpha, Direction d) {
+        if (alpha[d.ordinal()] > 0.49F) {
+            switch (d) {
+                case UP ->
+                        vertexQuad(matrices, vertexConsumer, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, cols, firstThird, secondThird, firstThird, Math.round(alpha[Direction.UP.ordinal()]));
+                case SOUTH ->
+                        vertexQuad(matrices, vertexConsumer, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, firstThird, secondThird, col2, Math.round(alpha[Direction.SOUTH.ordinal()]));
+                case NORTH ->
+                        vertexQuad(matrices, vertexConsumer, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, secondThird, firstThird, cols, firstThird, Math.round(alpha[Direction.NORTH.ordinal()]));
+                case EAST ->
+                        vertexQuad(matrices, vertexConsumer, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, col2, secondThird, firstThird, secondThird, Math.round(alpha[Direction.EAST.ordinal()]));
+                case WEST ->
+                        vertexQuad(matrices, vertexConsumer, (float) box.minX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.minY, (float) box.minZ, firstThird, cols, firstThird, secondThird, Math.round(alpha[Direction.WEST.ordinal()]));
+                case DOWN ->
+                        vertexQuad(matrices, vertexConsumer, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, col2, secondThird, firstThird, Math.round(alpha[Direction.DOWN.ordinal()]));
+            }
+        }
+    }
+
+    public static void vertexQuad(MatrixStack matrices, VertexConsumer vertexConsumer, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4, Color cols, Color col2, Color col3, Color col4, int alpha) {
+        vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x4, y4, z4).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).next();
+        vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x3, y3, z3).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).next();
+        vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x2, y2, z2).color(col3.getRed(), col3.getGreen(), col3.getBlue(), alpha).next();
+        vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x1, y1, z1).color(col4.getRed(), col4.getGreen(), col4.getBlue(), alpha).next();
+    }
+
+    public static void vertexBoxLines(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, Color cols, Color col2, float[] alpha) {
         float x1 = (float) box.minX;
         float y1 = (float) box.minY;
         float z1 = (float) box.minZ;
         float x2 = (float) box.maxX;
         float y2 = (float) box.maxY;
         float z2 = (float) box.maxZ;
-        int cullMode = dirs.length == 0 ? CULL_BACK : CULL_NONE;
-
-        if (ArrayUtils.contains(dirs, Direction.DOWN)) {
-            vertexQuad(matrices, vertexConsumer, x1, y1, z1, x2, y1, z1, x2, y1, z2, x1, y1, z2, cullMode, quadColor);
-        }
-
-        if (ArrayUtils.contains(dirs, Direction.WEST)) {
-            vertexQuad(matrices, vertexConsumer, x1, y1, z2, x1, y2, z2, x1, y2, z1, x1, y1, z1, cullMode, quadColor);
-        }
-
-        if (ArrayUtils.contains(dirs, Direction.EAST)) {
-            vertexQuad(matrices, vertexConsumer, x2, y1, z1, x2, y2, z1, x2, y2, z2, x2, y1, z2, cullMode, quadColor);
-        }
-
-        if (ArrayUtils.contains(dirs, Direction.NORTH)) {
-            vertexQuad(matrices, vertexConsumer, x1, y1, z1, x1, y2, z1, x2, y2, z1, x2, y1, z1, cullMode, quadColor);
-        }
-
-        if (ArrayUtils.contains(dirs, Direction.SOUTH)) {
-            vertexQuad(matrices, vertexConsumer, x2, y1, z2, x2, y2, z2, x1, y2, z2, x1, y1, z2, cullMode, quadColor);
-        }
-
-        if (ArrayUtils.contains(dirs, Direction.UP)) {
-            vertexQuad(matrices, vertexConsumer, x1, y2, z2, x2, y2, z2, x2, y2, z1, x1, y2, z1, cullMode, quadColor);
-        }
-    }
-
-    public static void vertexQuad(MatrixStack matrices, VertexConsumer vertexConsumer, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4, int cullMode, int[] cols) {
-        if (cullMode != CULL_FRONT) {
-            vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x1, y1, z1).color(cols[0], cols[1], cols[2], cols[3]).next();
-            vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x2, y2, z2).color(cols[0], cols[1], cols[2], cols[3]).next();
-            vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x3, y3, z3).color(cols[0], cols[1], cols[2], cols[3]).next();
-            vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x4, y4, z4).color(cols[0], cols[1], cols[2], cols[3]).next();
-        }
-
-        if (cullMode != CULL_BACK) {
-            vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x4, y4, z4).color(cols[0], cols[1], cols[2], cols[3]).next();
-            vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x3, y3, z3).color(cols[0], cols[1], cols[2], cols[3]).next();
-            vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x2, y2, z2).color(cols[0], cols[1], cols[2], cols[3]).next();
-            vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x1, y1, z1).color(cols[0], cols[1], cols[2], cols[3]).next();
-        }
-    }
-
-    public static void vertexBoxLines(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, int[] cols, Direction... dirs) {
-        float x1 = (float) box.minX;
-        float y1 = (float) box.minY;
-        float z1 = (float) box.minZ;
-        float x2 = (float) box.maxX;
-        float y2 = (float) box.maxY;
-        float z2 = (float) box.maxZ;
-        boolean exDown = ArrayUtils.contains(dirs, Direction.DOWN);
-        boolean exWest = ArrayUtils.contains(dirs, Direction.WEST);
-        boolean exEast = ArrayUtils.contains(dirs, Direction.EAST);
-        boolean exNorth = ArrayUtils.contains(dirs, Direction.NORTH);
-        boolean exSouth = ArrayUtils.contains(dirs, Direction.SOUTH);
-        boolean exUp = ArrayUtils.contains(dirs, Direction.UP);
-
-
-        if (exDown) {
-            vertexLine(matrices, vertexConsumer, x1, y1, z1, x2, y1, z1, cols);
-            vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y1, z2, cols);
-            vertexLine(matrices, vertexConsumer, x2, y1, z2, x1, y1, z2, cols);
-            vertexLine(matrices, vertexConsumer, x1, y1, z2, x1, y1, z1, cols);
-        }
-
-        if (exWest) {
-            if (!exDown) vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y1, z2, cols);
-            vertexLine(matrices, vertexConsumer, x1, y1, z2, x1, y2, z2, cols);
-            vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y2, z1, cols);
-            if (!exUp) vertexLine(matrices, vertexConsumer, x1, y2, z1, x1, y2, z2, cols);
-        }
-
-        if (exEast) {
-            if (!exDown) vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y1, z2, cols);
-            vertexLine(matrices, vertexConsumer, x2, y1, z2, x2, y2, z2, cols);
-            vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y2, z1, cols);
-            if (!exUp) vertexLine(matrices, vertexConsumer, x2, y2, z1, x2, y2, z2, cols);
-        }
-
-        if (exNorth) {
-            if (!exDown) vertexLine(matrices, vertexConsumer, x1, y1, z1, x2, y1, z1, cols);
-            if (!exEast) vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y2, z1, cols);
-            if (!exWest) vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y2, z1, cols);
-            if (!exUp) vertexLine(matrices, vertexConsumer, x1, y2, z1, x2, y2, z1, cols);
-        }
-
-        if (exSouth) {
-            if (!exDown) vertexLine(matrices, vertexConsumer, x1, y1, z2, x2, y1, z2, cols);
-            if (!exEast) vertexLine(matrices, vertexConsumer, x2, y1, z2, x2, y2, z2, cols);
-            if (!exWest) vertexLine(matrices, vertexConsumer, x1, y1, z2, x1, y2, z2, cols);
-            if (!exUp) vertexLine(matrices, vertexConsumer, x1, y2, z2, x2, y2, z2, cols);
-        }
-
-        if (exUp) {
-            vertexLine(matrices, vertexConsumer, x1, y2, z1, x2, y2, z1, cols);
-            vertexLine(matrices, vertexConsumer, x2, y2, z1, x2, y2, z2, cols);
-            vertexLine(matrices, vertexConsumer, x2, y2, z2, x1, y2, z2, cols);
-            vertexLine(matrices, vertexConsumer, x1, y2, z2, x1, y2, z1, cols);
-        }
-    }
-    public static void vertexBoxLines(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, int[] cols, int[] col2, Direction... dirs) {
-        float x1 = (float) box.minX;
-        float y1 = (float) box.minY;
-        float z1 = (float) box.minZ;
-        float x2 = (float) box.maxX;
-        float y2 = (float) box.maxY;
-        float z2 = (float) box.maxZ;
-        boolean exDown = ArrayUtils.contains(dirs, Direction.DOWN);
-        boolean exWest = ArrayUtils.contains(dirs, Direction.WEST);
-        boolean exEast = ArrayUtils.contains(dirs, Direction.EAST);
-        boolean exNorth = ArrayUtils.contains(dirs, Direction.NORTH);
-        boolean exSouth = ArrayUtils.contains(dirs, Direction.SOUTH);
-        boolean exUp = ArrayUtils.contains(dirs, Direction.UP);
-        int[] firstThird = new int[]{interp(cols[0], col2[0], 3, 1), interp(cols[1], col2[1], 3, 1), interp(cols[2], col2[2], 3, 1), cols[3]};
-        int[] secondThird = new int[]{interp(cols[0], col2[0], 3, 2), interp(cols[1], col2[1], 3, 2), interp(cols[2], col2[2], 3, 2), cols[3]};
+        Color firstThird = new Color(interp(cols.getRed(), col2.getRed(), 1), interp(cols.getGreen(), col2.getGreen(), 1), interp(cols.getBlue(), col2.getBlue(), 1), 255);
+        Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
         /*
         (facing west)
                +--------+ <- start here with col1 (min X, max Y, min Z)
@@ -149,78 +107,59 @@ public class Vertexer {
             |        |/
    final -> +--------+
          */
-        if (exUp) {
-            vertexLine(matrices, vertexConsumer, x1, y2, z1, x2, y2, z1, cols, firstThird);
-            vertexLine(matrices, vertexConsumer, x1, y2, z1, x1, y2, z2, cols, firstThird);
-            vertexLine(matrices, vertexConsumer, x2, y2, z1, x2, y2, z2, firstThird, secondThird);
-            vertexLine(matrices, vertexConsumer, x1, y2, z2, x2, y2, z2, firstThird, secondThird);
-        }
-        if (exDown) {
-            vertexLine(matrices, vertexConsumer, x1, y1, z1, x2, y1, z1, firstThird, secondThird);
-            vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y1, z2, firstThird, secondThird);
-            vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y1, z2, secondThird, col2);
-            vertexLine(matrices, vertexConsumer, x1, y1, z2, x2, y1, z2, secondThird, col2);
-        }
+        //i don't wanna bother checking for <0.5 alpha here, surely it makes no difference?
+        //down
+        vertexLine(matrices, vertexConsumer, x1, y1, z1, x2, y1, z1, firstThird, secondThird, Math.round(Math.max(alpha[0], alpha[2])), 1, 0, 0);
+        vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y1, z2, firstThird, secondThird, Math.round(Math.max(alpha[4], alpha[0])), 0, 0, 1);
+        vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y1, z2, secondThird, col2, Math.round(Math.max(alpha[5], alpha[0])), 0, 0, 1);
+        vertexLine(matrices, vertexConsumer, x1, y1, z2, x2, y1, z2, secondThird, col2, Math.round(Math.max(alpha[3], alpha[0])), 1, 0, 0);
+        //west
+        vertexLine(matrices, vertexConsumer, x1, y1, z2, x1, y2, z2, secondThird, firstThird, Math.round(Math.max(alpha[3], alpha[4])), 0, 1, 0);
+        vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y2, z1, firstThird, cols, Math.round(Math.max(alpha[2], alpha[4])), 0, 1, 0);
 
-        if (exWest) {
-            if (!exDown) vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y1, z2, firstThird, secondThird);
-            vertexLine(matrices, vertexConsumer, x1, y1, z2, x1, y2, z2, secondThird, firstThird);
-            vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y2, z1, firstThird, cols);
-            if (!exUp) vertexLine(matrices, vertexConsumer, x1, y2, z1, x1, y2, z2, cols, firstThird);
-        }
+        //east
+        vertexLine(matrices, vertexConsumer, x2, y2, z2, x2, y1, z2, secondThird, col2, Math.round(Math.max(alpha[3], alpha[5])), 0, -1, 0);
+        vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y2, z1, secondThird, firstThird, Math.round(Math.max(alpha[2], alpha[5])), 0, 1, 0);
 
-        if (exEast) {
-            if (!exDown) vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y1, z2, secondThird, col2);
-            vertexLine(matrices, vertexConsumer, x2, y1, z2, x2, y2, z2, col2, secondThird);
-            vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y2, z1, secondThird, firstThird);
-            if (!exUp) vertexLine(matrices, vertexConsumer, x2, y2, z1, x2, y2, z2, firstThird, secondThird);
-        }
+        //north
 
-        if (exNorth) {
-            if (!exDown) vertexLine(matrices, vertexConsumer, x1, y1, z1, x2, y1, z1, firstThird, secondThird);
-            if (!exEast) vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y2, z1, secondThird, firstThird);
-            if (!exWest) vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y2, z1, firstThird, cols);
-            if (!exUp) vertexLine(matrices, vertexConsumer, x1, y2, z1, x2, y2, z1, cols, firstThird);
-        }
+        //south
 
-        if (exSouth) {
-            if (!exDown) vertexLine(matrices, vertexConsumer, x1, y1, z2, x2, y1, z2, secondThird, col2);
-            if (!exEast) vertexLine(matrices, vertexConsumer, x2, y1, z2, x2, y2, z2, col2, secondThird);
-            if (!exWest) vertexLine(matrices, vertexConsumer, x1, y1, z2, x1, y2, z2, secondThird, firstThird);
-            if (!exUp) vertexLine(matrices, vertexConsumer, x1, y2, z2, x2, y2, z2, firstThird, secondThird);
-        }
+        //up
+        vertexLine(matrices, vertexConsumer, x1, y2, z1, x2, y2, z1, cols, firstThird, Math.round(Math.max(alpha[2], alpha[1])), 1, 0, 0);
+        vertexLine(matrices, vertexConsumer, x1, y2, z1, x1, y2, z2, cols, firstThird, Math.round(Math.max(alpha[4], alpha[1])), 0, 0, 1);
+        vertexLine(matrices, vertexConsumer, x2, y2, z1, x2, y2, z2, firstThird, secondThird, Math.round(Math.max(alpha[5], alpha[1])), 0, 0, 1);
+        vertexLine(matrices, vertexConsumer, x1, y2, z2, x2, y2, z2, firstThird, secondThird, Math.round(Math.max(alpha[3], alpha[1])), 1, 0, 0);
     }
 
-    private static int interp(int in1, int in2, int div, int mul){
-        return Math.min(in1, in2) + (((Math.max(in1, in2) - Math.min(in1, in2)) / div) * mul);
+    private static int interp(int in1, int in2, int mul) {
+        if (in1 != in2) {
+            int diff = ((Math.max(in1, in2) - Math.min(in1, in2)) / 3);
+            return in1 > in2 ? in2 + (diff * (mul == 2 ? 1 : 2)) : in1 + diff * mul;
+        }
+        return in1;
     }
 
-    public static void vertexLine(MatrixStack matrices, VertexConsumer vertexConsumer, float x1, float y1, float z1, float x2, float y2, float z2, int[] cols) {
+    public static void vertexLine(MatrixStack matrices, VertexConsumer vertexConsumer, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, int nx, int ny, int nz) {
         Matrix4f model = matrices.peek().getPositionMatrix();
         Matrix3f normal = matrices.peek().getNormalMatrix();
 
-        Vector3f normalVec = getNormal(x1, y1, z1, x2, y2, z2);
 
-        vertexConsumer.vertex(model, x1, y1, z1).color(cols[0], cols[1], cols[2], cols[3]).normal(normal, normalVec.x(), normalVec.y(), normalVec.z()).next();
-        vertexConsumer.vertex(model, x2, y2, z2).color(cols[0], cols[1], cols[2], cols[3]).normal(normal, normalVec.x(), normalVec.y(), normalVec.z()).next();
-    }
-    public static void vertexLine(MatrixStack matrices, VertexConsumer vertexConsumer, float x1, float y1, float z1, float x2, float y2, float z2, int[] cols, int[] col2) {
-        Matrix4f model = matrices.peek().getPositionMatrix();
-        Matrix3f normal = matrices.peek().getNormalMatrix();
-
-        Vector3f normalVec = getNormal(x1, y1, z1, x2, y2, z2);
-
-        vertexConsumer.vertex(model, x1, y1, z1).color(cols[0], cols[1], cols[2], cols[3]).normal(normal, normalVec.x(), normalVec.y(), normalVec.z()).next();
-        vertexConsumer.vertex(model, x2, y2, z2).color(col2[0], col2[1], col2[2], cols[3]).normal(normal, normalVec.x(), normalVec.y(), normalVec.z()).next();
+        vertexConsumer.vertex(model, x1, y1, z1).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).normal(normal, nx, ny, nz).next();
+        vertexConsumer.vertex(model, x2, y2, z2).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).normal(normal, nx, ny, nz).next();
     }
 
-    public static Vector3f getNormal(float x1, float y1, float z1, float x2, float y2, float z2) {
-        float xNormal = x2 - x1;
-        float yNormal = y2 - y1;
-        float zNormal = z2 - z1;
-        float normalSqrt = MathHelper.sqrt(xNormal * xNormal + yNormal * yNormal + zNormal * zNormal);
+    static class Side {
+        public float distance;
+        public Direction dir;
 
-        return new Vector3f(xNormal / normalSqrt, yNormal / normalSqrt, zNormal / normalSqrt);
+        public Side(float distance, Direction dir) {
+            this.distance = distance;
+            this.dir = dir;
+        }
+
+        public float getDistance() {
+            return distance;
+        }
     }
-
 }

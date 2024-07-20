@@ -6,16 +6,20 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.*;
+import org.lwjgl.opengl.GL11;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
+
+import java.awt.*;
+
 
 public class Renderer {
     static Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
 
-    public static void drawBoxFill(MatrixStack ms, Box box, int[] cols, Direction... excludeDirs) {
+    public static void drawBoxFill(MatrixStack ms, Box box, Color cols, Color col2, float[] alpha) {
         ms.push();
         ms.translate(box.minX - camera.getPos().x, box.minY - camera.getPos().y, box.minZ - camera.getPos().z);
         setup();
-        if (BlockHighlightConfig.INSTANCE.getConfig().fillCulling) {
+        if (BlockHighlightConfig.INSTANCE.getConfig().fillDepthTest) {
             RenderSystem.enableDepthTest();
         } else {
             RenderSystem.disableDepthTest();
@@ -24,18 +28,19 @@ public class Renderer {
         BufferBuilder buffer = tessellator.getBuffer();
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
         buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
-        Vertexer.vertexBoxQuads(ms, buffer, moveToZero(box), cols, excludeDirs);
+        Vertexer.vertexBoxQuads(ms, buffer, moveToZero(box), cols, col2, alpha);
         tessellator.draw();
         end();
         ms.pop();
     }
 
 
-    public static void drawBoxOutline(MatrixStack ms, Box box, int[] color, float lineWidth, Direction... excludeDirs) {
+    public static void drawBoxOutline(MatrixStack ms, Box box, Color color, Color col2, float[] alpha, float lineWidth) {
         ms.push();
         ms.translate(box.minX - camera.getPos().x, box.minY - camera.getPos().y, box.minZ - camera.getPos().z);
         setup();
-        if (BlockHighlightConfig.INSTANCE.getConfig().lineCulling) {
+        GL11.glEnable(GL11.GL_LINE_SMOOTH);
+        if (BlockHighlightConfig.INSTANCE.getConfig().lineDepthTest) {
             RenderSystem.enableDepthTest();
         } else {
             RenderSystem.disableDepthTest();
@@ -45,9 +50,10 @@ public class Renderer {
         BufferBuilder buffer = tessellator.getBuffer();
         RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
         buffer.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
-        Vertexer.vertexBoxLines(ms, buffer, moveToZero(box), color, new int[] {BlockHighlightConfig.INSTANCE.getConfig().lineCol2.getRed(), BlockHighlightConfig.INSTANCE.getConfig().lineCol2.getGreen(), BlockHighlightConfig.INSTANCE.getConfig().lineCol2.getBlue(), BlockHighlightConfig.INSTANCE.getConfig().lineAlpha}, excludeDirs);
+        Vertexer.vertexBoxLines(ms, buffer, moveToZero(box), color, col2, alpha);
         tessellator.draw();
         end();
+        GL11.glDisable(GL11.GL_LINE_SMOOTH);
         ms.pop();
     }
 
@@ -69,7 +75,7 @@ public class Renderer {
     public static void end() {
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
-        RenderSystem.enableCull();
         RenderSystem.disableBlend();
+        RenderSystem.enableCull();
     }
 }
