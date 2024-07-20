@@ -1,6 +1,7 @@
 package tektonikal.customblockhighlight;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.Text;
@@ -19,7 +20,7 @@ import java.util.Comparator;
 public class Vertexer {
     public static MinecraftClient mc = MinecraftClient.getInstance();
 
-    public static void vertexBoxQuads(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, Color cols, Color col2, float[] alpha) {
+    public static void vertexBoxQuads(MatrixStack matrices, BufferBuilder builder, Box box, Color cols, Color col2, float[] alpha) {
         Color firstThird = new Color(interp(cols.getRed(), col2.getRed(), 1), interp(cols.getGreen(), col2.getGreen(), 1), interp(cols.getBlue(), col2.getBlue(), 1), 255);
         Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
         ArrayList<Side> sides = new ArrayList<>();
@@ -32,7 +33,7 @@ public class Vertexer {
             sides.sort(Comparator.comparing(Side::getDistance).reversed());
         }
         for (int i = 0; i < alpha.length; i++) {
-            drawSide(matrices, vertexConsumer, box, cols, col2, firstThird, secondThird, alpha, sides.get(i).dir);
+            drawSide(matrices, builder, box, cols, col2, firstThird, secondThird, alpha, sides.get(i).dir);
         }
     }
 
@@ -60,33 +61,35 @@ public class Vertexer {
         return null;
     }
 
-    public static void drawSide(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, Color cols, Color col2, Color firstThird, Color secondThird, float[] alpha, Direction d) {
-        if (alpha[d.ordinal()] > 0.49F) {
+    public static void drawSide(MatrixStack matrices, BufferBuilder builder, Box box, Color cols, Color col2, Color firstThird, Color secondThird, float[] alpha, Direction d) {
+        //IT WAS YOU !!!!!!
+//        if (alpha[d.ordinal()] > 0.49F) {
             switch (d) {
                 case UP ->
-                        vertexQuad(matrices, vertexConsumer, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, cols, firstThird, secondThird, firstThird, Math.round(alpha[Direction.UP.ordinal()]));
+                        vertexQuad(matrices, builder, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, cols, firstThird, secondThird, firstThird, Math.round(alpha[Direction.UP.ordinal()]));
                 case SOUTH ->
-                        vertexQuad(matrices, vertexConsumer, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, firstThird, secondThird, col2, Math.round(alpha[Direction.SOUTH.ordinal()]));
+                        vertexQuad(matrices, builder, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, firstThird, secondThird, col2, Math.round(alpha[Direction.SOUTH.ordinal()]));
                 case NORTH ->
-                        vertexQuad(matrices, vertexConsumer, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, secondThird, firstThird, cols, firstThird, Math.round(alpha[Direction.NORTH.ordinal()]));
+                        vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, secondThird, firstThird, cols, firstThird, Math.round(alpha[Direction.NORTH.ordinal()]));
                 case EAST ->
-                        vertexQuad(matrices, vertexConsumer, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, col2, secondThird, firstThird, secondThird, Math.round(alpha[Direction.EAST.ordinal()]));
+                        vertexQuad(matrices, builder, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, col2, secondThird, firstThird, secondThird, Math.round(alpha[Direction.EAST.ordinal()]));
                 case WEST ->
-                        vertexQuad(matrices, vertexConsumer, (float) box.minX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.minY, (float) box.minZ, firstThird, cols, firstThird, secondThird, Math.round(alpha[Direction.WEST.ordinal()]));
+                        vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.minY, (float) box.minZ, firstThird, cols, firstThird, secondThird, Math.round(alpha[Direction.WEST.ordinal()]));
                 case DOWN ->
-                        vertexQuad(matrices, vertexConsumer, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, col2, secondThird, firstThird, Math.round(alpha[Direction.DOWN.ordinal()]));
+                        vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, col2, secondThird, firstThird, Math.round(alpha[Direction.DOWN.ordinal()]));
             }
-        }
+//        }
     }
 
-    public static void vertexQuad(MatrixStack matrices, VertexConsumer vertexConsumer, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4, Color cols, Color col2, Color col3, Color col4, int alpha) {
-        vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x4, y4, z4).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).next();
-        vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x3, y3, z3).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).next();
-        vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x2, y2, z2).color(col3.getRed(), col3.getGreen(), col3.getBlue(), alpha).next();
-        vertexConsumer.vertex(matrices.peek().getPositionMatrix(), x1, y1, z1).color(col4.getRed(), col4.getGreen(), col4.getBlue(), alpha).next();
+    public static void vertexQuad(MatrixStack matrices, BufferBuilder builder, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4, Color cols, Color col2, Color col3, Color col4, int alpha) {
+        Matrix4f model = matrices.peek().getPositionMatrix();
+        builder.vertex(model, x4, y4, z4).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha);
+        builder.vertex(model, x3, y3, z3).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha);
+        builder.vertex(model, x2, y2, z2).color(col3.getRed(), col3.getGreen(), col3.getBlue(), alpha);
+        builder.vertex(model, x1, y1, z1).color(col4.getRed(), col4.getGreen(), col4.getBlue(), alpha);
     }
 
-    public static void vertexBoxLines(MatrixStack matrices, VertexConsumer vertexConsumer, Box box, Color cols, Color col2, float[] alpha) {
+    public static void vertexBoxLines(MatrixStack matrices, BufferBuilder builder, Box box, Color cols, Color col2, float[] alpha) {
         float x1 = (float) box.minX;
         float y1 = (float) box.minY;
         float z1 = (float) box.minZ;
@@ -109,27 +112,27 @@ public class Vertexer {
          */
         //i don't wanna bother checking for <0.5 alpha here, surely it makes no difference?
         //down
-        vertexLine(matrices, vertexConsumer, x1, y1, z1, x2, y1, z1, firstThird, secondThird, Math.round(Math.max(alpha[0], alpha[2])), 1, 0, 0);
-        vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y1, z2, firstThird, secondThird, Math.round(Math.max(alpha[4], alpha[0])), 0, 0, 1);
-        vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y1, z2, secondThird, col2, Math.round(Math.max(alpha[5], alpha[0])), 0, 0, 1);
-        vertexLine(matrices, vertexConsumer, x1, y1, z2, x2, y1, z2, secondThird, col2, Math.round(Math.max(alpha[3], alpha[0])), 1, 0, 0);
+        vertexLine(matrices, builder, x1, y1, z1, x2, y1, z1, firstThird, secondThird, Math.round(Math.max(alpha[0], alpha[2])), 1, 0, 0);
+        vertexLine(matrices, builder, x1, y1, z1, x1, y1, z2, firstThird, secondThird, Math.round(Math.max(alpha[4], alpha[0])), 0, 0, 1);
+        vertexLine(matrices, builder, x2, y1, z1, x2, y1, z2, secondThird, col2, Math.round(Math.max(alpha[5], alpha[0])), 0, 0, 1);
+        vertexLine(matrices, builder, x1, y1, z2, x2, y1, z2, secondThird, col2, Math.round(Math.max(alpha[3], alpha[0])), 1, 0, 0);
         //west
-        vertexLine(matrices, vertexConsumer, x1, y1, z2, x1, y2, z2, secondThird, firstThird, Math.round(Math.max(alpha[3], alpha[4])), 0, 1, 0);
-        vertexLine(matrices, vertexConsumer, x1, y1, z1, x1, y2, z1, firstThird, cols, Math.round(Math.max(alpha[2], alpha[4])), 0, 1, 0);
+        vertexLine(matrices, builder, x1, y1, z2, x1, y2, z2, secondThird, firstThird, Math.round(Math.max(alpha[3], alpha[4])), 0, 1, 0);
+        vertexLine(matrices, builder, x1, y1, z1, x1, y2, z1, firstThird, cols, Math.round(Math.max(alpha[2], alpha[4])), 0, 1, 0);
 
         //east
-        vertexLine(matrices, vertexConsumer, x2, y2, z2, x2, y1, z2, secondThird, col2, Math.round(Math.max(alpha[3], alpha[5])), 0, -1, 0);
-        vertexLine(matrices, vertexConsumer, x2, y1, z1, x2, y2, z1, secondThird, firstThird, Math.round(Math.max(alpha[2], alpha[5])), 0, 1, 0);
+        vertexLine(matrices, builder, x2, y2, z2, x2, y1, z2, secondThird, col2, Math.round(Math.max(alpha[3], alpha[5])), 0, -1, 0);
+        vertexLine(matrices, builder, x2, y1, z1, x2, y2, z1, secondThird, firstThird, Math.round(Math.max(alpha[2], alpha[5])), 0, 1, 0);
 
         //north
 
         //south
 
         //up
-        vertexLine(matrices, vertexConsumer, x1, y2, z1, x2, y2, z1, cols, firstThird, Math.round(Math.max(alpha[2], alpha[1])), 1, 0, 0);
-        vertexLine(matrices, vertexConsumer, x1, y2, z1, x1, y2, z2, cols, firstThird, Math.round(Math.max(alpha[4], alpha[1])), 0, 0, 1);
-        vertexLine(matrices, vertexConsumer, x2, y2, z1, x2, y2, z2, firstThird, secondThird, Math.round(Math.max(alpha[5], alpha[1])), 0, 0, 1);
-        vertexLine(matrices, vertexConsumer, x1, y2, z2, x2, y2, z2, firstThird, secondThird, Math.round(Math.max(alpha[3], alpha[1])), 1, 0, 0);
+        vertexLine(matrices, builder, x1, y2, z1, x2, y2, z1, cols, firstThird, Math.round(Math.max(alpha[2], alpha[1])), 1, 0, 0);
+        vertexLine(matrices, builder, x1, y2, z1, x1, y2, z2, cols, firstThird, Math.round(Math.max(alpha[4], alpha[1])), 0, 0, 1);
+        vertexLine(matrices, builder, x2, y2, z1, x2, y2, z2, firstThird, secondThird, Math.round(Math.max(alpha[5], alpha[1])), 0, 0, 1);
+        vertexLine(matrices, builder, x1, y2, z2, x2, y2, z2, firstThird, secondThird, Math.round(Math.max(alpha[3], alpha[1])), 1, 0, 0);
     }
 
     private static int interp(int in1, int in2, int mul) {
@@ -140,13 +143,11 @@ public class Vertexer {
         return in1;
     }
 
-    public static void vertexLine(MatrixStack matrices, VertexConsumer vertexConsumer, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, int nx, int ny, int nz) {
+    public static void vertexLine(MatrixStack matrices, BufferBuilder builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, int nx, int ny, int nz) {
         Matrix4f model = matrices.peek().getPositionMatrix();
-        Matrix3f normal = matrices.peek().getNormalMatrix();
 
-
-        vertexConsumer.vertex(model, x1, y1, z1).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).normal(normal, nx, ny, nz).next();
-        vertexConsumer.vertex(model, x2, y2, z2).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).normal(normal, nx, ny, nz).next();
+        builder.vertex(model, x1, y1, z1).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).normal(matrices.peek(), nx, ny, nz);
+        builder.vertex(model, x2, y2, z2).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).normal(matrices.peek(), nx, ny, nz);
     }
 
     static class Side {
@@ -157,7 +158,6 @@ public class Vertexer {
             this.distance = distance;
             this.dir = dir;
         }
-
         public float getDistance() {
             return distance;
         }

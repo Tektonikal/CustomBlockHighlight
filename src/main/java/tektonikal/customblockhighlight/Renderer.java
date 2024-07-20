@@ -25,11 +25,10 @@ public class Renderer {
             RenderSystem.disableDepthTest();
         }
         Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.getBuffer();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
         Vertexer.vertexBoxQuads(ms, buffer, moveToZero(box), cols, col2, alpha);
-        tessellator.draw();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        BufferRenderer.drawWithGlobalProgram(buffer.end());
         end();
         ms.pop();
     }
@@ -47,11 +46,10 @@ public class Renderer {
         }
         RenderSystem.lineWidth(lineWidth);
         Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.getBuffer();
-        RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
-        buffer.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
+        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
         Vertexer.vertexBoxLines(ms, buffer, moveToZero(box), color, col2, alpha);
-        tessellator.draw();
+        RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
+        BufferRenderer.drawWithGlobalProgram(buffer.end());
         end();
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
         ms.pop();
