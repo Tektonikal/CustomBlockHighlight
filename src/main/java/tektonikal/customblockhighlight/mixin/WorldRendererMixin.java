@@ -1,5 +1,6 @@
 package tektonikal.customblockhighlight.mixin;
 
+import com.jcraft.jorbis.Block;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.BedPart;
 import net.minecraft.block.enums.DoubleBlockHalf;
@@ -7,10 +8,14 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
+import net.minecraft.fluid.Fluids;
+import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.shape.VoxelShape;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -163,12 +168,12 @@ public abstract class WorldRendererMixin {
         }
         //now the outline itself
         if (BlockHighlightConfig.INSTANCE.getConfig().outlineEnabled) {
-
+            if(BlockHighlightConfig.INSTANCE.getConfig().outlineType.equals(OutlineType.EDGES)){
+                drawCuboidShapeOutline(matrices, vertexConsumer, state.getOutlineShape(mc.world, pos), 0, 0, 0, );
+            }
             Color finalLineCol = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.getConfig().lineCol;
             Color finalLineCol2 = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.getConfig().delay) : BlockHighlightConfig.INSTANCE.getConfig().lineCol2;
-
             Renderer.drawBoxOutline(matrices, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().lineExpand), finalLineCol, finalLineCol2, lineFades, BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
-
             if (BlockHighlightConfig.INSTANCE.getConfig().fadeIn) {
                 for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos)) {
                     if (dir != null) {
@@ -209,16 +214,16 @@ public abstract class WorldRendererMixin {
     }
 
     @Unique
-    private Direction[] getSides(OutlineType type, BlockPos pos) {
+    private static Direction[] getSides(OutlineType type, BlockPos pos) {
         switch (type) {
             case LOOKAT -> {
                 return new Direction[]{((BlockHitResult) mc.crosshairTarget).getSide()};
             }
             case AIR_EXPOSED -> {
-                return invert(getAirDirs(pos));
+                return invert(getConcealedDirs(pos));
             }
             case CONCEALED -> {
-                return getAirDirs(pos);
+                return getConcealedDirs(pos);
             }
             default -> {
                 return Direction.values();
@@ -228,7 +233,7 @@ public abstract class WorldRendererMixin {
     }
 
     @Unique
-    private Color getRainbowCol(int delay) {
+    private static Color getRainbowCol(int delay) {
         return getRainbow(((System.currentTimeMillis() + delay) % 10000L / 10000.0f) * BlockHighlightConfig.INSTANCE.getConfig().rainbowSpeed);
     }
 
@@ -244,13 +249,14 @@ public abstract class WorldRendererMixin {
     }
 
     @Unique
-    public float ease(double start, double end, float speed) {
+    private static float ease(double start, double end, float speed) {
         return (float) (start + (end - start) * (1 - Math.exp(-(1.0F / mc.getCurrentFps()) * speed)));
     }
 
     @Unique
-    public Direction[] getAirDirs(BlockPos pos) {
+    private static Direction[] getConcealedDirs(BlockPos pos) {
         //future update todo: prevent blocks from detecting their own parts as obstructing air (maybe use gradients to show it?)
+        //todo: fix fluid detection
         Direction[] dirs = new Direction[6];
         if (!mc.world.isAir(pos.up())) {
             dirs[0] = (Direction.UP);
@@ -272,5 +278,19 @@ public abstract class WorldRendererMixin {
         }
         return dirs;
     }
-
+    @Unique
+    private static void drawCuboidShapeOutline(MatrixStack matrices, VertexConsumer vertexConsumer, VoxelShape shape, double offsetX, double offsetY, double offsetZ, float red, float green, float blue, float alpha) {
+        MatrixStack.Entry entry = matrices.peek();
+        shape.forEachEdge((minX, minY, minZ, maxX, maxY, maxZ) -> {
+            float k = (float)(maxX - minX);
+            float l = (float)(maxY - minY);
+            float m = (float)(maxZ - minZ);
+            float n = MathHelper.sqrt(k * k + l * l + m * m);
+            k /= n;
+            l /= n;
+            m /= n;
+            vertexConsumer.vertex(entry, (float)(minX + offsetX), (float)(minY + offsetY), (float)(minZ + offsetZ)).color(red, green, blue, alpha).normal(entry, k, l, m);
+            vertexConsumer.vertex(entry, (float)(maxX + offsetX), (float)(maxY + offsetY), (float)(maxZ + offsetZ)).color(red, green, blue, alpha).normal(entry, k, l, m);
+        });
+    }
 }
