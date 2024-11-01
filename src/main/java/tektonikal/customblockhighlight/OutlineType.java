@@ -7,6 +7,7 @@ public enum OutlineType implements NameableEnum {
     AIR_EXPOSED,
     ALL,
     CONCEALED,
+    EDGES,
     LOOKAT;
 
     @Override
@@ -15,6 +16,7 @@ public enum OutlineType implements NameableEnum {
             case "AIR_EXPOSED" -> Text.literal("Air exposed");
             case "ALL" -> Text.literal("All");
             case "CONCEALED" -> Text.literal("Concealed faces");
+            case "EDGES" -> Text.literal("Edges");
             case "LOOKAT" -> Text.literal("Looked at");
             default -> Text.literal("you done goofed !.");
         };
