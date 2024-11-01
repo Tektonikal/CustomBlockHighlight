@@ -47,8 +47,8 @@ public abstract class WorldRendererMixin {
     4. 1.21 update (surely it's trivial :clueless:)
     5. fade in/out when not looking at block
      */
-    @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/WorldRenderer;drawBlockOutline(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;Lnet/minecraft/entity/Entity;DDDLnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)V"))
-    private void CBH$thingamajig(WorldRenderer instance, MatrixStack matrices, VertexConsumer vertexConsumer, Entity entity, double cameraX, double cameraY, double cameraZ, BlockPos pos, BlockState state) {
+    @Redirect(method = "renderTargetBlockOutline", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/WorldRenderer;drawBlockOutline(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumer;Lnet/minecraft/entity/Entity;DDDLnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;I)V"))
+    private void CBH$thingamajig(WorldRenderer instance, MatrixStack matrices, VertexConsumer vertexConsumer, Entity entity, double cameraX, double cameraY, double cameraZ, BlockPos pos, BlockState state, int color) {
         Box targetBox;
         try {
             targetBox = state.getOutlineShape(mc.world, pos).getBoundingBox().offset(pos);
@@ -142,7 +142,7 @@ public abstract class WorldRendererMixin {
             if (BlockHighlightConfig.INSTANCE.getConfig().fadeIn) {
                 for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().fillType, pos)) {
                     if (dir != null) {
-                        sideFades[dir.ordinal()] = ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.getConfig().fillOpacity, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
+                        sideFades[dir.ordinal()] = (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.getConfig().fillOpacity, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
                     }
                 }
             } else {
@@ -155,7 +155,7 @@ public abstract class WorldRendererMixin {
             if (BlockHighlightConfig.INSTANCE.getConfig().fadeOut) {
                 for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().fillType, pos))) {
                     if (dir != null) {
-                        sideFades[dir.ordinal()] = ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
+                        sideFades[dir.ordinal()] = (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
                     }
                 }
             } else {
@@ -169,7 +169,7 @@ public abstract class WorldRendererMixin {
         //now the outline itself
         if (BlockHighlightConfig.INSTANCE.getConfig().outlineEnabled) {
             if(BlockHighlightConfig.INSTANCE.getConfig().outlineType.equals(OutlineType.EDGES)){
-                drawCuboidShapeOutline(matrices, vertexConsumer, state.getOutlineShape(mc.world, pos), 0, 0, 0, );
+//                 drawCuboidShapeOutline(matrices, vertexConsumer, state.getOutlineShape(mc.world, pos), 0, 0, 0, );
             }
             Color finalLineCol = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.getConfig().lineCol;
             Color finalLineCol2 = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.getConfig().delay) : BlockHighlightConfig.INSTANCE.getConfig().lineCol2;
@@ -177,7 +177,7 @@ public abstract class WorldRendererMixin {
             if (BlockHighlightConfig.INSTANCE.getConfig().fadeIn) {
                 for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos)) {
                     if (dir != null) {
-                        lineFades[dir.ordinal()] = ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.getConfig().lineAlpha, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
+                        lineFades[dir.ordinal()] = (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.getConfig().lineAlpha, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
                     }
                 }
             } else {
@@ -190,7 +190,7 @@ public abstract class WorldRendererMixin {
             if (BlockHighlightConfig.INSTANCE.getConfig().fadeOut) {
                 for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos))) {
                     if (dir != null) {
-                        lineFades[dir.ordinal()] = ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
+                        lineFades[dir.ordinal()] = (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
                     }
                 }
             } else {
@@ -249,8 +249,8 @@ public abstract class WorldRendererMixin {
     }
 
     @Unique
-    private static float ease(double start, double end, float speed) {
-        return (float) (start + (end - start) * (1 - Math.exp(-(1.0F / mc.getCurrentFps()) * speed)));
+    public double ease(double start, double end, float speed) {
+        return (start + (end - start) * (1 - Math.exp(-(1.0F / mc.getCurrentFps()) * speed)));
     }
 
     @Unique
