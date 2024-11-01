@@ -3,6 +3,7 @@ package tektonikal.customblockhighlight;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.*;
@@ -27,7 +28,7 @@ public class Renderer {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
         Vertexer.vertexBoxQuads(ms, buffer, moveToZero(box), cols, col2, alpha);
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        RenderSystem.setShader(ShaderProgramKeys.POSITION_COLOR);
         BufferRenderer.drawWithGlobalProgram(buffer.end());
         end();
         ms.pop();
@@ -48,7 +49,7 @@ public class Renderer {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
         Vertexer.vertexBoxLines(ms, buffer, moveToZero(box), color, col2, alpha);
-        RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
+        RenderSystem.setShader(ShaderProgramKeys.RENDERTYPE_LINES);
         BufferRenderer.drawWithGlobalProgram(buffer.end());
         end();
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
