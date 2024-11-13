@@ -211,7 +211,7 @@ public class BlockHighlightConfig {
                         .group(OptionGroup.createBuilder()
                                 .name(Text.of("Miscellaneous"))
                                 .option(Option.createBuilder(boolean.class)
-                                        .name(Text.of("Connected outlines"))
+                                        .name(Text.of("Connected Outlines"))
                                         .description(OptionDescription.of(Text.of("This applies to both the fill and outline. Maybe I'll change it later, who knows?")))
                                         .binding(true, () -> config.connected, newVal -> config.connected = newVal)
                                         .controller(TickBoxControllerBuilder::create)

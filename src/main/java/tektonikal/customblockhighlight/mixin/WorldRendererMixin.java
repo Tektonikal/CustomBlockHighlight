@@ -1,22 +1,19 @@
 package tektonikal.customblockhighlight.mixin;
 
-import com.jcraft.jorbis.Block;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.BedPart;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -31,6 +28,9 @@ import static net.minecraft.block.enums.ChestType.SINGLE;
 
 @Mixin(WorldRenderer.class)
 public abstract class WorldRendererMixin {
+    @Shadow
+    @Nullable
+    private ClientWorld world;
     @Unique
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     @Unique
@@ -137,7 +137,7 @@ public abstract class WorldRendererMixin {
         //render the fill first, we don't want it drawn over the outline
         if (BlockHighlightConfig.INSTANCE.getConfig().fillEnabled) {
             Color finalFillCol = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().fillRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.getConfig().fillCol;
-            Color finalFillCol2 = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().fillRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.getConfig().delay) : BlockHighlightConfig.INSTANCE.getConfig().fillCol2 ;
+            Color finalFillCol2 = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().fillRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.getConfig().delay) : BlockHighlightConfig.INSTANCE.getConfig().fillCol2;
             Renderer.drawBoxFill(matrices, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().fillExpand), finalFillCol, finalFillCol2, sideFades);
             if (BlockHighlightConfig.INSTANCE.getConfig().fadeIn) {
                 for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().fillType, pos)) {
@@ -168,35 +168,41 @@ public abstract class WorldRendererMixin {
         }
         //now the outline itself
         if (BlockHighlightConfig.INSTANCE.getConfig().outlineEnabled) {
-            if(BlockHighlightConfig.INSTANCE.getConfig().outlineType.equals(OutlineType.EDGES)){
-//                 drawCuboidShapeOutline(matrices, vertexConsumer, state.getOutlineShape(mc.world, pos), 0, 0, 0, );
-            }
+
             Color finalLineCol = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.getConfig().lineCol;
             Color finalLineCol2 = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.getConfig().delay) : BlockHighlightConfig.INSTANCE.getConfig().lineCol2;
-            Renderer.drawBoxOutline(matrices, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().lineExpand), finalLineCol, finalLineCol2, lineFades, BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
-            if (BlockHighlightConfig.INSTANCE.getConfig().fadeIn) {
-                for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos)) {
-                    if (dir != null) {
-                        lineFades[dir.ordinal()] = (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.getConfig().lineAlpha, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
-                    }
-                }
+
+            if (BlockHighlightConfig.INSTANCE.getConfig().outlineType == OutlineType.EDGES) {
+                Renderer.drawEdgeOutline(matrices, state.getOutlineShape(world, pos, ShapeContext.of(entity)), (double) easeBox.minX - cameraX, easeBox.minY - cameraY, easeBox.minZ - cameraZ, finalLineCol, finalLineCol2, BlockHighlightConfig.INSTANCE.getConfig().lineAlpha, BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
             } else {
-                for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos)) {
-                    if (dir != null) {
-                        lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.getConfig().lineAlpha;
+
+
+                Renderer.drawBoxOutline(matrices, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().lineExpand), finalLineCol, finalLineCol2, lineFades, BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
+
+                if (BlockHighlightConfig.INSTANCE.getConfig().fadeIn) {
+                    for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos)) {
+                        if (dir != null) {
+                            lineFades[dir.ordinal()] = (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.getConfig().lineAlpha, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
+                        }
+                    }
+                } else {
+                    for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos)) {
+                        if (dir != null) {
+                            lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.getConfig().lineAlpha;
+                        }
                     }
                 }
-            }
-            if (BlockHighlightConfig.INSTANCE.getConfig().fadeOut) {
-                for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos))) {
-                    if (dir != null) {
-                        lineFades[dir.ordinal()] = (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
+                if (BlockHighlightConfig.INSTANCE.getConfig().fadeOut) {
+                    for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos))) {
+                        if (dir != null) {
+                            lineFades[dir.ordinal()] = (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
+                        }
                     }
-                }
-            } else {
-                for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos))) {
-                    if (dir != null) {
-                        lineFades[dir.ordinal()] = 0;
+                } else {
+                    for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos))) {
+                        if (dir != null) {
+                            lineFades[dir.ordinal()] = 0;
+                        }
                     }
                 }
             }
@@ -214,16 +220,16 @@ public abstract class WorldRendererMixin {
     }
 
     @Unique
-    private static Direction[] getSides(OutlineType type, BlockPos pos) {
+    private Direction[] getSides(OutlineType type, BlockPos pos) {
         switch (type) {
             case LOOKAT -> {
                 return new Direction[]{((BlockHitResult) mc.crosshairTarget).getSide()};
             }
             case AIR_EXPOSED -> {
-                return invert(getConcealedDirs(pos));
+                return invert(getAirDirs(pos));
             }
             case CONCEALED -> {
-                return getConcealedDirs(pos);
+                return getAirDirs(pos);
             }
             default -> {
                 return Direction.values();
@@ -233,7 +239,7 @@ public abstract class WorldRendererMixin {
     }
 
     @Unique
-    private static Color getRainbowCol(int delay) {
+    private Color getRainbowCol(int delay) {
         return getRainbow(((System.currentTimeMillis() + delay) % 10000L / 10000.0f) * BlockHighlightConfig.INSTANCE.getConfig().rainbowSpeed);
     }
 
@@ -254,7 +260,7 @@ public abstract class WorldRendererMixin {
     }
 
     @Unique
-    private static Direction[] getConcealedDirs(BlockPos pos) {
+    public Direction[] getAirDirs(BlockPos pos) {
         //future update todo: prevent blocks from detecting their own parts as obstructing air (maybe use gradients to show it?)
         //todo: fix fluid detection
         Direction[] dirs = new Direction[6];
@@ -277,20 +283,5 @@ public abstract class WorldRendererMixin {
             dirs[5] = (Direction.WEST);
         }
         return dirs;
-    }
-    @Unique
-    private static void drawCuboidShapeOutline(MatrixStack matrices, VertexConsumer vertexConsumer, VoxelShape shape, double offsetX, double offsetY, double offsetZ, float red, float green, float blue, float alpha) {
-        MatrixStack.Entry entry = matrices.peek();
-        shape.forEachEdge((minX, minY, minZ, maxX, maxY, maxZ) -> {
-            float k = (float)(maxX - minX);
-            float l = (float)(maxY - minY);
-            float m = (float)(maxZ - minZ);
-            float n = MathHelper.sqrt(k * k + l * l + m * m);
-            k /= n;
-            l /= n;
-            m /= n;
-            vertexConsumer.vertex(entry, (float)(minX + offsetX), (float)(minY + offsetY), (float)(minZ + offsetZ)).color(red, green, blue, alpha).normal(entry, k, l, m);
-            vertexConsumer.vertex(entry, (float)(maxX + offsetX), (float)(maxY + offsetY), (float)(maxZ + offsetZ)).color(red, green, blue, alpha).normal(entry, k, l, m);
-        });
     }
 }
