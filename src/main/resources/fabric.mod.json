@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 1,
-	"id": "blockhighlight",
+	"id": "custom-block-highlight",
 	"version": "${version}",
 	"name": "Custom Block Highlight",
 	"description": "A simple mod to modify how your block outline looks. Includes animations and fancy rendering options!",

@@ -124,9 +124,7 @@ public class Vertexer {
         vertexLine(matrices, builder, x2, y2, z2, x2, y1, z2, secondThird, col2, Math.round(Math.max(alpha[3], alpha[5])), 0, -1, 0);
         vertexLine(matrices, builder, x2, y1, z1, x2, y2, z1, secondThird, firstThird, Math.round(Math.max(alpha[2], alpha[5])), 0, 1, 0);
 
-        //north
-
-        //south
+        //north and south are skipped, as they are not needed
 
         //up
         vertexLine(matrices, builder, x1, y2, z1, x2, y2, z1, cols, firstThird, Math.round(Math.max(alpha[2], alpha[1])), 1, 0, 0);
@@ -160,6 +158,22 @@ public class Vertexer {
         }
         public float getDistance() {
             return distance;
+        }
+    }
+    static class Line {
+        public float distance;
+        public Vec3d minPos, maxPos, normal;
+        public Line(Vec3d minPos, Vec3d maxPos, Vec3d normal){
+            this.minPos = minPos;
+            this.maxPos = maxPos;
+            this.normal = normal;
+            this.distance = (float) minPos.add(maxPos).multiply(0.5).distanceTo(mc.player.getEyePos());
+        }
+        public float getDistance(){
+            return distance;
+        }
+        public Vec3d getNormal(){
+            return normal;
         }
     }
 }
