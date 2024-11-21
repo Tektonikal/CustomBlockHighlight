@@ -4,13 +4,15 @@ import net.minecraft.block.*;
 import net.minecraft.block.enums.BedPart;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.*;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.*;
-import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -28,17 +30,37 @@ import static net.minecraft.block.enums.ChestType.SINGLE;
 
 @Mixin(WorldRenderer.class)
 public abstract class WorldRendererMixin {
-    @Shadow
-    @Nullable
-    private ClientWorld world;
     @Unique
     private static final MinecraftClient mc = MinecraftClient.getInstance();
     @Unique
     private static Box easeBox = new Box(0, 0, 0, 0, 0, 0);
     @Unique
-    private static float[] sideFades = new float[6];
+    private static final float[] sideFades = new float[6];
     @Unique
-    private static float[] lineFades = new float[6];
+    private static final float[] lineFades = new float[6];
+    @Shadow
+    @Nullable
+    private ClientWorld world;
+
+    @Unique
+    private static Direction[] invert(Direction[] invertDirs) {
+        EnumSet<Direction> dirs = EnumSet.allOf(Direction.class);
+        for (Direction d : invertDirs) {
+            dirs.remove(d);
+        }
+        return dirs.toArray(Direction[]::new);
+    }
+
+    //https://github.com/Splzh/ClearHitboxes/blob/main/src/main/java/splash/utils/ColorUtils.java !!
+    @Unique
+    private static Color getRainbow(double percent) {
+        double offset = Math.PI * 2 / 3;
+        double pos = percent * (Math.PI * 2);
+        float red = (float) ((Math.sin(pos) * 127) + 128);
+        float green = (float) ((Math.sin(pos + offset) * 127) + 128);
+        float blue = (float) ((Math.sin(pos + offset * 2) * 127) + 128);
+        return new Color((int) (red), (int) (green), (int) (blue), 255);
+    }
 
     /*
     TODO:
@@ -107,6 +129,9 @@ public abstract class WorldRendererMixin {
                 }
             }
         }
+        if (BlockHighlightConfig.INSTANCE.getConfig().outlineType == OutlineType.EDGES) {
+            targetBox = new Box(pos);
+        }
         boolean erm;
         if (BlockHighlightConfig.INSTANCE.getConfig().crystalHelper) {
             if (state.getBlock().equals(Blocks.OBSIDIAN) || state.getBlock().equals(Blocks.BEDROCK)) {
@@ -123,14 +148,10 @@ public abstract class WorldRendererMixin {
 
         //calculate where to render the block
         if (BlockHighlightConfig.INSTANCE.getConfig().doEasing) {
-            easeBox = new Box(
-                    ease(easeBox.minX, targetBox.minX, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed),
-                    ease(easeBox.minY, targetBox.minY, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed),
-                    ease(easeBox.minZ, targetBox.minZ, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed),
-                    ease(easeBox.maxX, targetBox.maxX, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed),
-                    ease(easeBox.maxY, targetBox.maxY, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed),
-                    ease(easeBox.maxZ, targetBox.maxZ, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed)
-            );
+            if (BlockHighlightConfig.INSTANCE.getConfig().outlineType == OutlineType.EDGES) {
+                targetBox = new Box(pos);
+            }
+            easeBox = new Box(ease(easeBox.minX, targetBox.minX, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(easeBox.minY, targetBox.minY, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(easeBox.minZ, targetBox.minZ, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(easeBox.maxX, targetBox.maxX, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(easeBox.maxY, targetBox.maxY, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(easeBox.maxZ, targetBox.maxZ, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed));
         } else {
             easeBox = targetBox;
         }
@@ -173,9 +194,8 @@ public abstract class WorldRendererMixin {
             Color finalLineCol2 = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.getConfig().delay) : BlockHighlightConfig.INSTANCE.getConfig().lineCol2;
 
             if (BlockHighlightConfig.INSTANCE.getConfig().outlineType == OutlineType.EDGES) {
-                Renderer.drawEdgeOutline(matrices, state.getOutlineShape(world, pos, ShapeContext.of(entity)), (double) easeBox.minX - cameraX, easeBox.minY - cameraY, easeBox.minZ - cameraZ, finalLineCol, finalLineCol2, BlockHighlightConfig.INSTANCE.getConfig().lineAlpha, BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
+                Renderer.drawEdgeOutline(matrices, state.getOutlineShape(world, pos, ShapeContext.of(entity)).offset(easeBox.minX, easeBox.minY, easeBox.minZ), finalLineCol, finalLineCol2, BlockHighlightConfig.INSTANCE.getConfig().lineAlpha, BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
             } else {
-
 
                 Renderer.drawBoxOutline(matrices, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().lineExpand), finalLineCol, finalLineCol2, lineFades, BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
 
@@ -209,16 +229,6 @@ public abstract class WorldRendererMixin {
         }
     }
 
-
-    @Unique
-    private static Direction[] invert(Direction[] invertDirs) {
-        EnumSet<Direction> dirs = EnumSet.allOf(Direction.class);
-        for (Direction d : invertDirs) {
-            dirs.remove(d);
-        }
-        return dirs.toArray(Direction[]::new);
-    }
-
     @Unique
     private Direction[] getSides(OutlineType type, BlockPos pos) {
         switch (type) {
@@ -235,23 +245,11 @@ public abstract class WorldRendererMixin {
                 return Direction.values();
             }
         }
-
     }
 
     @Unique
     private Color getRainbowCol(int delay) {
         return getRainbow(((System.currentTimeMillis() + delay) % 10000L / 10000.0f) * BlockHighlightConfig.INSTANCE.getConfig().rainbowSpeed);
-    }
-
-    //https://github.com/Splzh/ClearHitboxes/blob/main/src/main/java/splash/utils/ColorUtils.java !!
-    @Unique
-    private static Color getRainbow(double percent) {
-        double offset = Math.PI * 2 / 3;
-        double pos = percent * (Math.PI * 2);
-        float red = (float) ((Math.sin(pos) * 127) + 128);
-        float green = (float) ((Math.sin(pos + offset) * 127) + 128);
-        float blue = (float) ((Math.sin(pos + offset * 2) * 127) + 128);
-        return new Color((int) (red), (int) (green), (int) (blue), 255);
     }
 
     @Unique

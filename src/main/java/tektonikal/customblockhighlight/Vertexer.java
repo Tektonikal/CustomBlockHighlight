@@ -2,14 +2,11 @@ package tektonikal.customblockhighlight;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 
@@ -25,7 +22,7 @@ public class Vertexer {
         Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
         ArrayList<Side> sides = new ArrayList<>();
         for (int i = 0; i < alpha.length; i++) {
-            sides.add(new Side(getCenter(Direction.byId(i), new Box(((BlockHitResult) mc.crosshairTarget).getBlockPos())).toVector3f().distance(mc.player.getEyePos().toVector3f()), Direction.byId(i)));
+            sides.add(new Side(getCenter(Direction.byId(i), new Box(((BlockHitResult) mc.crosshairTarget).getBlockPos())).toVector3f().distance(MinecraftClient.getInstance().gameRenderer.getCamera().getPos().toVector3f()), Direction.byId(i)));
         }
         if (BlockHighlightConfig.INSTANCE.getConfig().invert) {
             sides.sort(Comparator.comparing(Side::getDistance));
@@ -62,8 +59,6 @@ public class Vertexer {
     }
 
     public static void drawSide(MatrixStack matrices, BufferBuilder builder, Box box, Color cols, Color col2, Color firstThird, Color secondThird, float[] alpha, Direction d) {
-        //IT WAS YOU !!!!!!
-//        if (alpha[d.ordinal()] > 0.49F) {
             switch (d) {
                 case UP ->
                         vertexQuad(matrices, builder, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, cols, firstThird, secondThird, firstThird, Math.round(alpha[Direction.UP.ordinal()]));
@@ -78,7 +73,6 @@ public class Vertexer {
                 case DOWN ->
                         vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, col2, secondThird, firstThird, Math.round(alpha[Direction.DOWN.ordinal()]));
             }
-//        }
     }
 
     public static void vertexQuad(MatrixStack matrices, BufferBuilder builder, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4, Color cols, Color col2, Color col3, Color col4, int alpha) {
@@ -161,19 +155,15 @@ public class Vertexer {
         }
     }
     static class Line {
-        public float distance;
-        public Vec3d minPos, maxPos, normal;
-        public Line(Vec3d minPos, Vec3d maxPos, Vec3d normal){
+        public Vec3d minPos, maxPos, normal, minVec;
+        public Line(Vec3d minPos, Vec3d maxPos, Vec3d normal, Vec3d minVec){
             this.minPos = minPos;
             this.maxPos = maxPos;
             this.normal = normal;
-            this.distance = (float) minPos.add(maxPos).multiply(0.5).distanceTo(mc.player.getEyePos());
+            this.minVec = minVec;
         }
         public float getDistance(){
-            return distance;
-        }
-        public Vec3d getNormal(){
-            return normal;
+            return (float) minPos.add(maxPos).multiply(0.5F).distanceTo(mc.gameRenderer.getCamera().getPos().subtract(minVec));
         }
     }
 }
