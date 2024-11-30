@@ -141,6 +141,12 @@ public class Vertexer {
         builder.vertex(model, x1, y1, z1).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).normal(matrices.peek(), nx, ny, nz);
         builder.vertex(model, x2, y2, z2).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).normal(matrices.peek(), nx, ny, nz);
     }
+    public static void vertexLine(MatrixStack matrices, BufferBuilder builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, Vec3d normal) {
+        Matrix4f model = matrices.peek().getPositionMatrix();
+
+        builder.vertex(model, x1, y1, z1).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).normal(matrices.peek(), (float) normal.x, (float) normal.y, (float) normal.z);
+        builder.vertex(model, x2, y2, z2).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).normal(matrices.peek(), (float) normal.x, (float) normal.y, (float) normal.z);
+    }
 
     static class Side {
         public float distance;
@@ -152,18 +158,6 @@ public class Vertexer {
         }
         public float getDistance() {
             return distance;
-        }
-    }
-    static class Line {
-        public Vec3d minPos, maxPos, normal, minVec;
-        public Line(Vec3d minPos, Vec3d maxPos, Vec3d normal, Vec3d minVec){
-            this.minPos = minPos;
-            this.maxPos = maxPos;
-            this.normal = normal;
-            this.minVec = minVec;
-        }
-        public float getDistance(){
-            return (float) minPos.add(maxPos).multiply(0.5F).distanceTo(mc.gameRenderer.getCamera().getPos().subtract(minVec));
         }
     }
 }
