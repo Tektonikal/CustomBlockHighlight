@@ -57,4 +57,9 @@ public class Line {
     public void update(boolean b){
         this.alphaMultiplier = (float) ease(this.alphaMultiplier, b ? 1 : 0, 10);
     }
+    public void updateAndRender(MatrixStack ms, BufferBuilder buf, Color c1, Color c2, int alpha, boolean b){
+        this.alphaMultiplier = (float) ease(this.alphaMultiplier, b ? 1 : 0, 10);
+        Vertexer.vertexLine(ms, buf, (float) minPos.x, (float) minPos.y, (float) minPos.z, (float) maxPos.x, (float) maxPos.y, (float) maxPos.z, c1, c2, Math.round(alpha * alphaMultiplier), getNormal());
+
+    }
 }

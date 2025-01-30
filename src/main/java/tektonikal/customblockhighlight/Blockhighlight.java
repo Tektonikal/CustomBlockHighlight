@@ -8,7 +8,7 @@ public class Blockhighlight implements ModInitializer {
     @Override
     public void onInitialize() {
         BlockHighlightConfig.INSTANCE.load();
-        WorldRenderEvents.BEFORE_BLOCK_OUTLINE.register(Renderer::main);
+        WorldRenderEvents.BEFORE_BLOCK_OUTLINE.register(Renderer::mainLoop);
         BlockTargetCallback.EVENT.register(Renderer::update);
     }
 }

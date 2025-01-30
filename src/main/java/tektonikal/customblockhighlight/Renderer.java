@@ -9,18 +9,29 @@ import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.client.MinecraftClient;
 //import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.*;
+import net.minecraft.client.render.block.BlockModelRenderer;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Unique;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.util.Line;
 
 import java.awt.*;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -37,65 +48,62 @@ public class Renderer {
     private static final float[] sideFades = new float[6];
     @Unique
     private static final float[] lineFades = new float[6];
-    static Camera camera = MinecraftClient.getInstance().gameRenderer.getCamera();
+    static final Camera camera = mc.gameRenderer.getCamera();
     public static ArrayList<Line> lines = new ArrayList<>();
     public static ArrayList<Line> toRemove = new ArrayList<>();
     public static BlockPos prevPos = new BlockPos(0, 0, 0);
     public static BlockPos tempPos = new BlockPos(0, 0, 0);
+    public static BlockPos pos = new BlockPos(0, 0, 0);
+    public static VoxelShape s = VoxelShapes.fullCube();
+    public static Box targetBox = new Box(pos);
+    public static Direction connected = null;
+    public static float edgeAlpha = 0;
+
+
+    public static BufferBuilder startDrawing(boolean lines) {
+        setup();
+        if (lines) {
+            GL11.glEnable(GL11.GL_LINE_SMOOTH);
+            RenderSystem.lineWidth(BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
+        }
+        if (lines ? BlockHighlightConfig.INSTANCE.getConfig().lineDepthTest : BlockHighlightConfig.INSTANCE.getConfig().fillDepthTest) {
+            RenderSystem.enableDepthTest();
+        } else {
+            RenderSystem.disableDepthTest();
+        }
+        return Tessellator.getInstance().begin(lines ? VertexFormat.DrawMode.LINES : VertexFormat.DrawMode.QUADS, lines ? VertexFormats.LINES : VertexFormats.POSITION_COLOR);
+    }
+
+    public static void endDrawing(BufferBuilder buffer, boolean lines) {
+        RenderSystem.setShader(lines ? GameRenderer::getRenderTypeLinesProgram : GameRenderer::getPositionColorProgram);
+        BufferRenderer.drawWithGlobalProgram(buffer.end());
+        GL11.glDisable(GL11.GL_LINE_SMOOTH);
+        end();
+    }
 
     public static void drawBoxFill(MatrixStack ms, Box box, Color cols, Color col2, float[] alpha) {
         ms.push();
         ms.translate(box.minX - camera.getPos().x, box.minY - camera.getPos().y, box.minZ - camera.getPos().z);
-        setup();
-        if (BlockHighlightConfig.INSTANCE.getConfig().fillDepthTest) {
-            RenderSystem.enableDepthTest();
-        } else {
-            RenderSystem.disableDepthTest();
-        }
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+        BufferBuilder buffer = startDrawing(false);
         Vertexer.vertexBoxQuads(ms, buffer, moveToZero(box), cols, col2, alpha);
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        BufferRenderer.drawWithGlobalProgram(buffer.end());
-        end();
+        endDrawing(buffer, false);
         ms.pop();
     }
 
-    public static void drawBoxOutline(MatrixStack ms, Box box, Color color, Color col2, float[] alpha, float lineWidth) {
+    public static void drawBoxOutline(MatrixStack ms, Box box, Color color, Color col2, float[] alpha) {
         ms.push();
         ms.translate(box.minX - camera.getPos().x, box.minY - camera.getPos().y, box.minZ - camera.getPos().z);
-        setup();
-        GL11.glEnable(GL11.GL_LINE_SMOOTH);
-        if (BlockHighlightConfig.INSTANCE.getConfig().lineDepthTest) {
-            RenderSystem.enableDepthTest();
-        } else {
-            RenderSystem.disableDepthTest();
-        }
-        RenderSystem.lineWidth(lineWidth);
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
+        BufferBuilder buffer = startDrawing(true);
         Vertexer.vertexBoxLines(ms, buffer, moveToZero(box), color, col2, alpha);
-        RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
-        BufferRenderer.drawWithGlobalProgram(buffer.end());
-        end();
-        GL11.glDisable(GL11.GL_LINE_SMOOTH);
+        endDrawing(buffer, true);
         ms.pop();
     }
 
-    public static void drawEdgeOutline(MatrixStack matrices, VoxelShape shape, Color c1, Color c2, float alpha, float lineWidth) {
+    public static void drawEdgeOutline(MatrixStack matrices, VoxelShape shape, Color c1, Color c2, float alpha) {
         matrices.push();
         matrices.translate(shape.getBoundingBox().minX - camera.getPos().x, shape.getBoundingBox().minY - camera.getPos().y, shape.getBoundingBox().minZ - camera.getPos().z);
-        setup();
         ArrayList<Line> newLines = new ArrayList<>();
-        GL11.glEnable(GL11.GL_LINE_SMOOTH);
-        if (BlockHighlightConfig.INSTANCE.getConfig().lineDepthTest) {
-            RenderSystem.enableDepthTest();
-        } else {
-            RenderSystem.disableDepthTest();
-        }
-        RenderSystem.lineWidth(lineWidth);
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.begin(VertexFormat.DrawMode.LINES, VertexFormats.LINES);
+        BufferBuilder buffer = startDrawing(true);
         VoxelShape finalShape = shape;
         moveToZero(shape).forEachEdge((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3d(minX, minY, minZ), new Vec3d(maxX, maxY, maxZ), getMinVec(finalShape.getBoundingBox()))));
         if (lines.isEmpty()) {
@@ -121,19 +129,10 @@ public class Renderer {
         shape = moveToZero(shape);
         VoxelShape finalShape1 = shape;
         double blegh = moveToZero(shape).getBoundingBox().getMinPos().distanceTo(shape.getBoundingBox().getMaxPos());
-        finalLines.forEach(line -> {
-            line.update(true);
-            line.render(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha));
-        });
+        finalLines.forEach(line -> line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha), true));
         toRemove.removeIf(line -> line.alphaMultiplier < 0.0039);
-        toRemove.forEach(line -> {
-            line.update(false);
-            line.render(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha));
-        });
-        RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
-        BufferRenderer.drawWithGlobalProgram(buffer.end());
-        end();
-        GL11.glDisable(GL11.GL_LINE_SMOOTH);
+        toRemove.forEach(line -> line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha), false));
+        endDrawing(buffer, true);
         matrices.pop();
     }
 
@@ -180,10 +179,10 @@ public class Renderer {
                 return new Direction[]{((BlockHitResult) mc.crosshairTarget).getSide()};
             }
             case AIR_EXPOSED -> {
-                return invert(getAirDirs(pos));
+                return invert(getConcealedFaces(pos));
             }
             case CONCEALED -> {
-                return getAirDirs(pos);
+                return getConcealedFaces(pos);
             }
             default -> {
                 return Direction.values();
@@ -201,27 +200,38 @@ public class Renderer {
         return (start + (end - start) * (1 - Math.exp(-(1.0F / mc.getCurrentFps()) * speed)));
     }
 
+    public static boolean isBlockOccupied(BlockPos pos) {
+        if (!mc.world.getFluidState(pos).isEmpty()) {
+            //ignore liquids
+            return false;
+        }
+        return !mc.world.isAir(pos);
+    }
+
     @Unique
-    public static Direction[] getAirDirs(BlockPos pos) {
-        //future update todo: prevent blocks from detecting their own parts as obstructing air (maybe use gradients to show it?)
-        //todo: fix fluid detection
+    public static Direction[] getConcealedFaces(BlockPos pos) {
+        /*
+        I don't know if I should keep the original behaviour for this
+        As of now, this method means that even when rendering the box for a block with multiple parts,
+        it will still cull faces relative to the selected block, and not the entire rendered selection
+         */
         Direction[] dirs = new Direction[6];
-        if (!mc.world.isAir(pos.up())) {
+        if (isBlockOccupied(pos.up())) {
             dirs[0] = (Direction.UP);
         }
-        if (!mc.world.isAir(pos.down())) {
+        if (isBlockOccupied(pos.down())) {
             dirs[1] = (Direction.DOWN);
         }
-        if (!mc.world.isAir(pos.north())) {
+        if (isBlockOccupied(pos.north())) {
             dirs[2] = (Direction.NORTH);
         }
-        if (!mc.world.isAir(pos.east())) {
+        if (isBlockOccupied(pos.east())) {
             dirs[3] = (Direction.EAST);
         }
-        if (!mc.world.isAir(pos.south())) {
+        if (isBlockOccupied(pos.south())) {
             dirs[4] = (Direction.SOUTH);
         }
-        if (!mc.world.isAir(pos.west())) {
+        if (isBlockOccupied(pos.west())) {
             dirs[5] = (Direction.WEST);
         }
         return dirs;
@@ -242,14 +252,19 @@ public class Renderer {
         return new Color(Math.clamp(MathHelper.lerp(percent, c1.getRed(), c2.getRed()), 0, 255), Math.clamp(MathHelper.lerp(percent, c1.getGreen(), c2.getGreen()), 0, 255), Math.clamp(MathHelper.lerp(percent, c1.getBlue(), c2.getBlue()), 0, 255));
     }
 
-    public static boolean main(WorldRenderContext c, HitResult h) {
+    @SuppressWarnings("SameReturnValue")
+    public static boolean mainLoop(WorldRenderContext c, HitResult h) {
+        //TODO: water and clouds take priority over outline rendering? i don't like it
         checkForUpdate(h);
-        if (h == null || h.getType() != net.minecraft.util.hit.HitResult.Type.BLOCK) {
+        pos = ((BlockHitResult) h).getBlockPos();
+        BlockState state = mc.world.getBlockState(pos);
+        boolean erm = isCrystalObstructed(state);
+        //fade out without updating position if we start looking at air
+        if (h.getType() != HitResult.Type.BLOCK) {
+            updateFades();
+            renderBlockOutline(c.matrixStack(), erm, state);
             return false;
         }
-        BlockPos pos = ((BlockHitResult) h).getBlockPos();
-        BlockState state = MinecraftClient.getInstance().world.getBlockState(pos);
-        Box targetBox;
         try {
             targetBox = state.getOutlineShape(mc.world, pos).getBoundingBox().offset(pos);
         } catch (UnsupportedOperationException ex) {
@@ -257,152 +272,186 @@ public class Renderer {
             targetBox = new Box(((BlockHitResult) mc.crosshairTarget).getBlockPos());
         }
         //get connected blocks
-        if (BlockHighlightConfig.INSTANCE.getConfig().connected) {
-            if (state.getBlock() instanceof ChestBlock && !state.get(ChestBlock.CHEST_TYPE).equals(SINGLE)) {
-                Direction facing = ChestBlock.getFacing(state);
-                BlockPos tempPos = ((BlockHitResult) mc.crosshairTarget).getBlockPos().offset(facing);
-                BlockState tempState = mc.world.getBlockState(tempPos);
-                if (tempState.getBlock() instanceof ChestBlock) {
-                    targetBox = targetBox.union(tempState.getOutlineShape(mc.world, tempPos).getBoundingBox().offset(tempPos));
-                }
-            }
-            if (state.getBlock() instanceof DoorBlock) {
-                DoubleBlockHalf half = state.get(DoorBlock.HALF);
-                Direction otherDirection;
-                if (half == DoubleBlockHalf.LOWER) {
-                    otherDirection = Direction.UP;
-                } else {
-                    otherDirection = Direction.DOWN;
-                }
-                BlockPos otherPos = pos.offset(otherDirection);
-                BlockState otherState = mc.world.getBlockState(otherPos);
-                if (otherState.getBlock() instanceof DoorBlock && otherState.get(DoorBlock.HALF) != half) {
-                    targetBox = targetBox.union(otherState.getOutlineShape(mc.world, otherPos).getBoundingBox().offset(otherPos));
-                }
-            }
-            if (state.getBlock() instanceof BedBlock) {
-                BedPart part = state.get(BedBlock.PART);
-                Direction dir = state.get(HorizontalFacingBlock.FACING);
-                if (part == BedPart.HEAD) {
-                    dir = dir.getOpposite();
-                }
-                BlockPos oP = pos.offset(dir);
-                BlockState other = mc.world.getBlockState(oP);
-                if (other.getBlock() instanceof BedBlock && other.get(BedBlock.PART) != part) {
-                    targetBox = targetBox.union(other.getOutlineShape(mc.world, oP).getBoundingBox().offset(oP));
-                }
-            }
-            if (state.getBlock() instanceof TallPlantBlock) {
-                DoubleBlockHalf half = state.get(TallPlantBlock.HALF);
-                Direction direction;
-                if (half == DoubleBlockHalf.LOWER) {
-                    direction = Direction.UP;
-                } else {
-                    direction = Direction.DOWN;
-                }
-                BlockPos otherPos = pos.offset(direction);
-                BlockState otherState = mc.world.getBlockState(otherPos);
-                if (otherState.getBlock() instanceof TallPlantBlock) {
-                    targetBox = targetBox.union(otherState.getOutlineShape(mc.world, otherPos).getBoundingBox().offset(otherPos));
-                }
-            }
+        if (BlockHighlightConfig.INSTANCE.getConfig().connectedBlocks) {
+            connected = joinConnected(state, pos);
         }
-        boolean erm;
-        if (BlockHighlightConfig.INSTANCE.getConfig().crystalHelper) {
-            if (state.getBlock().equals(Blocks.OBSIDIAN) || state.getBlock().equals(Blocks.BEDROCK)) {
-                double pd = pos.up().getX();
-                double pe = pos.up().getY();
-                double pf = pos.up().getZ();
-                erm = !mc.world.isAir(pos.up()) || !mc.world.getOtherEntities(null, new Box(pd, pe, pf, pd + 1.0, pe + 2.0, pf + 1.0)).isEmpty();
-            } else {
-                erm = false;
-            }
-        } else {
-            erm = false;
-        }
-
         //calculate where to render the block
         if (BlockHighlightConfig.INSTANCE.getConfig().doEasing) {
             easeBox = new Box(ease(easeBox.minX, targetBox.minX, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(easeBox.minY, targetBox.minY, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(easeBox.minZ, targetBox.minZ, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(easeBox.maxX, targetBox.maxX, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(easeBox.maxY, targetBox.maxY, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(easeBox.maxZ, targetBox.maxZ, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed));
         } else {
             easeBox = targetBox;
         }
-        //render the fill first, we don't want it drawn over the outline
-        if (BlockHighlightConfig.INSTANCE.getConfig().fillEnabled) {
-            Color finalFillCol = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().fillRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.getConfig().fillCol;
-            Color finalFillCol2 = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().fillRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.getConfig().delay) : BlockHighlightConfig.INSTANCE.getConfig().fillCol2;
-            Renderer.drawBoxFill(c.matrixStack(), easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().fillExpand), finalFillCol, finalFillCol2, sideFades);
-            if (BlockHighlightConfig.INSTANCE.getConfig().fadeIn) {
-                for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().fillType, pos)) {
-                    if (dir != null) {
-                        sideFades[dir.ordinal()] = (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.getConfig().fillOpacity, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
-                    }
-                }
-            } else {
-                for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().fillType, pos)) {
-                    if (dir != null) {
-                        sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.getConfig().fillOpacity;
-                    }
-                }
-            }
-            if (BlockHighlightConfig.INSTANCE.getConfig().fadeOut) {
-                for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().fillType, pos))) {
-                    if (dir != null) {
-                        sideFades[dir.ordinal()] = (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
-                    }
-                }
-            } else {
-                for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().fillType, pos))) {
-                    if (dir != null) {
-                        sideFades[dir.ordinal()] = 0;
-                    }
-                }
-            }
-        }
-        //now the outline itself
-        if (BlockHighlightConfig.INSTANCE.getConfig().outlineEnabled) {
-
-            Color finalLineCol = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.getConfig().lineCol;
-            Color finalLineCol2 = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.getConfig().delay) : BlockHighlightConfig.INSTANCE.getConfig().lineCol2;
-
-            if (BlockHighlightConfig.INSTANCE.getConfig().outlineType == OutlineType.EDGES) {
-                VoxelShape s = state.getOutlineShape(c.world(), pos, ShapeContext.of(c.camera().getFocusedEntity()));
-                Renderer.drawEdgeOutline(c.matrixStack(), s.offset(easeBox.minX - s.getBoundingBox().getMinPos().x, easeBox.minY - s.getBoundingBox().getMinPos().y, easeBox.minZ - s.getBoundingBox().getMinPos().z), finalLineCol, finalLineCol2, BlockHighlightConfig.INSTANCE.getConfig().lineAlpha, BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
-            } else {
-                Renderer.drawBoxOutline(c.matrixStack(), easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().lineExpand), finalLineCol, finalLineCol2, lineFades, BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
-                Renderer.drawBoxOutline(c.matrixStack(), new Box(tempPos), finalLineCol, finalLineCol2, lineFades, BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
-                if (BlockHighlightConfig.INSTANCE.getConfig().fadeIn) {
-                    for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos)) {
-                        if (dir != null) {
-                            lineFades[dir.ordinal()] = (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.getConfig().lineAlpha, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
-                        }
-                    }
-                } else {
-                    for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos)) {
-                        if (dir != null) {
-                            lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.getConfig().lineAlpha;
-                        }
-                    }
-                }
-                if (BlockHighlightConfig.INSTANCE.getConfig().fadeOut) {
-                    for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos))) {
-                        if (dir != null) {
-                            lineFades[dir.ordinal()] = (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed);
-                        }
-                    }
-                } else {
-                    for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos))) {
-                        if (dir != null) {
-                            lineFades[dir.ordinal()] = 0;
-                        }
-                    }
-                }
-            }
-        }
+        renderBlockOutline(c.matrixStack(), erm, state);
         return false;
     }
 
-    public static ActionResult update(BlockPos blockPos, BlockPos blockPos1) {
+    private static void renderBlockOutline(MatrixStack ms, boolean erm, BlockState state) {
+        //render the fill first, we don't want it drawn over the outline
+        updateFades();
+        if (BlockHighlightConfig.INSTANCE.getConfig().fillEnabled) {
+            drawFill(ms, erm);
+        }
+        //now the outline itself
+        if (BlockHighlightConfig.INSTANCE.getConfig().outlineEnabled) {
+            drawOutline(ms, erm, state);
+        }
+    }
+
+    private static boolean isCrystalObstructed(BlockState state) {
+        if (BlockHighlightConfig.INSTANCE.getConfig().crystalHelper) {
+            if (state.getBlock().equals(Blocks.OBSIDIAN) || state.getBlock().equals(Blocks.BEDROCK)) {
+                double pd = pos.up().getX();
+                double pe = pos.up().getY();
+                double pf = pos.up().getZ();
+                return !mc.world.isAir(pos.up()) || !mc.world.getOtherEntities(null, new Box(pd, pe, pf, pd + 1.0, pe + 2.0, pf + 1.0)).isEmpty();
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    private static void drawFill(MatrixStack ms, boolean erm) {
+        Color finalFillCol = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().fillRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.getConfig().fillCol;
+        Color finalFillCol2 = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().fillRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.getConfig().delay) : BlockHighlightConfig.INSTANCE.getConfig().fillCol2;
+        Renderer.drawBoxFill(ms, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().fillExpand), finalFillCol, finalFillCol2, sideFades);
+    }
+
+    private static void drawOutline(MatrixStack ms, boolean erm, BlockState state) {
+        Color finalLineCol = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.getConfig().lineCol;
+        Color finalLineCol2 = erm ? Color.RED : BlockHighlightConfig.INSTANCE.getConfig().outlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.getConfig().delay) : BlockHighlightConfig.INSTANCE.getConfig().lineCol2;
+        if (BlockHighlightConfig.INSTANCE.getConfig().outlineType == OutlineType.EDGES) {
+            if (isBlockOccupied(pos)) {
+                s = state.getOutlineShape(mc.world, pos, ShapeContext.of(camera.getFocusedEntity()));
+                if(connected != null){
+                    s = VoxelShapes.combine(s, mc.world.getBlockState(pos.offset(connected)).getOutlineShape(mc.world, pos.offset(connected), ShapeContext.of(camera.getFocusedEntity())).offset(connected.getOffsetX(), connected.getOffsetY(), connected.getOffsetZ()), BooleanBiFunction.OR).simplify();
+                }
+            }
+            Renderer.drawEdgeOutline(ms, s.offset(easeBox.minX - s.getBoundingBox().getMinPos().x, easeBox.minY - s.getBoundingBox().getMinPos().y, easeBox.minZ - s.getBoundingBox().getMinPos().z), finalLineCol, finalLineCol2, edgeAlpha);
+        } else {
+            Renderer.drawBoxOutline(ms, easeBox.expand(BlockHighlightConfig.INSTANCE.getConfig().lineExpand), finalLineCol, finalLineCol2, lineFades);
+        }
+//        BakedModel b = mc.getBlockRenderManager().getModel(state);
+//        b.getQuads(state, Direction.UP, Random.create()).forEach(bakedQuad -> bakedQuad.getVertexData());
+    }
+
+    private static void updateFades() {
+        //clean this up later
+        if (mc.world.isAir(pos)) {
+            for (Direction dir : Direction.values()) {
+                sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.getConfig().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed) : 0;
+                lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.getConfig().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed) : 0;
+            }
+            edgeAlpha = BlockHighlightConfig.INSTANCE.getConfig().fadeOut ? (float) ease(edgeAlpha, 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed) : 0;
+        } else {
+            edgeAlpha = BlockHighlightConfig.INSTANCE.getConfig().fadeIn ? (float) ease(edgeAlpha, BlockHighlightConfig.INSTANCE.getConfig().lineAlpha, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed) : BlockHighlightConfig.INSTANCE.getConfig().lineAlpha;
+            for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().fillType, pos)) {
+                if (dir != null) {
+                    sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.getConfig().fadeIn ? (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.getConfig().fillOpacity, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed) : BlockHighlightConfig.INSTANCE.getConfig().fillOpacity;
+                }
+            }
+            for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().fillType, pos))) {
+                if (dir != null) {
+                    sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.getConfig().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed) : 0;
+                }
+            }
+            for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos)) {
+                if (dir != null) {
+                    lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.getConfig().fadeIn ? (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.getConfig().lineAlpha, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed) : BlockHighlightConfig.INSTANCE.getConfig().lineAlpha;
+                }
+            }
+            for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.getConfig().outlineType, pos))) {
+                if (dir != null) {
+                    lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.getConfig().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.getConfig().fadeSpeed) : 0;
+                }
+            }
+        }
+    }
+
+    private static Direction joinConnected(BlockState state, BlockPos pos) {
+        BlockState connectedState;
+        Direction dir = null;
+        BlockPos connectedPos;
+        DoubleBlockHalf half;
+        if (state.getBlock() instanceof ChestBlock && !state.get(ChestBlock.CHEST_TYPE).equals(SINGLE)) {
+            dir = ChestBlock.getFacing(state);
+            connectedPos = ((BlockHitResult) mc.crosshairTarget).getBlockPos().offset(dir);
+            connectedState = mc.world.getBlockState(connectedPos);
+            if (connectedState.getBlock() instanceof ChestBlock) {
+                targetBox = targetBox.union(connectedState.getOutlineShape(mc.world, connectedPos).getBoundingBox().offset(connectedPos));
+            }
+            return dir;
+        }
+        if (state.getBlock() instanceof DoorBlock) {
+            half = state.get(DoorBlock.HALF);
+            if (half == DoubleBlockHalf.LOWER) {
+                dir = Direction.UP;
+            } else {
+                dir = Direction.DOWN;
+            }
+            connectedPos = pos.offset(dir);
+            connectedState = mc.world.getBlockState(connectedPos);
+            if (connectedState.getBlock() instanceof DoorBlock && connectedState.get(DoorBlock.HALF) != half) {
+                targetBox = targetBox.union(connectedState.getOutlineShape(mc.world, connectedPos).getBoundingBox().offset(connectedPos));
+            }
+            return dir;
+        }
+        if (state.getBlock() instanceof BedBlock) {
+            BedPart part = state.get(BedBlock.PART);
+            dir = state.get(HorizontalFacingBlock.FACING);
+            if (part == BedPart.HEAD) {
+                dir = dir.getOpposite();
+            }
+            connectedPos = pos.offset(dir);
+            connectedState = mc.world.getBlockState(connectedPos);
+            if (connectedState.getBlock() instanceof BedBlock && connectedState.get(BedBlock.PART) != part) {
+                targetBox = targetBox.union(connectedState.getOutlineShape(mc.world, connectedPos).getBoundingBox().offset(connectedPos));
+            }
+            return dir;
+        }
+        if (state.getBlock() instanceof TallPlantBlock) {
+            half = state.get(TallPlantBlock.HALF);
+            if (half == DoubleBlockHalf.LOWER) {
+                dir = Direction.UP;
+            } else {
+                dir = Direction.DOWN;
+            }
+            connectedPos = pos.offset(dir);
+            connectedState = mc.world.getBlockState(connectedPos);
+            if (connectedState.getBlock() instanceof TallPlantBlock) {
+                targetBox = targetBox.union(connectedState.getOutlineShape(mc.world, connectedPos).getBoundingBox().offset(connectedPos));
+            }
+            return dir;
+        }
+        if(state.getBlock() instanceof PistonHeadBlock){
+            dir = state.get(PistonBlock.FACING);
+            Direction oppDir = dir.getOpposite();
+            connectedPos = pos.offset(oppDir);
+            connectedState = mc.world.getBlockState(connectedPos);
+            if (connectedState.getBlock() instanceof PistonBlock && connectedState.get(PistonBlock.FACING) == dir) {
+                targetBox = targetBox.union(connectedState.getOutlineShape(mc.world, connectedPos).getBoundingBox().offset(connectedPos));
+            }
+            return oppDir;
+        }
+        if(state.getBlock() instanceof PistonBlock && state.get(PistonBlock.EXTENDED)){
+            dir = state.get(PistonBlock.FACING);
+            connectedPos = pos.offset(dir);
+            connectedState = mc.world.getBlockState(connectedPos);
+            if (connectedState.getBlock() instanceof PistonHeadBlock && connectedState.get(PistonBlock.FACING) == dir) {
+                targetBox = targetBox.union(connectedState.getOutlineShape(mc.world, connectedPos).getBoundingBox().offset(connectedPos));
+            }
+            return dir;
+        }
+        return null;
+    }
+
+
+    @SuppressWarnings("SameReturnValue")
+    public static ActionResult update(BlockPos prev, BlockPos curr) {
+//        if (!mc.world.isAir(blockPos1)) {
+//            System.out.println("!!!!!!!!!");
+//        }
         return ActionResult.PASS;
     }
 
@@ -413,15 +462,61 @@ public class Renderer {
                 prevPos = null;
             }
         } else {
-            if(prevPos == null){
-                tempPos = prevPos;
-                prevPos = ((BlockHitResult)h).getBlockPos();
+            if (prevPos == null) {
+                tempPos = null;
+                prevPos = ((BlockHitResult) h).getBlockPos();
             }
-            if (!prevPos.equals(((BlockHitResult)h).getBlockPos())) {
+            if (!prevPos.equals(((BlockHitResult) h).getBlockPos())) {
                 tempPos = prevPos;
-                prevPos = ((BlockHitResult)h).getBlockPos();
-//                BlockTargetCallback.EVENT.invoker().interact(prevPos, ((BlockHitResult)h).getBlockPos());
+                prevPos = ((BlockHitResult) h).getBlockPos();
+                BlockTargetCallback.EVENT.invoker().interact(prevPos, ((BlockHitResult) h).getBlockPos());
             }
         }
     }
+//    public static void quad(
+//            MatrixStack.Entry matrixEntry, BakedQuad quad, float[] brightnesses, float red, float green, float blue, float f, int[] is, int i, boolean bl
+//    ) {
+//        int[] js = quad.getVertexData();
+//        Vec3i vec3i = quad.getFace().getVector();
+//        Matrix4f matrix4f = matrixEntry.getPositionMatrix();
+//        Vector3f vector3f = matrixEntry.transformNormal((float)vec3i.getX(), (float)vec3i.getY(), (float)vec3i.getZ(), new Vector3f());
+//        int j = 8;
+//        int k = js.length / 8;
+//        int l = (int)(f * 255.0F);
+//
+//        try (MemoryStack memoryStack = MemoryStack.stackPush()) {
+//            ByteBuffer byteBuffer = memoryStack.malloc(VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL.getVertexSizeByte());
+//            IntBuffer intBuffer = byteBuffer.asIntBuffer();
+//
+//            for (int m = 0; m < k; m++) {
+//                intBuffer.clear();
+//                intBuffer.put(js, m * 8, 8);
+//                float g = byteBuffer.getFloat(0);
+//                float h = byteBuffer.getFloat(4);
+//                float n = byteBuffer.getFloat(8);
+//                float r;
+//                float s;
+//                float t;
+//                if (bl) {
+//                    float o = (float)(byteBuffer.get(12) & 255);
+//                    float p = (float)(byteBuffer.get(13) & 255);
+//                    float q = (float)(byteBuffer.get(14) & 255);
+//                    r = o * brightnesses[m] * red;
+//                    s = p * brightnesses[m] * green;
+//                    t = q * brightnesses[m] * blue;
+//                } else {
+//                    r = brightnesses[m] * red * 255.0F;
+//                    s = brightnesses[m] * green * 255.0F;
+//                    t = brightnesses[m] * blue * 255.0F;
+//                }
+//
+//                int u = ColorHelper.Argb.getArgb(l, (int)r, (int)s, (int)t);
+//                int v = is[m];
+//                float q = byteBuffer.getFloat(16);
+//                float w = byteBuffer.getFloat(20);
+//                Vector3f vector3f2 = matrix4f.transformPosition(g, h, n, new Vector3f());
+//                this.vertex(vector3f2.x(), vector3f2.y(), vector3f2.z(), u, q, w, i, v, vector3f.x(), vector3f.y(), vector3f.z());
+//            }
+//        }
+//    }
 }

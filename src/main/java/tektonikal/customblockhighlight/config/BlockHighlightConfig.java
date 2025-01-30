@@ -3,23 +3,16 @@ package tektonikal.customblockhighlight.config;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import dev.isxander.yacl3.config.ConfigEntry;
 import dev.isxander.yacl3.config.GsonConfigInstance;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import tektonikal.customblockhighlight.OutlineType;
 
 import java.awt.*;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 
 public class BlockHighlightConfig {
@@ -62,7 +55,7 @@ public class BlockHighlightConfig {
     @ConfigEntry public int rainbowSpeed = 5;
     @ConfigEntry public int delay = 250;
     @ConfigEntry public boolean crystalHelper = true;
-    @ConfigEntry public boolean connected = true;
+    @ConfigEntry public boolean connectedBlocks = true;
     //@formatter:on
 
     public static Screen getConfigScreen(Screen parent) {
@@ -213,7 +206,7 @@ public class BlockHighlightConfig {
                                 .option(Option.createBuilder(boolean.class)
                                         .name(Text.of("Connected Outlines"))
                                         .description(OptionDescription.of(Text.of("This applies to both the fill and outline. Maybe I'll change it later, who knows?")))
-                                        .binding(true, () -> config.connected, newVal -> config.connected = newVal)
+                                        .binding(true, () -> config.connectedBlocks, newVal -> config.connectedBlocks = newVal)
                                         .controller(TickBoxControllerBuilder::create)
                                         .build())
                                 .option(Option.createBuilder(boolean.class)
