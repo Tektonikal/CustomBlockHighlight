@@ -1,37 +1,28 @@
 package tektonikal.customblockhighlight;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.BedPart;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.client.MinecraftClient;
-//import net.minecraft.client.gl.ShaderProgramKeys;
+import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.render.*;
-import net.minecraft.client.render.block.BlockModelRenderer;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
-import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Unique;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.util.Line;
 
 import java.awt.*;
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -42,13 +33,11 @@ import static net.minecraft.block.enums.ChestType.SINGLE;
 public class Renderer {
     @Unique
     private static final MinecraftClient mc = MinecraftClient.getInstance();
-    @Unique
-    private static Box easeBox = new Box(0, 0, 0, 0, 0, 0);
+    static final Camera camera = mc.gameRenderer.getCamera();
     @Unique
     private static final float[] sideFades = new float[6];
     @Unique
     private static final float[] lineFades = new float[6];
-    static final Camera camera = mc.gameRenderer.getCamera();
     public static ArrayList<Line> lines = new ArrayList<>();
     public static ArrayList<Line> toRemove = new ArrayList<>();
     public static BlockPos prevPos = new BlockPos(0, 0, 0);
@@ -58,7 +47,8 @@ public class Renderer {
     public static Box targetBox = new Box(pos);
     public static Direction connected = null;
     public static float edgeAlpha = 0;
-
+    @Unique
+    private static Box easeBox = new Box(0, 0, 0, 0, 0, 0);
 
     public static BufferBuilder startDrawing(boolean lines) {
         setup();
@@ -67,6 +57,7 @@ public class Renderer {
             RenderSystem.lineWidth(BlockHighlightConfig.INSTANCE.getConfig().lineWidth);
         }
         if (lines ? BlockHighlightConfig.INSTANCE.getConfig().lineDepthTest : BlockHighlightConfig.INSTANCE.getConfig().fillDepthTest) {
+
             RenderSystem.enableDepthTest();
         } else {
             RenderSystem.disableDepthTest();
@@ -75,7 +66,7 @@ public class Renderer {
     }
 
     public static void endDrawing(BufferBuilder buffer, boolean lines) {
-        RenderSystem.setShader(lines ? GameRenderer::getRenderTypeLinesProgram : GameRenderer::getPositionColorProgram);
+        RenderSystem.setShader(lines ? ShaderProgramKeys.RENDERTYPE_LINES : ShaderProgramKeys.POSITION_COLOR);
         BufferRenderer.drawWithGlobalProgram(buffer.end());
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
         end();
@@ -201,7 +192,7 @@ public class Renderer {
     }
 
     public static boolean isBlockOccupied(BlockPos pos) {
-        if (!mc.world.getFluidState(pos).isEmpty()) {
+        if (mc.world.getBlockState(pos).contains(Properties.WATERLOGGED) && !mc.world.getBlockState(pos).get(Properties.WATERLOGGED) && !mc.world.getFluidState(pos).isEmpty()) {
             //ignore liquids
             return false;
         }
@@ -255,6 +246,9 @@ public class Renderer {
     @SuppressWarnings("SameReturnValue")
     public static boolean mainLoop(WorldRenderContext c, HitResult h) {
         //TODO: water and clouds take priority over outline rendering? i don't like it
+        if(!(h instanceof BlockHitResult)){
+            return false;
+        }
         checkForUpdate(h);
         pos = ((BlockHitResult) h).getBlockPos();
         BlockState state = mc.world.getBlockState(pos);
@@ -324,7 +318,7 @@ public class Renderer {
         if (BlockHighlightConfig.INSTANCE.getConfig().outlineType == OutlineType.EDGES) {
             if (isBlockOccupied(pos)) {
                 s = state.getOutlineShape(mc.world, pos, ShapeContext.of(camera.getFocusedEntity()));
-                if(connected != null){
+                if (connected != null) {
                     s = VoxelShapes.combine(s, mc.world.getBlockState(pos.offset(connected)).getOutlineShape(mc.world, pos.offset(connected), ShapeContext.of(camera.getFocusedEntity())).offset(connected.getOffsetX(), connected.getOffsetY(), connected.getOffsetZ()), BooleanBiFunction.OR).simplify();
                 }
             }
@@ -371,7 +365,7 @@ public class Renderer {
 
     private static Direction joinConnected(BlockState state, BlockPos pos) {
         BlockState connectedState;
-        Direction dir = null;
+        Direction dir;
         BlockPos connectedPos;
         DoubleBlockHalf half;
         if (state.getBlock() instanceof ChestBlock && !state.get(ChestBlock.CHEST_TYPE).equals(SINGLE)) {
@@ -424,7 +418,7 @@ public class Renderer {
             }
             return dir;
         }
-        if(state.getBlock() instanceof PistonHeadBlock){
+        if (state.getBlock() instanceof PistonHeadBlock) {
             dir = state.get(PistonBlock.FACING);
             Direction oppDir = dir.getOpposite();
             connectedPos = pos.offset(oppDir);
@@ -434,7 +428,7 @@ public class Renderer {
             }
             return oppDir;
         }
-        if(state.getBlock() instanceof PistonBlock && state.get(PistonBlock.EXTENDED)){
+        if (state.getBlock() instanceof PistonBlock && state.get(PistonBlock.EXTENDED)) {
             dir = state.get(PistonBlock.FACING);
             connectedPos = pos.offset(dir);
             connectedState = mc.world.getBlockState(connectedPos);

@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.7-SNAPSHOT'
+	id 'fabric-loom' version '1.11-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -35,7 +35,7 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	modImplementation("dev.isxander:yet-another-config-lib:${project.yacl_version}-fabric")
-//	modImplementation("dev.isxander.yacl:yet-another-config-lib-fabric:${yacl_version}")
+//	modImplementation("dev.isxander.yacl:yet-another-config-lib-fabric:${project.yacl_version}")
 	modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
 	
 }
