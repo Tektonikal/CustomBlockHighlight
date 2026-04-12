@@ -46,9 +46,9 @@ public class Line {
     }
 
     public void moveTo(Vec3d minPosTo, Vec3d maxPosTo, Vec3d minVecTo) {
-        this.minPos = new Vec3d(ease(this.minPos.x, minPosTo.x, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(this.minPos.y, minPosTo.y, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(this.minPos.z, minPosTo.z, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed));
-        this.maxPos = new Vec3d(ease(this.maxPos.x, maxPosTo.x, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(this.maxPos.y, maxPosTo.y, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(this.maxPos.z, maxPosTo.z, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed));
-        this.minVec = new Vec3d(ease(this.minVec.x, minVecTo.x, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(this.minVec.y, minVecTo.y, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed), ease(this.minVec.z, minVecTo.z, BlockHighlightConfig.INSTANCE.getConfig().easeSpeed));
+        this.minPos = new Vec3d(ease(this.minPos.x, minPosTo.x, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(this.minPos.y, minPosTo.y, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(this.minPos.z, minPosTo.z, BlockHighlightConfig.INSTANCE.instance().easeSpeed));
+        this.maxPos = new Vec3d(ease(this.maxPos.x, maxPosTo.x, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(this.maxPos.y, maxPosTo.y, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(this.maxPos.z, maxPosTo.z, BlockHighlightConfig.INSTANCE.instance().easeSpeed));
+        this.minVec = new Vec3d(ease(this.minVec.x, minVecTo.x, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(this.minVec.y, minVecTo.y, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(this.minVec.z, minVecTo.z, BlockHighlightConfig.INSTANCE.instance().easeSpeed));
     }
 
     public double ease(double start, double end, float speed) {

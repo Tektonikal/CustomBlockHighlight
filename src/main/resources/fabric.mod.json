@@ -3,10 +3,12 @@
 	"id": "custom-block-highlight",
 	"version": "${version}",
 	"name": "Custom Block Highlight",
-	"description": "A simple mod to modify how your block outline looks. Includes animations and fancy rendering options!",
+	"description": "Revitalize the block outline.",
 	"authors": ["Tektonikal"],
 	"contact": {
-		"issues": "https://discord.gg/hbcZD7meKw"
+		"homepage": "https://modrinth.com/mod/custom-block-highlight",
+		"sources": "https://github.com/Tektonikal/CustomBlockHighlight",
+		"issues": "https://github.com/Tektonikal/CustomBlockHighlight/issues"
 	},
 	"license": "LGPL-3.0",
 	"icon": "assets/icon.png",
@@ -19,13 +21,17 @@
 			"tektonikal.customblockhighlight.Blockhighlight"
 		]
 	},
-	"mixins": [
-		"custom-block-highlight.mixins.json"
-	],
 	"depends": {
 		"fabricloader": ">=${loader_version}",
 		"fabric": "*",
 		"minecraft": "${minecraft_version}",
 		"yet_another_config_lib_v3": "*"
+	},
+	"custom": {
+		"modmenu": {
+			"links": {
+				"Discord": "https://discord.gg/HyUVJYeKS5"
+			}
+		}
 	}
 }

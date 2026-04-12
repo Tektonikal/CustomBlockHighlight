@@ -13,11 +13,11 @@ public enum OutlineType implements NameableEnum {
     @Override
     public Text getDisplayName() {
         return switch (name()){
-            case "AIR_EXPOSED" -> Text.literal("Air exposed");
             case "ALL" -> Text.literal("All");
-            case "CONCEALED" -> Text.literal("Concealed faces");
             case "EDGES" -> Text.literal("Edges");
-            case "LOOKAT" -> Text.literal("Looked at");
+            case "AIR_EXPOSED" -> Text.literal("Air Exposed");
+            case "CONCEALED" -> Text.literal("Concealed Faces");
+            case "LOOKAT" -> Text.literal("Looked At");
             default -> Text.literal("you done goofed !.");
         };
     }

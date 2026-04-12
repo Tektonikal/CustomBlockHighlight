@@ -22,9 +22,9 @@ public class Vertexer {
         Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
         ArrayList<Side> sides = new ArrayList<>();
         for (int i = 0; i < alpha.length; i++) {
-            sides.add(new Side(getCenter(Direction.byId(i), new Box(((BlockHitResult) mc.crosshairTarget).getBlockPos())).toVector3f().distance(MinecraftClient.getInstance().gameRenderer.getCamera().getPos().toVector3f()), Direction.byId(i)));
+            sides.add(new Side(getCenter(Direction.byId(i), new Box(Renderer.pos)).toVector3f().distance(MinecraftClient.getInstance().gameRenderer.getCamera().getPos().toVector3f()), Direction.byId(i)));
         }
-        if (BlockHighlightConfig.INSTANCE.getConfig().invert) {
+        if (BlockHighlightConfig.INSTANCE.instance().invert) {
             sides.sort(Comparator.comparing(Side::getDistance));
         } else {
             sides.sort(Comparator.comparing(Side::getDistance).reversed());
