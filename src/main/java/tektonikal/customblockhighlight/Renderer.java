@@ -1,31 +1,44 @@
 package tektonikal.customblockhighlight;
 
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.block.*;
 import net.minecraft.block.enums.BedPart;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.ShaderProgramKeys;
+import net.minecraft.client.gl.MappableRingBuffer;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.render.*;
+import net.minecraft.client.render.state.OutlineRenderState;
+import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Unique;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.util.Line;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.EnumSet;
+import java.util.*;
 
 import static net.minecraft.block.enums.ChestType.SINGLE;
 
@@ -47,52 +60,98 @@ public class Renderer {
     public static Box targetBox = new Box(pos);
     public static Direction connected = null;
     public static float edgeAlpha = 0;
+    private static MappableRingBuffer vertexBuffer;
     @Unique
     private static Box easeBox = new Box(0, 0, 0, 0, 0, 0);
+    private static final RenderPipeline OUTLINE_THROUGH_WALLS = RenderPipelines.register(
+            RenderPipeline.builder(RenderPipelines.RENDERTYPE_LINES_SNIPPET)
+                    .withLocation(Identifier.of("custom-block-highlight", "pipeline/evil-lines"))
+                    .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+                    .withCull(false)
+                    .build()
+    );
+    private static final RenderPipeline FILL_NO_DEPTH = RenderPipelines.register(
+            RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
+                    .withLocation(Identifier.of("custom-block-highlight", "pipeline/evil-fill"))
+                    .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+                    .withCull(false)
+                    .build()
+    );
+    private static final BufferAllocator allocator = new BufferAllocator(RenderLayer.field_64009);
 
     public static BufferBuilder startDrawing(boolean lines) {
-        setup();
         if (lines) {
             GL11.glEnable(GL11.GL_LINE_SMOOTH);
-            RenderSystem.lineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
         }
-        if (lines ? BlockHighlightConfig.INSTANCE.instance().lineDepthTest : BlockHighlightConfig.INSTANCE.instance().fillDepthTest) {
-
-            RenderSystem.enableDepthTest();
-        } else {
-            RenderSystem.disableDepthTest();
-        }
-        return Tessellator.getInstance().begin(lines ? VertexFormat.DrawMode.LINES : VertexFormat.DrawMode.QUADS, lines ? VertexFormats.LINES : VertexFormats.POSITION_COLOR);
+        return new BufferBuilder(allocator, lines ? VertexFormat.DrawMode.LINES : VertexFormat.DrawMode.QUADS, lines ? VertexFormats.POSITION_COLOR_NORMAL_LINE_WIDTH : VertexFormats.POSITION_COLOR);
+    }
+    private static void draw(BufferBuilder buffer, boolean lines) {
+        BuiltBuffer builtBuffer = buffer.end();
+        BuiltBuffer.DrawParameters drawParameters = builtBuffer.getDrawParameters();
+        VertexFormat format = drawParameters.format();
+        GpuBuffer vertices = upload(drawParameters, format, builtBuffer);
+        draw(lines ? BlockHighlightConfig.INSTANCE.instance().lineDepthTest ? RenderPipelines.LINES_TRANSLUCENT : OUTLINE_THROUGH_WALLS : BlockHighlightConfig.INSTANCE.instance().fillDepthTest ? RenderPipelines.DEBUG_FILLED_BOX : FILL_NO_DEPTH, builtBuffer, drawParameters, vertices, format);
+        vertexBuffer.rotate();
     }
 
-    public static void endDrawing(BufferBuilder buffer, boolean lines) {
-        RenderSystem.setShader(lines ? ShaderProgramKeys.RENDERTYPE_LINES : ShaderProgramKeys.POSITION_COLOR);
-        BufferRenderer.drawWithGlobalProgram(buffer.end());
-        GL11.glDisable(GL11.GL_LINE_SMOOTH);
-        end();
+    private static GpuBuffer upload(BuiltBuffer.DrawParameters drawParameters, VertexFormat format, BuiltBuffer builtBuffer) {
+        int vertexBufferSize = drawParameters.vertexCount() * format.getVertexSize();
+        if (vertexBuffer == null || vertexBuffer.size() < vertexBufferSize) {
+            if (vertexBuffer != null) {
+                vertexBuffer.close();
+            }
+            vertexBuffer = new MappableRingBuffer(() -> "block_outline render pipeline", 34, vertexBufferSize);
+        }
+
+        CommandEncoder commandEncoder = RenderSystem.getDevice().createCommandEncoder();
+
+        try (GpuBuffer.MappedView mappedView = commandEncoder.mapBuffer(vertexBuffer.getBlocking().slice(0L, builtBuffer.getBuffer().remaining()), false, true)) {
+            MemoryUtil.memCopy(builtBuffer.getBuffer(), mappedView.data());
+        }
+
+        return vertexBuffer.getBlocking();
+    }
+
+    private static void draw(RenderPipeline pipeline, BuiltBuffer builtBuffer, BuiltBuffer.DrawParameters drawParameters, GpuBuffer vertices, VertexFormat format) {
+        RenderSystem.ShapeIndexBuffer shapeIndexBuffer = RenderSystem.getSequentialBuffer(pipeline.getVertexFormatMode());
+        GpuBuffer indices = shapeIndexBuffer.getIndexBuffer(drawParameters.indexCount());
+        VertexFormat.IndexType indexType = shapeIndexBuffer.getIndexType();
+        GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().write(RenderSystem.getModelViewMatrix(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F), new Vector3f(), new Matrix4f());
+
+        try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "block_outline outline rendering", MinecraftClient.getInstance().getFramebuffer().getColorAttachmentView(), OptionalInt.empty(), MinecraftClient.getInstance().getFramebuffer().getDepthAttachmentView(), OptionalDouble.empty())) {
+            renderPass.setPipeline(pipeline);
+            RenderSystem.bindDefaultUniforms(renderPass);
+            renderPass.setUniform("DynamicTransforms", dynamicTransforms);
+            renderPass.setVertexBuffer(0, vertices);
+            renderPass.setIndexBuffer(indices, indexType);
+            renderPass.drawIndexed(0, 0, drawParameters.indexCount(), 1);
+        }
+
+        builtBuffer.close();
     }
 
     public static void drawBoxFill(MatrixStack ms, Box box, Color cols, Color col2, float[] alpha) {
         ms.push();
-        ms.translate(box.minX - camera.getPos().x, box.minY - camera.getPos().y, box.minZ - camera.getPos().z);
+        ms.translate(box.minX - camera.getCameraPos().x, box.minY - camera.getCameraPos().y, box.minZ - camera.getCameraPos().z);
         BufferBuilder buffer = startDrawing(false);
         Vertexer.vertexBoxQuads(ms, buffer, moveToZero(box), cols, col2, alpha);
-        endDrawing(buffer, false);
+        draw(buffer, false);
         ms.pop();
     }
 
     public static void drawBoxOutline(MatrixStack ms, Box box, Color color, Color col2, float[] alpha) {
         ms.push();
-        ms.translate(box.minX - camera.getPos().x, box.minY - camera.getPos().y, box.minZ - camera.getPos().z);
+        ms.translate(box.minX - camera.getCameraPos().x, box.minY - camera.getCameraPos().y, box.minZ - camera.getCameraPos().z);
         BufferBuilder buffer = startDrawing(true);
         Vertexer.vertexBoxLines(ms, buffer, moveToZero(box), color, col2, alpha);
-        endDrawing(buffer, true);
+        draw(buffer, true);
+//        endDrawing(buffer, true);
         ms.pop();
     }
 
     public static void drawEdgeOutline(MatrixStack matrices, VoxelShape shape, Color c1, Color c2, float alpha) {
         matrices.push();
-        matrices.translate(shape.getBoundingBox().minX - camera.getPos().x, shape.getBoundingBox().minY - camera.getPos().y, shape.getBoundingBox().minZ - camera.getPos().z);
+        matrices.translate(shape.getBoundingBox().minX - camera.getCameraPos().x, shape.getBoundingBox().minY - camera.getCameraPos().y, shape.getBoundingBox().minZ - camera.getCameraPos().z);
         ArrayList<Line> newLines = new ArrayList<>();
         BufferBuilder buffer = startDrawing(true);
         VoxelShape finalShape = shape;
@@ -123,7 +182,8 @@ public class Renderer {
         finalLines.forEach(line -> line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha), true));
         toRemove.removeIf(line -> line.alphaMultiplier < 0.0039);
         toRemove.forEach(line -> line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.getBoundingBox().getMinPos().distanceTo(new Vec3d(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha), false));
-        endDrawing(buffer, true);
+        draw(buffer, true);
+//        endDrawing(buffer, true);
         matrices.pop();
     }
 
@@ -140,19 +200,19 @@ public class Renderer {
     }
 
     //TODO: clean up these calls, some of them are useless iirc
-    public static void setup() {
-        RenderSystem.depthMask(false);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableCull();
-    }
-
-    public static void end() {
-        RenderSystem.depthMask(true);
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableBlend();
-        RenderSystem.enableCull();
-    }
+//    public static void setup() {
+//        RenderSystem.depthMask(false);
+//        RenderSystem.enableBlend();
+//        RenderSystem.defaultBlendFunc();
+//        RenderSystem.disableCull();
+//    }
+//
+//    public static void end() {
+//        RenderSystem.depthMask(true);
+//        RenderSystem.enableDepthTest();
+//        RenderSystem.disableBlend();
+//        RenderSystem.enableCull();
+//    }
 
     @Unique
     private static Direction[] invert(Direction[] invertDirs) {
@@ -236,7 +296,8 @@ public class Renderer {
     }
 
     @SuppressWarnings("SameReturnValue")
-    public static boolean mainLoop(WorldRenderContext c, HitResult h) {
+    public static boolean mainLoop(WorldRenderContext c, OutlineRenderState yeah) {
+        HitResult h = MinecraftClient.getInstance().crosshairTarget;
         //TODO: water and clouds take priority over outline rendering? i don't like it
 //        if(!(h instanceof BlockHitResult)){
 //            return false;
@@ -244,7 +305,7 @@ public class Renderer {
         BlockState state = mc.world.getBlockState(pos);
         boolean erm = isCrystalObstructed(state);
         if (h.getType() != HitResult.Type.BLOCK) {
-            renderBlockOutline(c.matrixStack(), erm, state, true);
+            renderBlockOutline(c.matrices(), erm, state, true);
             return false;
         }
         checkForUpdate(h);
@@ -266,7 +327,7 @@ public class Renderer {
         } else {
             easeBox = targetBox;
         }
-        renderBlockOutline(c.matrixStack(), erm, state, false);
+        renderBlockOutline(c.matrices(), erm, state, false);
         return false;
     }
 

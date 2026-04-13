@@ -31,7 +31,7 @@ public class BlockHighlightConfig {
     public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val -> Text.of(String.format("%.2f", val).replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
 
     public static Gson gson = new GsonBuilder()
-            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+            .setFieldNamingPolicy(FieldNamingPolicy.IDENTITY)
             .serializeNulls()
             .registerTypeHierarchyAdapter(Color.class, new GsonConfigInstance.ColorTypeAdapter())
             .setPrettyPrinting()

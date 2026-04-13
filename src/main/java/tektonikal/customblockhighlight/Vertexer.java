@@ -22,7 +22,7 @@ public class Vertexer {
         Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
         ArrayList<Side> sides = new ArrayList<>();
         for (int i = 0; i < alpha.length; i++) {
-            sides.add(new Side(getCenter(Direction.byId(i), new Box(Renderer.pos)).toVector3f().distance(MinecraftClient.getInstance().gameRenderer.getCamera().getPos().toVector3f()), Direction.byId(i)));
+            sides.add(new Side(getCenter(Direction.byIndex(i), new Box(Renderer.pos)).toVector3f().distance(MinecraftClient.getInstance().gameRenderer.getCamera().getCameraPos().toVector3f()), Direction.byIndex(i)));
         }
         if (BlockHighlightConfig.INSTANCE.instance().invert) {
             sides.sort(Comparator.comparing(Side::getDistance));
@@ -77,10 +77,10 @@ public class Vertexer {
 
     public static void vertexQuad(MatrixStack matrices, BufferBuilder builder, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4, Color cols, Color col2, Color col3, Color col4, int alpha) {
         Matrix4f model = matrices.peek().getPositionMatrix();
-        builder.vertex(model, x4, y4, z4).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha);
-        builder.vertex(model, x3, y3, z3).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha);
-        builder.vertex(model, x2, y2, z2).color(col3.getRed(), col3.getGreen(), col3.getBlue(), alpha);
         builder.vertex(model, x1, y1, z1).color(col4.getRed(), col4.getGreen(), col4.getBlue(), alpha);
+        builder.vertex(model, x2, y2, z2).color(col3.getRed(), col3.getGreen(), col3.getBlue(), alpha);
+        builder.vertex(model, x3, y3, z3).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha);
+        builder.vertex(model, x4, y4, z4).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha);
     }
 
     public static void vertexBoxLines(MatrixStack matrices, BufferBuilder builder, Box box, Color cols, Color col2, float[] alpha) {
@@ -138,14 +138,14 @@ public class Vertexer {
     public static void vertexLine(MatrixStack matrices, BufferBuilder builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, float nx, float ny, float nz) {
         Matrix4f model = matrices.peek().getPositionMatrix();
 
-        builder.vertex(model, x1, y1, z1).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).normal(matrices.peek(), nx, ny, nz);
-        builder.vertex(model, x2, y2, z2).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).normal(matrices.peek(), nx, ny, nz);
+        builder.vertex(model, x1, y1, z1).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).normal(matrices.peek(), nx, ny, nz).lineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
+        builder.vertex(model, x2, y2, z2).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).normal(matrices.peek(), nx, ny, nz).lineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
     }
     public static void vertexLine(MatrixStack matrices, BufferBuilder builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, Vec3d normal) {
         Matrix4f model = matrices.peek().getPositionMatrix();
 
-        builder.vertex(model, x1, y1, z1).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).normal(matrices.peek(), (float) normal.x, (float) normal.y, (float) normal.z);
-        builder.vertex(model, x2, y2, z2).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).normal(matrices.peek(), (float) normal.x, (float) normal.y, (float) normal.z);
+        builder.vertex(model, x1, y1, z1).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).normal(matrices.peek(), (float) normal.x, (float) normal.y, (float) normal.z).lineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
+        builder.vertex(model, x2, y2, z2).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).normal(matrices.peek(), (float) normal.x, (float) normal.y, (float) normal.z).lineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
     }
 
     static class Side {

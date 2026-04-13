@@ -24,7 +24,7 @@ public class Line {
     }
 
     public float getDistanceToCamera() {
-        return (float) minPos.add(maxPos).multiply(0.5F).distanceTo(Vertexer.mc.gameRenderer.getCamera().getPos().subtract(minVec));
+        return (float) minPos.add(maxPos).multiply(0.5F).distanceTo(Vertexer.mc.gameRenderer.getCamera().getCameraPos().subtract(minVec));
     }
     public float distanceTo(Vec3d pos) {
         return (float) minPos.add(maxPos).multiply(0.5F).distanceTo(pos.subtract(minVec));
