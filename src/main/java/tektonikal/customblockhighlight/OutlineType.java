@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight;
 
 import dev.isxander.yacl3.api.NameableEnum;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 public enum OutlineType implements NameableEnum {
     AIR_EXPOSED,
@@ -11,14 +11,14 @@ public enum OutlineType implements NameableEnum {
     LOOKAT;
 
     @Override
-    public Text getDisplayName() {
+    public Component getDisplayName() {
         return switch (name()){
-            case "ALL" -> Text.literal("All");
-            case "EDGES" -> Text.literal("Edges");
-            case "AIR_EXPOSED" -> Text.literal("Air Exposed");
-            case "CONCEALED" -> Text.literal("Concealed Faces");
-            case "LOOKAT" -> Text.literal("Looked At");
-            default -> Text.literal("you done goofed !.");
+            case "ALL" -> Component.literal("All");
+            case "EDGES" -> Component.literal("Edges");
+            case "AIR_EXPOSED" -> Component.literal("Air Exposed");
+            case "CONCEALED" -> Component.literal("Concealed Faces");
+            case "LOOKAT" -> Component.literal("Looked At");
+            default -> Component.literal("you done goofed !.");
         };
     }
 }

@@ -1,28 +1,27 @@
 package tektonikal.customblockhighlight;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import org.joml.Matrix4f;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
-
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.PoseStack;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 public class Vertexer {
-    public static MinecraftClient mc = MinecraftClient.getInstance();
+    public static Minecraft mc = Minecraft.getInstance();
 
-    public static void vertexBoxQuads(MatrixStack matrices, BufferBuilder builder, Box box, Color cols, Color col2, float[] alpha) {
+    public static void vertexBoxQuads(PoseStack matrices, VertexConsumer builder, AABB box, Color cols, Color col2, float[] alpha) {
         Color firstThird = new Color(interp(cols.getRed(), col2.getRed(), 1), interp(cols.getGreen(), col2.getGreen(), 1), interp(cols.getBlue(), col2.getBlue(), 1), 255);
         Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
         ArrayList<Side> sides = new ArrayList<>();
         for (int i = 0; i < alpha.length; i++) {
-            sides.add(new Side(getCenter(Direction.byIndex(i), new Box(Renderer.pos)).toVector3f().distance(MinecraftClient.getInstance().gameRenderer.getCamera().getCameraPos().toVector3f()), Direction.byIndex(i)));
+            sides.add(new Side(getCenter(Direction.from3DDataValue(i), new AABB(Renderer.pos)).toVector3f().distance(Minecraft.getInstance().gameRenderer.mainCamera().position().toVector3f()), Direction.from3DDataValue(i)));
         }
         if (BlockHighlightConfig.INSTANCE.instance().invert) {
             sides.sort(Comparator.comparing(Side::getDistance));
@@ -34,31 +33,31 @@ public class Vertexer {
         }
     }
 
-    private static Vec3d getCenter(Direction direction, Box box) {
+    private static Vec3 getCenter(Direction direction, AABB box) {
         switch (direction) {
             case UP -> {
-                return new Vec3d((box.minX + box.maxX) / 2.0F, box.maxY, (box.minZ + box.maxZ) / 2.0F);
+                return new Vec3((box.minX + box.maxX) / 2.0F, box.maxY, (box.minZ + box.maxZ) / 2.0F);
             }
             case DOWN -> {
-                return new Vec3d((box.minX + box.maxX) / 2.0F, box.minY, (box.minZ + box.maxZ) / 2.0F);
+                return new Vec3((box.minX + box.maxX) / 2.0F, box.minY, (box.minZ + box.maxZ) / 2.0F);
             }
             case EAST -> {
-                return new Vec3d(box.maxX, (box.minY + box.maxY) / 2.0F, (box.minZ + box.maxZ) / 2.0F);
+                return new Vec3(box.maxX, (box.minY + box.maxY) / 2.0F, (box.minZ + box.maxZ) / 2.0F);
             }
             case WEST -> {
-                return new Vec3d(box.minX, (box.minY + box.maxY) / 2.0F, (box.minZ + box.maxZ) / 2.0F);
+                return new Vec3(box.minX, (box.minY + box.maxY) / 2.0F, (box.minZ + box.maxZ) / 2.0F);
             }
             case NORTH -> {
-                return new Vec3d((box.minX + box.maxX) / 2.0F, (box.minY + box.maxY) / 2.0F, box.minZ);
+                return new Vec3((box.minX + box.maxX) / 2.0F, (box.minY + box.maxY) / 2.0F, box.minZ);
             }
             case SOUTH -> {
-                return new Vec3d((box.minX + box.maxX) / 2.0F, (box.minY + box.maxY) / 2.0F, box.maxZ);
+                return new Vec3((box.minX + box.maxX) / 2.0F, (box.minY + box.maxY) / 2.0F, box.maxZ);
             }
         }
         return null;
     }
 
-    public static void drawSide(MatrixStack matrices, BufferBuilder builder, Box box, Color cols, Color col2, Color firstThird, Color secondThird, float[] alpha, Direction d) {
+    public static void drawSide(PoseStack matrices, VertexConsumer builder, AABB box, Color cols, Color col2, Color firstThird, Color secondThird, float[] alpha, Direction d) {
             switch (d) {
                 case UP ->
                         vertexQuad(matrices, builder, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, cols, firstThird, secondThird, firstThird, Math.round(alpha[Direction.UP.ordinal()]));
@@ -75,15 +74,15 @@ public class Vertexer {
             }
     }
 
-    public static void vertexQuad(MatrixStack matrices, BufferBuilder builder, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4, Color cols, Color col2, Color col3, Color col4, int alpha) {
-        Matrix4f model = matrices.peek().getPositionMatrix();
-        builder.vertex(model, x1, y1, z1).color(col4.getRed(), col4.getGreen(), col4.getBlue(), alpha);
-        builder.vertex(model, x2, y2, z2).color(col3.getRed(), col3.getGreen(), col3.getBlue(), alpha);
-        builder.vertex(model, x3, y3, z3).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha);
-        builder.vertex(model, x4, y4, z4).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha);
+    public static void vertexQuad(PoseStack matrices, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4, Color cols, Color col2, Color col3, Color col4, int alpha) {
+        Matrix4f model = matrices.last().pose();
+        builder.addVertex(model, x1, y1, z1).setColor(col4.getRed(), col4.getGreen(), col4.getBlue(), alpha);
+        builder.addVertex(model, x2, y2, z2).setColor(col3.getRed(), col3.getGreen(), col3.getBlue(), alpha);
+        builder.addVertex(model, x3, y3, z3).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha);
+        builder.addVertex(model, x4, y4, z4).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha);
     }
 
-    public static void vertexBoxLines(MatrixStack matrices, BufferBuilder builder, Box box, Color cols, Color col2, float[] alpha) {
+    public static void vertexBoxLines(PoseStack matrices, VertexConsumer builder, AABB box, Color cols, Color col2, float[] alpha) {
         float x1 = (float) box.minX;
         float y1 = (float) box.minY;
         float z1 = (float) box.minZ;
@@ -135,17 +134,17 @@ public class Vertexer {
         return in1;
     }
 
-    public static void vertexLine(MatrixStack matrices, BufferBuilder builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, float nx, float ny, float nz) {
-        Matrix4f model = matrices.peek().getPositionMatrix();
+    public static void vertexLine(PoseStack matrices, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, float nx, float ny, float nz) {
+        Matrix4f model = matrices.last().pose();
 
-        builder.vertex(model, x1, y1, z1).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).normal(matrices.peek(), nx, ny, nz).lineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
-        builder.vertex(model, x2, y2, z2).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).normal(matrices.peek(), nx, ny, nz).lineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
+        builder.addVertex(model, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
+        builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
     }
-    public static void vertexLine(MatrixStack matrices, BufferBuilder builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, Vec3d normal) {
-        Matrix4f model = matrices.peek().getPositionMatrix();
+    public static void vertexLine(PoseStack matrices, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, Vec3 normal) {
+        Matrix4f model = matrices.last().pose();
 
-        builder.vertex(model, x1, y1, z1).color(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).normal(matrices.peek(), (float) normal.x, (float) normal.y, (float) normal.z).lineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
-        builder.vertex(model, x2, y2, z2).color(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).normal(matrices.peek(), (float) normal.x, (float) normal.y, (float) normal.z).lineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
+        builder.addVertex(model, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
+        builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(BlockHighlightConfig.INSTANCE.instance().lineWidth);
     }
 
     static class Side {
