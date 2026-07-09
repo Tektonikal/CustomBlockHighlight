@@ -3,8 +3,11 @@ package tektonikal.customblockhighlight;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
@@ -25,7 +28,15 @@ public class Vertexer {
 
         List<Side> sides = new ArrayList<>();
 		for (int i = 0; i < alpha.length; i++) {
-			sides.add(new Side(getCenter(Direction.from3DDataValue(i), new AABB(Renderer.pos)).toVector3f().distance(Minecraft.getInstance().gameRenderer.mainCamera().position().toVector3f()), Direction.from3DDataValue(i)));
+			AABB aabb;
+			if (mc.hitResult instanceof BlockHitResult block) {
+				aabb = new AABB(block.getBlockPos());
+			} else if (mc.hitResult instanceof EntityHitResult entity) {
+				aabb = entity.getEntity().getBoundingBox();
+			} else {
+				aabb = new AABB(BlockPos.ZERO);
+			}
+			sides.add(new Side(getCenter(Direction.from3DDataValue(i), aabb).toVector3f().distance(Minecraft.getInstance().gameRenderer.mainCamera().position().toVector3f()), Direction.from3DDataValue(i)));
 		}
 
         sides.sort(Comparator.comparing(Side::distance));
