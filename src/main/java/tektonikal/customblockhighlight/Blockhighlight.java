@@ -11,6 +11,5 @@ public class Blockhighlight implements ModInitializer {
         BlockHighlightConfig.INSTANCE.load();
         LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, outlineRenderState) -> false);
 		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
-        BlockTargetCallback.EVENT.register(Renderer::update);
     }
 }

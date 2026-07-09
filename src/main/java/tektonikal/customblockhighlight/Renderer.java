@@ -1,14 +1,11 @@
 package tektonikal.customblockhighlight;
 
-import com.mojang.blaze3d.IndexType;
 import com.mojang.blaze3d.PrimitiveTopology;
-import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.CompareOp;
-import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTextureView;
@@ -16,7 +13,6 @@ import com.mojang.blaze3d.vertex.*;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MappableRingBuffer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.StagedVertexBuffer;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -24,17 +20,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.piston.PistonHeadBlock;
-import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.BooleanOp;
@@ -42,58 +35,50 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.joml.*;
-import org.lwjgl.opengl.GL11;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongepowered.asm.mixin.Unique;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.util.Line;
 
 import java.awt.*;
 import java.lang.Math;
-import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
 import java.util.*;
-
-import static net.minecraft.world.level.block.state.properties.ChestType.SINGLE;
+import java.util.List;
 
 public class Renderer {
-	@Unique
-	private static final Minecraft mc = Minecraft.getInstance();
-	static final Camera camera = mc.gameRenderer.mainCamera();
-	@Unique
-	private static final float[] sideFades = new float[6];
-	@Unique
-	private static final float[] lineFades = new float[6];
-	private static final Logger log = LoggerFactory.getLogger(Renderer.class);
-	public static ArrayList<Line> lines = new ArrayList<>();
-	public static ArrayList<Line> toRemove = new ArrayList<>();
-	public static BlockPos prevPos = new BlockPos(0, 0, 0);
-	public static BlockPos tempPos = new BlockPos(0, 0, 0);
-	public static BlockPos pos = new BlockPos(0, 0, 0);
-	public static VoxelShape s = Shapes.block();
-	public static AABB targetBox = new AABB(pos);
-	public static Direction connected = null;
-	public static float edgeAlpha = 0;
-	public static boolean erm = false;
-	@Unique
-	private static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
-	private static final RenderPipeline OUTLINE_THROUGH_WALLS = RenderPipelines.register(
+	public static final Minecraft mc = Minecraft.getInstance();
+	public static final Camera camera = mc.gameRenderer.mainCamera();
+
+	public static final float[] sideFades = new float[6];
+	public static final float[] lineFades = new float[6];
+
+	public static final RenderPipeline OUTLINE_THROUGH_WALLS = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/evil-lines"))
 					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 					.withCull(false)
 					.build()
 	);
-	private static final RenderPipeline FILL_NO_DEPTH = RenderPipelines.register(
+	public static final RenderPipeline FILL_NO_DEPTH = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/evil-fill"))
 					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
 					.withCull(false)
 					.build()
 	);
-	private static final StagedVertexBuffer stagedFaceBuffer = new StagedVertexBuffer(() -> " CBH sides", RenderType.SMALL_BUFFER_SIZE);
-	private static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
+	public static final StagedVertexBuffer stagedFaceBuffer = new StagedVertexBuffer(() -> " CBH sides", RenderType.SMALL_BUFFER_SIZE);
+	public static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
+
+	public static BlockPos pos = new BlockPos(0, 0, 0);
+
+	public static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
+	public static AABB targetBox = new AABB(pos);
+
+	public static List<Line> lines = new ArrayList<>();
+	public static List<Line> toRemove = new ArrayList<>();
+
+	public static VoxelShape shape = Shapes.block();
+	public static Direction connected = null;
+	public static float edgeAlpha = 0;
+	public static boolean erm = false;
 
 	public static StagedVertexBuffer.Draw startDrawing(boolean lines) {
 		StagedVertexBuffer.Draw draw;
@@ -213,7 +198,6 @@ public class Renderer {
 		return shape.move(getMinVec(shape.bounds()).x * -1, getMinVec(shape.bounds()).y * -1, getMinVec(shape.bounds()).z * -1);
 	}
 
-	@Unique
 	private static Direction[] invert(Direction[] invertDirs) {
 		EnumSet<Direction> dirs = EnumSet.allOf(Direction.class);
 		for (Direction d : invertDirs) {
@@ -222,7 +206,6 @@ public class Renderer {
 		return dirs.toArray(Direction[]::new);
 	}
 
-	@Unique
 	private static Direction[] getSides(OutlineType type, BlockPos pos) {
 		return switch (type) {
 			case LOOKAT -> (mc.hitResult instanceof BlockHitResult block) ? new Direction[]{block.getDirection()} : Direction.values();
@@ -232,19 +215,18 @@ public class Renderer {
 		};
 	}
 
-	@Unique
 	public static Color getRainbowCol(float delay) {
 		double rainbowState = Math.ceil((System.currentTimeMillis() + (int) (delay))) * BlockHighlightConfig.INSTANCE.instance().rainbowSpeed / 50;
 		rainbowState %= 360;
 		return Color.getHSBColor((float) (rainbowState / 360.0f), BlockHighlightConfig.INSTANCE.instance().saturation, BlockHighlightConfig.INSTANCE.instance().brightness);
 	}
 
-	@Unique
 	public static double ease(double start, double end, float speed) {
 		return (start + (end - start) * (1 - Math.exp(-(1.0F / mc.getFps()) * speed)));
 	}
 
 	public static boolean isBlockOccupied(BlockPos pos) {
+		if (mc.level == null) throw new IllegalStateException("level == null");
 		if (mc.level.getBlockState(pos).hasProperty(BlockStateProperties.WATERLOGGED) && !mc.level.getBlockState(pos).getValue(BlockStateProperties.WATERLOGGED) && !mc.level.getFluidState(pos).isEmpty()) {
 			//ignore liquids
 			return false;
@@ -252,7 +234,6 @@ public class Renderer {
 		return !mc.level.isEmptyBlock(pos);
 	}
 
-	@Unique
 	public static Direction[] getConcealedFaces(BlockPos pos) {
         /*
         I don't know if I should keep the original behaviour for this
@@ -289,6 +270,7 @@ public class Renderer {
 	@SuppressWarnings("SameReturnValue")
 	public static void mainLoop(LevelRenderContext c) {
 		HitResult h = Minecraft.getInstance().hitResult;
+		if (h == null || mc.level == null) return;
         /*
         TODO: better fluid logic? just to spite microcontrollers?
         - Is player holding water bucket?
@@ -353,6 +335,8 @@ public class Renderer {
 	}
 
 	private static boolean isCrystalObstructed(BlockState state) {
+		if (mc.level == null) throw new IllegalStateException("level == null");
+
 		if (BlockHighlightConfig.INSTANCE.instance().crystalHelper) {
 			if (state.getBlock().equals(Blocks.OBSIDIAN) || state.getBlock().equals(Blocks.BEDROCK)) {
 				double pd = pos.above().getX();
@@ -374,28 +358,32 @@ public class Renderer {
 	}
 
 	private static void drawOutline(PoseStack ms, boolean erm, BlockState state) {
+		if (mc.level == null) throw new IllegalStateException("level == null");
+		var cameraEntity = camera.entity();
+		if (cameraEntity == null) return;
+
 		Color finalLineCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().outlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().lineCol;
 		Color finalLineCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().outlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().lineCol2;
 		if (BlockHighlightConfig.INSTANCE.instance().outlineType == OutlineType.EDGES) {
 			if (isBlockOccupied(pos)) {
-				s = state.getShape(mc.level, pos, CollisionContext.of(camera.entity()));
+				shape = state.getShape(mc.level, pos, CollisionContext.of(cameraEntity));
 				if (connected != null) {
-					s = Shapes.joinUnoptimized(s, mc.level.getBlockState(pos.relative(connected)).getShape(mc.level, pos.relative(connected), CollisionContext.of(camera.entity())).move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR).optimize();
+					shape = Shapes.joinUnoptimized(shape, mc.level.getBlockState(pos.relative(connected)).getShape(mc.level, pos.relative(connected), CollisionContext.of(cameraEntity)).move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR).optimize();
 				}
 			}
-			if (!s.isEmpty()) {
+			if (!shape.isEmpty()) {
 				if (BlockHighlightConfig.INSTANCE.instance().tertiary) {
 					Color tfinalLineCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
 					Color tfinalLineCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
-					Renderer.drawEdgeOutline(ms, s.move(easeBox.minX - s.bounds().getMinPosition().x, easeBox.minY - s.bounds().getMinPosition().y, easeBox.minZ - s.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha, 2);
+					Renderer.drawEdgeOutline(ms, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha, 2);
 				}
 				if (BlockHighlightConfig.INSTANCE.instance().secondary) {
 					//TODO: edges mode ignores line expansion
 					Color sfinalLineCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
 					Color sfinalLineCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
-					Renderer.drawEdgeOutline(ms, s.move(easeBox.minX - s.bounds().getMinPosition().x, easeBox.minY - s.bounds().getMinPosition().y, easeBox.minZ - s.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha, 1);
+					Renderer.drawEdgeOutline(ms, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha, 1);
 				}
-				Renderer.drawEdgeOutline(ms, s.move(easeBox.minX - s.bounds().getMinPosition().x, easeBox.minY - s.bounds().getMinPosition().y, easeBox.minZ - s.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, 0);
+				Renderer.drawEdgeOutline(ms, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, 0);
 			}
 		} else {
 			if (BlockHighlightConfig.INSTANCE.instance().tertiary) {
@@ -415,6 +403,7 @@ public class Renderer {
 	}
 
 	private static void updateFades(boolean shouldFadeOut) {
+		if (mc.hitResult == null || mc.level == null) return;
 		//clean this up later
 		if (mc.hitResult.getType() == HitResult.Type.ENTITY) {
 			for (Direction dir : Direction.values()) {
@@ -456,13 +445,19 @@ public class Renderer {
 	}
 
 	private static Direction joinConnected(BlockState state, BlockPos pos) {
+		if (mc.level == null) return null;
+
 		BlockState connectedState;
 		Direction dir;
 		BlockPos connectedPos;
 		DoubleBlockHalf half;
-		if (state.getBlock() instanceof ChestBlock && !state.getValue(ChestBlock.TYPE).equals(SINGLE)) {
+		if (state.getBlock() instanceof ChestBlock && !state.getValue(ChestBlock.TYPE).equals(ChestType.SINGLE)) {
 			dir = ChestBlock.getConnectedDirection(state);
-			connectedPos = ((BlockHitResult) mc.hitResult).getBlockPos().relative(dir);
+			if (mc.hitResult instanceof BlockHitResult block) {
+				connectedPos = block.getBlockPos().relative(dir);
+			} else {
+				return null;
+			}
 			connectedState = mc.level.getBlockState(connectedPos);
 			if (connectedState.getBlock() instanceof ChestBlock) {
 				targetBox = targetBox.minmax(connectedState.getShape(mc.level, connectedPos).bounds().move(connectedPos));
@@ -532,33 +527,6 @@ public class Renderer {
 		return null;
 	}
 
-
-	@SuppressWarnings("SameReturnValue")
-	public static InteractionResult update(BlockPos prev, BlockPos curr) {
-//        if (!mc.world.isAir(blockPos1)) {
-//            System.out.println("!!!!!!!!!");
-//        }
-		return InteractionResult.PASS;
-	}
-
-	public static void checkForUpdate(BlockPos pos) {
-		if (pos == null) {
-			if (prevPos != null) {
-				tempPos = prevPos;
-				prevPos = null;
-			}
-		} else {
-			if (prevPos == null) {
-				tempPos = null;
-				prevPos = pos;
-			}
-			if (!prevPos.equals(pos)) {
-				tempPos = prevPos;
-				prevPos = pos;
-				BlockTargetCallback.EVENT.invoker().interact(prevPos, pos);
-			}
-		}
-	}
 //    public static void quad(
 //            MatrixStack.Entry matrixEntry, BakedQuad quad, float[] brightnesses, float red, float green, float blue, float f, int[] is, int i, boolean bl
 //    ) {
