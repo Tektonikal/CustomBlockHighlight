@@ -12,6 +12,7 @@ import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 
 public class Vertexer {
 	public static Minecraft mc = Minecraft.getInstance();
@@ -19,17 +20,21 @@ public class Vertexer {
 	public static void vertexBoxQuads(PoseStack matrices, VertexConsumer builder, AABB box, Color cols, Color col2, float[] alpha) {
 		Color firstThird = new Color(interp(cols.getRed(), col2.getRed(), 1), interp(cols.getGreen(), col2.getGreen(), 1), interp(cols.getBlue(), col2.getBlue(), 1), 255);
 		Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
-		ArrayList<Side> sides = new ArrayList<>();
+
+        record Side(float distance, Direction direction) {}
+
+        List<Side> sides = new ArrayList<>();
 		for (int i = 0; i < alpha.length; i++) {
 			sides.add(new Side(getCenter(Direction.from3DDataValue(i), new AABB(Renderer.pos)).toVector3f().distance(Minecraft.getInstance().gameRenderer.mainCamera().position().toVector3f()), Direction.from3DDataValue(i)));
 		}
+
+        sides.sort(Comparator.comparing(Side::distance));
 		if (BlockHighlightConfig.INSTANCE.instance().invert) {
-			sides.sort(Comparator.comparing(Side::getDistance));
-		} else {
-			sides.sort(Comparator.comparing(Side::getDistance).reversed());
+            sides = sides.reversed();
 		}
+
 		for (int i = 0; i < alpha.length; i++) {
-			var direction = sides.get(i).dir;
+			var direction = sides.get(i).direction();
 			drawSide(matrices, builder, box, cols, col2, firstThird, secondThird, alpha[direction.ordinal()], direction);
 		}
 	}
@@ -144,19 +149,5 @@ public class Vertexer {
 		};
 		builder.addVertex(model, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(width);
 		builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(width);
-	}
-
-	static class Side {
-		public float distance;
-		public Direction dir;
-
-		public Side(float distance, Direction dir) {
-			this.distance = distance;
-			this.dir = dir;
-		}
-
-		public float getDistance() {
-			return distance;
-		}
 	}
 }

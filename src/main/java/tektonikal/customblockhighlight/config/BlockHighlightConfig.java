@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-
 public class BlockHighlightConfig {
 	public static ConfigClassHandler<BlockHighlightConfig> INSTANCE = ConfigClassHandler.createBuilder(BlockHighlightConfig.class)
 			.id(Identifier.fromNamespaceAndPath("custom-block-highlight", "config"))
@@ -30,9 +29,11 @@ public class BlockHighlightConfig {
 					.setPath(FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json")).build()).build();
 	public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val -> Component.nullToEmpty(String.format("%.2f", val).replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
 
+	@SuppressWarnings("deprecation")
 	public static Gson gson = new GsonBuilder()
 			.setFieldNamingPolicy(FieldNamingPolicy.IDENTITY)
 			.serializeNulls()
+			// todo: yell at teal to update this to config v2
 			.registerTypeHierarchyAdapter(Color.class, new GsonConfigInstance.ColorTypeAdapter())
 			.setPrettyPrinting()
 			.create();
@@ -88,7 +89,7 @@ public class BlockHighlightConfig {
     //@formatter:on
 
 	public static Screen getConfigScreen(Screen parent) {
-		return YetAnotherConfigLib.create(INSTANCE, ((defaults, config, builder) -> builder
+		return YetAnotherConfigLib.create(INSTANCE, ((_, config, builder) -> builder
 				.title(Component.literal("Custom Block Highlight"))
 				.category(ConfigCategory.createBuilder()
 						.name(Component.literal("Outline"))
@@ -378,7 +379,7 @@ public class BlockHighlightConfig {
 								.name(Component.nullToEmpty("Config"))
 								.option(ButtonOption.createBuilder()
 										.name(Component.nullToEmpty(" - Copy To Clipboard"))
-										.action((yaclScreen, buttonOption) -> {
+										.action((_, _) -> {
 											BlockHighlightConfig.INSTANCE.save();
 											Minecraft.getInstance().keyboardHandler.setClipboard(BlockHighlightConfig.gson.toJson(INSTANCE.instance()));
 										})
@@ -388,7 +389,7 @@ public class BlockHighlightConfig {
 										.name(Component.literal(" - Load From Clipboard"))
 										.description(OptionDescription.of(Component.nullToEmpty("Loads settings from your clipboard if they're valid. The screen will close, reopen it to see your new values.")))
 										.text(Component.nullToEmpty("Load"))
-										.action((yaclScreen, buttonOption) -> {
+										.action((_, _) -> {
 											try {
 												BlockHighlightConfig yeah = BlockHighlightConfig.gson.fromJson(Minecraft.getInstance().keyboardHandler.getClipboard(), BlockHighlightConfig.class);
 												if (yeah == null) {

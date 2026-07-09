@@ -12,12 +12,12 @@ public enum OutlineType implements NameableEnum {
 
 	@Override
 	public Component getDisplayName() {
-		return switch (this) {
-			case ALL -> Component.literal("All");
-			case EDGES -> Component.literal("Edges");
-			case AIR_EXPOSED -> Component.literal("Air Exposed");
-			case CONCEALED -> Component.literal("Concealed Faces");
-			case LOOKAT -> Component.literal("Looked At");
-		};
+		return Component.literal(switch (this) {
+			case ALL -> "All";
+			case EDGES -> "Edges";
+			case AIR_EXPOSED -> "Air Exposed";
+			case CONCEALED -> "Concealed Faces";
+			case LOOKAT -> "Looked At";
+		});
 	}
 }

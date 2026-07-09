@@ -46,6 +46,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
+//TODO: fix thick lines not fully joining at corners
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
 	public static final Camera camera = mc.gameRenderer.mainCamera();
@@ -92,10 +93,8 @@ public class Renderer {
 		}
 		return draw;
 	}
-	//TODO: fix thick lines not fully joining at corners
 
-
-	private static void yeah(boolean lines, StagedVertexBuffer.Draw draw, int layer) {
+	private static void finishDraw(boolean lines, StagedVertexBuffer.Draw draw, int layer) {
 		stagedOutlineBuffer.upload();
 		stagedFaceBuffer.upload();
 		StagedVertexBuffer.ExecuteInfo info = lines ? stagedOutlineBuffer.getExecuteInfo(draw) : stagedFaceBuffer.getExecuteInfo(draw);
@@ -130,31 +129,31 @@ public class Renderer {
 		stagedOutlineBuffer.endFrame();
 	}
 
-	public static void drawBoxFill(PoseStack ms, AABB box, Color cols, Color col2, float[] alpha) {
-		ms.pushPose();
-		ms.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
+	public static void drawBoxFill(PoseStack stack, AABB box, Color cols, Color col2, float[] alpha) {
+		stack.pushPose();
+		stack.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
 		StagedVertexBuffer.Draw draw = startDrawing(false);
 		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
-		Vertexer.vertexBoxQuads(ms, buffer, moveToZero(box), cols, col2, alpha);
-		yeah(false, draw, 0);
-		ms.popPose();
+		Vertexer.vertexBoxQuads(stack, buffer, moveToZero(box), cols, col2, alpha);
+		finishDraw(false, draw, 0);
+		stack.popPose();
 	}
 	//TODO: allow cutting away from center of lines or from corner
 
-	public static void drawBoxOutline(PoseStack ms, AABB box, Color color, Color col2, float[] alpha, int layer) {
-		ms.pushPose();
+	public static void drawBoxOutline(PoseStack stack, AABB box, Color color, Color col2, float[] alpha, int layer) {
+		stack.pushPose();
 		StagedVertexBuffer.Draw draw = startDrawing(true);
-		ms.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
+		stack.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-		Vertexer.vertexBoxLines(ms, buffer, moveToZero(box), color, col2, alpha, layer);
-		yeah(true, draw, layer);
-		ms.popPose();
+		Vertexer.vertexBoxLines(stack, buffer, moveToZero(box), color, col2, alpha, layer);
+		finishDraw(true, draw, layer);
+		stack.popPose();
 	}
 
 	public static void drawEdgeOutline(PoseStack matrices, VoxelShape shape, Color c1, Color c2, float alpha, int layer) {
 		matrices.pushPose();
 		matrices.translate(shape.bounds().minX - camera.position().x, shape.bounds().minY - camera.position().y, shape.bounds().minZ - camera.position().z);
-		ArrayList<Line> newLines = new ArrayList<>();
+		List<Line> newLines = new ArrayList<>();
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
 		VoxelShape finalShape = shape;
@@ -177,15 +176,19 @@ public class Renderer {
 		for (int i = 0; i < lines.size(); i++) {
 			lines.get(i).moveTo(newLines.get(i).minPos, newLines.get(i).maxPos, newLines.get(i).minVec);
 		}
-		ArrayList<Line> finalLines = new ArrayList<>(lines);
-		finalLines.sort(Comparator.comparing(Line::getDistanceToCamera).reversed());
+		List<Line> sortedLines = Renderer.lines.stream().sorted(Comparator.comparing(Line::getDistanceToCamera).reversed()).toList();
+
 		shape = moveToZero(shape);
-		VoxelShape finalShape1 = shape;
-		double blegh = moveToZero(shape).bounds().getMinPosition().distanceTo(shape.bounds().getMaxPosition());
-		finalLines.forEach(line -> line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha), true, layer));
-		toRemove.removeIf(line -> line.alphaMultiplier < 0.0039);
-		toRemove.forEach(line -> line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha), false, layer));
-		yeah(true, draw, layer);
+		double normalised = shape.bounds().getMinPosition().distanceTo(shape.bounds().getMaxPosition());
+		for (Line finalLine : sortedLines) {
+			finalLine.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.minPos.x, finalLine.minPos.y, finalLine.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.maxPos.x, finalLine.maxPos.y, finalLine.maxPos.z)) / normalised)), Math.round(alpha), true, layer);
+		}
+
+		toRemove.removeIf(line -> line.alphaMultiplier < 1/255f);
+		for (Line line : toRemove) {
+			line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / normalised)), Math.round(alpha), false, layer);
+		}
+		finishDraw(true, draw, layer);
 		matrices.popPose();
 	}
 
@@ -317,16 +320,16 @@ public class Renderer {
 		renderBlockOutline(c.poseStack(), erm, state, h.getType() == HitResult.Type.MISS);
 	}
 
-	private static void renderBlockOutline(PoseStack ms, boolean erm, BlockState state, boolean shouldFade) {
+	private static void renderBlockOutline(PoseStack stack, boolean erm, BlockState state, boolean shouldFade) {
 		//render the fill first, we don't want it drawn over the outline
 		updateFades(shouldFade);
 		if (edgeAlpha > 1) {
 			if (BlockHighlightConfig.INSTANCE.instance().fillEnabled) {
-				drawFill(ms, erm);
+				drawFill(stack, erm);
 			}
 			//now the outline itself
 			if (BlockHighlightConfig.INSTANCE.instance().outlineEnabled) {
-				drawOutline(ms, erm, state);
+				drawOutline(stack, erm, state);
 			}
 		}
 	}
@@ -348,13 +351,13 @@ public class Renderer {
 		}
 	}
 
-	private static void drawFill(PoseStack ms, boolean erm) {
+	private static void drawFill(PoseStack stack, boolean erm) {
 		Color finalFillCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().fillRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().fillCol;
 		Color finalFillCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().fillRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().fillCol2;
-		Renderer.drawBoxFill(ms, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().fillExpand), finalFillCol, finalFillCol2, sideFades);
+		Renderer.drawBoxFill(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().fillExpand), finalFillCol, finalFillCol2, sideFades);
 	}
 
-	private static void drawOutline(PoseStack ms, boolean erm, BlockState state) {
+	private static void drawOutline(PoseStack stack, boolean erm, BlockState state) {
 		if (mc.level == null) throw new IllegalStateException("level == null");
 		var cameraEntity = camera.entity();
 		if (cameraEntity == null) return;
@@ -372,28 +375,28 @@ public class Renderer {
 				if (BlockHighlightConfig.INSTANCE.instance().tertiary) {
 					Color tfinalLineCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
 					Color tfinalLineCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
-					Renderer.drawEdgeOutline(ms, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha, 2);
+					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha, 2);
 				}
 				if (BlockHighlightConfig.INSTANCE.instance().secondary) {
 					//TODO: edges mode ignores line expansion
 					Color sfinalLineCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
 					Color sfinalLineCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
-					Renderer.drawEdgeOutline(ms, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha, 1);
+					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha, 1);
 				}
-				Renderer.drawEdgeOutline(ms, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, 0);
+				Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, 0);
 			}
 		} else {
 			if (BlockHighlightConfig.INSTANCE.instance().tertiary) {
 				Color tfinalLineCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
 				Color tfinalLineCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
-				Renderer.drawBoxOutline(ms, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), tfinalLineCol, tfinalLineCol2, lineFades, 2);
+				Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), tfinalLineCol, tfinalLineCol2, lineFades, 2);
 			}
 			if (BlockHighlightConfig.INSTANCE.instance().secondary) {
 				Color sfinalLineCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
 				Color sfinalLineCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
-				Renderer.drawBoxOutline(ms, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), sfinalLineCol, sfinalLineCol2, lineFades, 1);
+				Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), sfinalLineCol, sfinalLineCol2, lineFades, 1);
 			}
-			Renderer.drawBoxOutline(ms, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), finalLineCol, finalLineCol2, lineFades, 0);
+			Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), finalLineCol, finalLineCol2, lineFades, 0);
 		}
 		// insert model data pulling render idk code here
 	}
