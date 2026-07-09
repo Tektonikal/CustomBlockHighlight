@@ -271,14 +271,7 @@ public class Renderer {
 	public static void mainLoop(LevelRenderContext c) {
 		HitResult h = Minecraft.getInstance().hitResult;
 		if (h == null || mc.level == null) return;
-        /*
-        TODO: better fluid logic? just to spite microcontrollers?
-        - Is player holding water bucket?
-            - Is player holding water bucket in offhand?
-                - Can mainhand item be placed?
-                    - Is player looking at something that can be used?
-                        - Is player sneaking?
-         */
+        // TODO: better fluid logic? just to spite microcontrollers
 		if (h.getType() != HitResult.Type.MISS) {
 			if (!(h instanceof EntityHitResult)) {
 				pos = ((BlockHitResult) h).getBlockPos();
@@ -398,8 +391,7 @@ public class Renderer {
 			}
 			Renderer.drawBoxOutline(ms, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), finalLineCol, finalLineCol2, lineFades, 0);
 		}
-//        BakedModel b = mc.getBlockRenderManager().getModel(state);
-//        b.getQuads(state, Direction.UP, Random.create()).forEach(bakedQuad -> bakedQuad.getVertexData());
+		// insert model data pulling render idk code here
 	}
 
 	private static void updateFades(boolean shouldFadeOut) {
@@ -526,51 +518,4 @@ public class Renderer {
 		}
 		return null;
 	}
-
-//    public static void quad(
-//            MatrixStack.Entry matrixEntry, BakedQuad quad, float[] brightnesses, float red, float green, float blue, float f, int[] is, int i, boolean bl
-//    ) {
-//        int[] js = quad.getVertexData();
-//        Vec3i vec3i = quad.getFace().getVector();
-//        Matrix4f matrix4f = matrixEntry.getPositionMatrix();
-//        Vector3f vector3f = matrixEntry.transformNormal((float)vec3i.getX(), (float)vec3i.getY(), (float)vec3i.getZ(), new Vector3f());
-//        int j = 8;
-//        int k = js.length / 8;
-//        int l = (int)(f * 255.0F);
-//
-//        try (MemoryStack memoryStack = MemoryStack.stackPush()) {
-//            ByteBuffer byteBuffer = memoryStack.malloc(VertexFormats.POSITION_COLOR_TEXTURE_LIGHT_NORMAL.getVertexSizeByte());
-//            IntBuffer intBuffer = byteBuffer.asIntBuffer();
-//
-//            for (int m = 0; m < k; m++) {
-//                intBuffer.clear();
-//                intBuffer.put(js, m * 8, 8);
-//                float g = byteBuffer.getFloat(0);
-//                float h = byteBuffer.getFloat(4);
-//                float n = byteBuffer.getFloat(8);
-//                float r;
-//                float s;
-//                float t;
-//                if (bl) {
-//                    float o = (float)(byteBuffer.get(12) & 255);
-//                    float p = (float)(byteBuffer.get(13) & 255);
-//                    float q = (float)(byteBuffer.get(14) & 255);
-//                    r = o * brightnesses[m] * red;
-//                    s = p * brightnesses[m] * green;
-//                    t = q * brightnesses[m] * blue;
-//                } else {
-//                    r = brightnesses[m] * red * 255.0F;
-//                    s = brightnesses[m] * green * 255.0F;
-//                    t = brightnesses[m] * blue * 255.0F;
-//                }
-//
-//                int u = ColorHelper.Argb.getArgb(l, (int)r, (int)s, (int)t);
-//                int v = is[m];
-//                float q = byteBuffer.getFloat(16);
-//                float w = byteBuffer.getFloat(20);
-//                Vector3f vector3f2 = matrix4f.transformPosition(g, h, n, new Vector3f());
-//                this.vertex(vector3f2.x(), vector3f2.y(), vector3f2.z(), u, q, w, i, v, vector3f.x(), vector3f.y(), vector3f.z());
-//            }
-//        }
-//    }
 }
