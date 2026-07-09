@@ -49,6 +49,20 @@ public class BlockHighlightConfig {
         @SerialEntry public float lineExpand = 0;
         @SerialEntry public boolean lineDepthTest = false;
 
+	@SerialEntry public boolean secondary = false;
+		@SerialEntry public Color slineCol = Color.decode("#000000");
+		@SerialEntry public Color slineCol2 = Color.decode("#FFFFFF");
+		@SerialEntry public boolean soutlineRainbow = true;
+		@SerialEntry public int slineWidth = 3;
+		@SerialEntry public boolean slineDepthTest = false;
+
+	@SerialEntry public boolean tertiary = false;
+		@SerialEntry public Color tlineCol = Color.decode("#000000");
+		@SerialEntry public Color tlineCol2 = Color.decode("#FFFFFF");
+		@SerialEntry public boolean toutlineRainbow = true;
+		@SerialEntry public int tlineWidth = 3;
+		@SerialEntry public boolean tlineDepthTest = false;
+
     //fill stuffs
     @SerialEntry public boolean fillEnabled = true;
         @SerialEntry public Color fillCol = Color.decode("#000000");
@@ -141,6 +155,86 @@ public class BlockHighlightConfig {
                                         .build())
                                 .build())
                         .build())
+		        .category(ConfigCategory.createBuilder()
+				        .name(Component.nullToEmpty("Secondary Outline"))
+				        .option(Option.<Boolean>createBuilder()
+						        .name(Component.nullToEmpty(" - Enabled"))
+						        .stateManager(StateManager.createInstant(false, () -> config.secondary, newVal -> config.secondary = newVal))
+						        .controller(TickBoxControllerBuilder::create)
+						        .build())
+				        .group(OptionGroup.createBuilder()
+						        .name(Component.nullToEmpty("Color"))
+						        .option(Option.<Color>createBuilder()
+								        .name(Component.nullToEmpty(" - Primary"))
+								        .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> config.slineCol, newVal -> config.slineCol = newVal))
+								        .controller(ColorControllerBuilder::create)
+								        .build())
+						        .option(Option.<Color>createBuilder()
+								        .name(Component.nullToEmpty(" - Secondary"))
+								        .stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> config.slineCol2, newVal -> config.slineCol2 = newVal))
+								        .controller(ColorControllerBuilder::create)
+								        .build())
+						        .option(Option.<Boolean>createBuilder()
+								        .name(Component.nullToEmpty(" - Rainbow"))
+								        .stateManager(StateManager.createInstant(true, () -> config.soutlineRainbow, newVal -> config.soutlineRainbow = newVal))
+								        .controller(TickBoxControllerBuilder::create)
+								        .build())
+						        .build())
+				        .group(OptionGroup.createBuilder()
+						        .name(Component.nullToEmpty("Miscellaneous"))
+						        .option(Option.<Boolean>createBuilder()
+								        .name(Component.nullToEmpty(" - Depth Test"))
+								        .description(OptionDescription.of(Component.nullToEmpty("Whether parts of the outline are visible through other objects.")))
+								        .stateManager(StateManager.createInstant(false, () -> config.slineDepthTest, newVal -> config.slineDepthTest = newVal))
+								        .controller(TickBoxControllerBuilder::create)
+								        .build())
+						        .option(Option.<Integer>createBuilder()
+								        .name(Component.nullToEmpty(" - Line Width"))
+								        .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 10).step(1).formatValue(value -> Component.literal(value + " px")))
+								        .stateManager(StateManager.createInstant(3, () -> config.slineWidth, newVal -> config.slineWidth = newVal))
+								        .build())
+						        .build())
+				        .build())
+		        .category(ConfigCategory.createBuilder()
+				        .name(Component.nullToEmpty("Tertiary Outline"))
+				        .option(Option.<Boolean>createBuilder()
+						        .name(Component.nullToEmpty(" - Enabled"))
+						        .stateManager(StateManager.createInstant(false, () -> config.tertiary, newVal -> config.tertiary = newVal))
+						        .controller(TickBoxControllerBuilder::create)
+						        .build())
+				        .group(OptionGroup.createBuilder()
+						        .name(Component.nullToEmpty("Color"))
+						        .option(Option.<Color>createBuilder()
+								        .name(Component.nullToEmpty(" - Primary"))
+								        .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> config.tlineCol, newVal -> config.tlineCol = newVal))
+								        .controller(ColorControllerBuilder::create)
+								        .build())
+						        .option(Option.<Color>createBuilder()
+								        .name(Component.nullToEmpty(" - Secondary"))
+								        .stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> config.tlineCol2, newVal -> config.tlineCol2 = newVal))
+								        .controller(ColorControllerBuilder::create)
+								        .build())
+						        .option(Option.<Boolean>createBuilder()
+								        .name(Component.nullToEmpty(" - Rainbow"))
+								        .stateManager(StateManager.createInstant(true, () -> config.toutlineRainbow, newVal -> config.toutlineRainbow = newVal))
+								        .controller(TickBoxControllerBuilder::create)
+								        .build())
+						        .build())
+				        .group(OptionGroup.createBuilder()
+						        .name(Component.nullToEmpty("Miscellaneous"))
+						        .option(Option.<Boolean>createBuilder()
+								        .name(Component.nullToEmpty(" - Depth Test"))
+								        .description(OptionDescription.of(Component.nullToEmpty("Whether parts of the outline are visible through other objects.")))
+								        .stateManager(StateManager.createInstant(false, () -> config.tlineDepthTest, newVal -> config.tlineDepthTest = newVal))
+								        .controller(TickBoxControllerBuilder::create)
+								        .build())
+						        .option(Option.<Integer>createBuilder()
+								        .name(Component.nullToEmpty(" - Line Width"))
+								        .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 10).step(1).formatValue(value -> Component.literal(value + " px")))
+								        .stateManager(StateManager.createInstant(3, () -> config.tlineWidth, newVal -> config.tlineWidth = newVal))
+								        .build())
+						        .build())
+				        .build())
                 .category(ConfigCategory.createBuilder()
                         .name(Component.nullToEmpty("Fill"))
                         .option(Option.<Boolean>createBuilder()

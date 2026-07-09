@@ -25,14 +25,10 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.BedBlock;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.ChestBlock;
-import net.minecraft.world.level.block.DoorBlock;
-import net.minecraft.world.level.block.DoublePlantBlock;
-import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.piston.PistonHeadBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -40,23 +36,21 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
+import org.joml.*;
 import org.lwjgl.opengl.GL11;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Unique;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.util.Line;
 
 import java.awt.*;
+import java.lang.Math;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -71,6 +65,7 @@ public class Renderer {
 	private static final float[] sideFades = new float[6];
 	@Unique
 	private static final float[] lineFades = new float[6];
+	private static final Logger log = LoggerFactory.getLogger(Renderer.class);
 	public static ArrayList<Line> lines = new ArrayList<>();
 	public static ArrayList<Line> toRemove = new ArrayList<>();
 	public static BlockPos prevPos = new BlockPos(0, 0, 0);
@@ -80,6 +75,7 @@ public class Renderer {
 	public static AABB targetBox = new AABB(pos);
 	public static Direction connected = null;
 	public static float edgeAlpha = 0;
+	public static boolean erm = false;
 	@Unique
 	private static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
 	private static final RenderPipeline OUTLINE_THROUGH_WALLS = RenderPipelines.register(
@@ -100,9 +96,6 @@ public class Renderer {
 	private static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
 
 	public static StagedVertexBuffer.Draw startDrawing(boolean lines) {
-		if (lines) {
-			GL11.glEnable(GL11.GL_LINE_SMOOTH);
-		}
 		StagedVertexBuffer.Draw draw;
 		if (lines) {
 			draw = stagedOutlineBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH, PrimitiveTopology.LINES);
@@ -111,9 +104,10 @@ public class Renderer {
 		}
 		return draw;
 	}
+	//TODO: fix thick lines not fully joining at corners
 
 
-	private static void yeah(boolean lines, StagedVertexBuffer.Draw draw) {
+	private static void yeah(boolean lines, StagedVertexBuffer.Draw draw, int layer) {
 		stagedOutlineBuffer.upload();
 		stagedFaceBuffer.upload();
 		StagedVertexBuffer.ExecuteInfo info = lines ? stagedOutlineBuffer.getExecuteInfo(draw) : stagedFaceBuffer.getExecuteInfo(draw);
@@ -126,7 +120,14 @@ public class Renderer {
 		assert colorTexture != null;
 		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
 			if (lines) {
-				renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest ? RenderPipelines.LINES : OUTLINE_THROUGH_WALLS);
+				switch (layer){
+					case 0:
+					renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest ? RenderPipelines.LINES : OUTLINE_THROUGH_WALLS);
+					case 1:
+					renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest ? RenderPipelines.LINES : OUTLINE_THROUGH_WALLS);
+					case 2:
+						renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest ? RenderPipelines.LINES : OUTLINE_THROUGH_WALLS);
+				}
 			} else {
 				renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().fillDepthTest ? RenderPipelines.DEBUG_QUADS : FILL_NO_DEPTH);
 			}
@@ -147,22 +148,22 @@ public class Renderer {
 		StagedVertexBuffer.Draw draw = startDrawing(false);
 		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
 		Vertexer.vertexBoxQuads(ms, buffer, moveToZero(box), cols, col2, alpha);
-		yeah(false, draw);
+		yeah(false, draw, 0);
 		ms.popPose();
 	}
+	//TODO: allow cutting away from center of lines or from corner
 
-	public static void drawBoxOutline(PoseStack ms, AABB box, Color color, Color col2, float[] alpha) {
+	public static void drawBoxOutline(PoseStack ms, AABB box, Color color, Color col2, float[] alpha, int layer) {
 		ms.pushPose();
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		ms.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-		Vertexer.vertexBoxLines(ms, buffer, moveToZero(box), color, col2, alpha);
-		yeah(true, draw);
-//        endDrawing(buffer, true);
+		Vertexer.vertexBoxLines(ms, buffer, moveToZero(box), color, col2, alpha, layer);
+		yeah(true, draw, layer);
 		ms.popPose();
 	}
 
-	public static void drawEdgeOutline(PoseStack matrices, VoxelShape shape, Color c1, Color c2, float alpha) {
+	public static void drawEdgeOutline(PoseStack matrices, VoxelShape shape, Color c1, Color c2, float alpha, int layer) {
 		matrices.pushPose();
 		matrices.translate(shape.bounds().minX - camera.position().x, shape.bounds().minY - camera.position().y, shape.bounds().minZ - camera.position().z);
 		ArrayList<Line> newLines = new ArrayList<>();
@@ -170,7 +171,7 @@ public class Renderer {
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
 		VoxelShape finalShape = shape;
 		moveToZero(shape).forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ), getMinVec(finalShape.bounds()))));
-		if (lines.isEmpty()) {
+		if (lines.isEmpty() || !BlockHighlightConfig.INSTANCE.instance().doEasing) {
 			lines = newLines;
 		}
 		while (lines.size() < newLines.size()) {
@@ -193,11 +194,10 @@ public class Renderer {
 		shape = moveToZero(shape);
 		VoxelShape finalShape1 = shape;
 		double blegh = moveToZero(shape).bounds().getMinPosition().distanceTo(shape.bounds().getMaxPosition());
-		finalLines.forEach(line -> line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha), true));
+		finalLines.forEach(line -> line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha), true, layer));
 		toRemove.removeIf(line -> line.alphaMultiplier < 0.0039);
-		toRemove.forEach(line -> line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha), false));
-		yeah(true, draw);
-//        endDrawing(buffer, true);
+		toRemove.forEach(line -> line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / blegh)), getLerpedColor(c1, c2, (float) (finalShape1.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / blegh)), Math.round(alpha), false, layer));
+		yeah(true, draw, layer);
 		matrices.popPose();
 	}
 
@@ -212,21 +212,6 @@ public class Renderer {
 	public static VoxelShape moveToZero(VoxelShape shape) {
 		return shape.move(getMinVec(shape.bounds()).x * -1, getMinVec(shape.bounds()).y * -1, getMinVec(shape.bounds()).z * -1);
 	}
-
-	//TODO: clean up these calls, some of them are useless iirc
-//    public static void setup() {
-//        RenderSystem.depthMask(false);
-//        RenderSystem.enableBlend();
-//        RenderSystem.defaultBlendFunc();
-//        RenderSystem.disableCull();
-//    }
-//
-//    public static void end() {
-//        RenderSystem.depthMask(true);
-//        RenderSystem.enableDepthTest();
-//        RenderSystem.disableBlend();
-//        RenderSystem.enableCull();
-//    }
 
 	@Unique
 	private static Direction[] invert(Direction[] invertDirs) {
@@ -309,20 +294,6 @@ public class Renderer {
 		return new Color(Math.clamp(Mth.lerpInt(percent, c1.getRed(), c2.getRed()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getGreen(), c2.getGreen()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getBlue(), c2.getBlue()), 0, 255));
 	}
 
-	public static boolean yeah(Class<? extends BlockBehaviour> clazz) {
-		Class<?>[] targetParams = {BlockState.class, Level.class, BlockPos.class, Player.class, BlockHitResult.class};
-
-		Method foundMethod = Arrays.stream(clazz.getDeclaredMethods())
-				.filter(method -> Arrays.equals(method.getParameterTypes(), targetParams))
-				.findFirst()
-				.orElse(null);
-
-		if (foundMethod != null) {
-			return true;
-		}
-		return false;
-	}
-
 	@SuppressWarnings("SameReturnValue")
 	public static void mainLoop(LevelRenderContext c) {
 		HitResult h = Minecraft.getInstance().hitResult;
@@ -334,17 +305,35 @@ public class Renderer {
                     - Is player looking at something that can be used?
                         - Is player sneaking?
          */
+		if (h.getType() != HitResult.Type.MISS) {
+			if (!(h instanceof EntityHitResult)) {
+				pos = ((BlockHitResult) h).getBlockPos();
+			}
+		}
 		BlockState state = mc.level.getBlockState(pos);
-		boolean erm = isCrystalObstructed(state);
-		try {
-			targetBox = state.getShape(mc.level, pos).bounds().move(pos);
-		} catch (UnsupportedOperationException ex) {
-			//if there is no actual outline, like for light blocks, just get a box around their coordinates.
-			targetBox = new AABB((((BlockHitResult) h).getBlockPos()));
+		erm = isCrystalObstructed(state);
+		if (h.getType() != HitResult.Type.MISS) {
+			if (h instanceof BlockHitResult) {
+				try {
+					targetBox = state.getShape(mc.level, pos).bounds().move(pos);
+				} catch (UnsupportedOperationException ex) {
+					//if there is no actual outline, like for light blocks, just get a box around their coordinates.
+					targetBox = new AABB((((BlockHitResult) h).getBlockPos()));
+				}
+			} else {
+				Entity entity = ((EntityHitResult) h).getEntity();
+				//so, so sloppy.
+				targetBox = moveToZero(entity.getBoundingBox()).move(entity.getPosition(Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false)).subtract(moveToZero(entity.getBoundingBox()).getCenter()).add(0, moveToZero(entity.getBoundingBox()).maxY / 2F, 0));
+			}
 		}
 		//get connected blocks
-		if (BlockHighlightConfig.INSTANCE.instance().connectedBlocks) {
-			connected = joinConnected(state, pos);
+		//TODO: in edges mode, switching between parts of the same connected block makes the animation act weird. fix it
+		if (BlockHighlightConfig.INSTANCE.instance().connectedBlocks && h instanceof BlockHitResult) {
+			if (h.getType() == HitResult.Type.MISS) {
+				connected = null;
+			} else {
+				connected = joinConnected(state, pos);
+			}
 		}
 		//calculate where to render the block
 		if (BlockHighlightConfig.INSTANCE.instance().doEasing) {
@@ -352,25 +341,22 @@ public class Renderer {
 		} else {
 			easeBox = targetBox;
 		}
-		if (h.getType() != HitResult.Type.BLOCK) {
-			renderBlockOutline(c.poseStack(), erm, state, true);
-			return;
-		}
-		checkForUpdate(h);
-		pos = ((BlockHitResult) h).getBlockPos();
 		//fade out without updating position if we start looking at air
-		renderBlockOutline(c.poseStack(), erm, state, false);
+		//TODO: more depth test options
+		renderBlockOutline(c.poseStack(), erm, state, h.getType() == HitResult.Type.MISS);
 	}
 
 	private static void renderBlockOutline(PoseStack ms, boolean erm, BlockState state, boolean shouldFade) {
 		//render the fill first, we don't want it drawn over the outline
 		updateFades(shouldFade);
-		if (BlockHighlightConfig.INSTANCE.instance().fillEnabled) {
-			drawFill(ms, erm);
-		}
-		//now the outline itself
-		if (BlockHighlightConfig.INSTANCE.instance().outlineEnabled) {
-			drawOutline(ms, erm, state);
+		if (edgeAlpha > 1) {
+			if (BlockHighlightConfig.INSTANCE.instance().fillEnabled) {
+				drawFill(ms, erm);
+			}
+			//now the outline itself
+			if (BlockHighlightConfig.INSTANCE.instance().outlineEnabled) {
+				drawOutline(ms, erm, state);
+			}
 		}
 	}
 
@@ -406,18 +392,47 @@ public class Renderer {
 				}
 			}
 			if (!s.isEmpty()) {
-				Renderer.drawEdgeOutline(ms, s.move(easeBox.minX - s.bounds().getMinPosition().x, easeBox.minY - s.bounds().getMinPosition().y, easeBox.minZ - s.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha);
+				if (BlockHighlightConfig.INSTANCE.instance().tertiary) {
+					Color tfinalLineCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
+					Color tfinalLineCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
+					Renderer.drawEdgeOutline(ms, s.move(easeBox.minX - s.bounds().getMinPosition().x, easeBox.minY - s.bounds().getMinPosition().y, easeBox.minZ - s.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha, 2);
+				}
+				if (BlockHighlightConfig.INSTANCE.instance().secondary) {
+					//TODO: edges mode ignores line expansion
+					Color sfinalLineCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
+					Color sfinalLineCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
+					Renderer.drawEdgeOutline(ms, s.move(easeBox.minX - s.bounds().getMinPosition().x, easeBox.minY - s.bounds().getMinPosition().y, easeBox.minZ - s.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha, 1);
+				}
+				Renderer.drawEdgeOutline(ms, s.move(easeBox.minX - s.bounds().getMinPosition().x, easeBox.minY - s.bounds().getMinPosition().y, easeBox.minZ - s.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, 0);
 			}
 		} else {
-			Renderer.drawBoxOutline(ms, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), finalLineCol, finalLineCol2, lineFades);
+			if (BlockHighlightConfig.INSTANCE.instance().tertiary) {
+				Color tfinalLineCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
+				Color tfinalLineCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
+				Renderer.drawBoxOutline(ms, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), tfinalLineCol, tfinalLineCol2, lineFades, 2);
+			}
+			if (BlockHighlightConfig.INSTANCE.instance().secondary) {
+				Color sfinalLineCol = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
+				Color sfinalLineCol2 = erm ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
+				Renderer.drawBoxOutline(ms, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), sfinalLineCol, sfinalLineCol2, lineFades, 1);
+			}
+			Renderer.drawBoxOutline(ms, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), finalLineCol, finalLineCol2, lineFades, 0);
 		}
 //        BakedModel b = mc.getBlockRenderManager().getModel(state);
 //        b.getQuads(state, Direction.UP, Random.create()).forEach(bakedQuad -> bakedQuad.getVertexData());
 	}
 
-	private static void updateFades(boolean shouldFade) {
+	private static void updateFades(boolean shouldFadeOut) {
 		//clean this up later
-		if (mc.level.isEmptyBlock(pos) || shouldFade) {
+		if (mc.hitResult.getType() == HitResult.Type.ENTITY) {
+			for (Direction dir : Direction.values()) {
+				sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().fillOpacity, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().fillOpacity;
+				lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
+			}
+			edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(edgeAlpha, BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
+			return;
+		}
+		if ((mc.level.isEmptyBlock(pos) || shouldFadeOut)) {
 			for (Direction dir : Direction.values()) {
 				sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
 				lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
@@ -534,8 +549,8 @@ public class Renderer {
 		return InteractionResult.PASS;
 	}
 
-	public static void checkForUpdate(HitResult h) {
-		if (h == null) {
+	public static void checkForUpdate(BlockPos pos) {
+		if (pos == null) {
 			if (prevPos != null) {
 				tempPos = prevPos;
 				prevPos = null;
@@ -543,12 +558,12 @@ public class Renderer {
 		} else {
 			if (prevPos == null) {
 				tempPos = null;
-				prevPos = ((BlockHitResult) h).getBlockPos();
+				prevPos = pos;
 			}
-			if (!prevPos.equals(((BlockHitResult) h).getBlockPos())) {
+			if (!prevPos.equals(pos)) {
 				tempPos = prevPos;
-				prevPos = ((BlockHitResult) h).getBlockPos();
-				BlockTargetCallback.EVENT.invoker().interact(prevPos, ((BlockHitResult) h).getBlockPos());
+				prevPos = pos;
+				BlockTargetCallback.EVENT.invoker().interact(prevPos, pos);
 			}
 		}
 	}

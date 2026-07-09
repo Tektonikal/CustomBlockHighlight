@@ -41,8 +41,8 @@ public class Line {
         return new Vec3(k, l, m);
     }
 
-    public void render(PoseStack ms, BufferBuilder buf, Color c1, Color c2, int alpha) {
-        Vertexer.vertexLine(ms, buf, (float) minPos.x, (float) minPos.y, (float) minPos.z, (float) maxPos.x, (float) maxPos.y, (float) maxPos.z, c1, c2, Math.round(alpha * alphaMultiplier), getNormal());
+    public void render(PoseStack ms, BufferBuilder buf, Color c1, Color c2, int alpha, int layer) {
+        Vertexer.vertexLine(ms, buf, (float) minPos.x, (float) minPos.y, (float) minPos.z, (float) maxPos.x, (float) maxPos.y, (float) maxPos.z, c1, c2, Math.round(alpha * alphaMultiplier), getNormal(), layer);
     }
 
     public void moveTo(Vec3 minPosTo, Vec3 maxPosTo, Vec3 minVecTo) {
@@ -57,9 +57,9 @@ public class Line {
     public void update(boolean b){
         this.alphaMultiplier = (float) ease(this.alphaMultiplier, b ? 1 : 0, 10);
     }
-    public void updateAndRender(PoseStack ms, VertexConsumer buf, Color c1, Color c2, int alpha, boolean b){
+    public void updateAndRender(PoseStack ms, VertexConsumer buf, Color c1, Color c2, int alpha, boolean b, int layer){
         this.alphaMultiplier = (float) ease(this.alphaMultiplier, b ? 1 : 0, 10);
-        Vertexer.vertexLine(ms, buf, (float) minPos.x, (float) minPos.y, (float) minPos.z, (float) maxPos.x, (float) maxPos.y, (float) maxPos.z, c1, c2, Math.round(alpha * alphaMultiplier), getNormal());
+        Vertexer.vertexLine(ms, buf, (float) minPos.x, (float) minPos.y, (float) minPos.z, (float) maxPos.x, (float) maxPos.y, (float) maxPos.z, c1, c2, Math.round(alpha * alphaMultiplier), getNormal(), layer);
 
     }
 }
