@@ -224,20 +224,12 @@ public class Renderer {
 
 	@Unique
 	private static Direction[] getSides(OutlineType type, BlockPos pos) {
-		switch (type) {
-			case LOOKAT -> {
-				return new Direction[]{((BlockHitResult) mc.hitResult).getDirection()};
-			}
-			case AIR_EXPOSED -> {
-				return invert(getConcealedFaces(pos));
-			}
-			case CONCEALED -> {
-				return getConcealedFaces(pos);
-			}
-			default -> {
-				return Direction.values();
-			}
-		}
+		return switch (type) {
+			case LOOKAT -> (mc.hitResult instanceof BlockHitResult block) ? new Direction[]{block.getDirection()} : Direction.values();
+			case AIR_EXPOSED -> invert(getConcealedFaces(pos));
+			case CONCEALED -> getConcealedFaces(pos);
+			default -> Direction.values();
+		};
 	}
 
 	@Unique
