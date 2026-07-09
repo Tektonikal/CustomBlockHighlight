@@ -9,7 +9,9 @@ import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -34,12 +36,13 @@ import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.joml.*;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.util.Line;
 
 import java.awt.*;
-import java.lang.Math;
 import java.util.*;
 import java.util.List;
 
@@ -105,11 +108,11 @@ public class Renderer {
 		assert colorTexture != null;
 		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
 			if (lines) {
-				switch (layer){
+				switch (layer) {
 					case 0:
-					renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest ? RenderPipelines.LINES : OUTLINE_THROUGH_WALLS);
+						renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest ? RenderPipelines.LINES : OUTLINE_THROUGH_WALLS);
 					case 1:
-					renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest ? RenderPipelines.LINES : OUTLINE_THROUGH_WALLS);
+						renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest ? RenderPipelines.LINES : OUTLINE_THROUGH_WALLS);
 					case 2:
 						renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest ? RenderPipelines.LINES : OUTLINE_THROUGH_WALLS);
 				}
@@ -208,7 +211,8 @@ public class Renderer {
 
 	private static Direction[] getSides(OutlineType type, BlockPos pos) {
 		return switch (type) {
-			case LOOKAT -> (mc.hitResult instanceof BlockHitResult block) ? new Direction[]{block.getDirection()} : Direction.values();
+			case LOOKAT ->
+					(mc.hitResult instanceof BlockHitResult block) ? new Direction[]{block.getDirection()} : Direction.values();
 			case AIR_EXPOSED -> invert(getConcealedFaces(pos));
 			case CONCEALED -> getConcealedFaces(pos);
 			default -> Direction.values();
@@ -271,7 +275,7 @@ public class Renderer {
 	public static void mainLoop(LevelRenderContext c) {
 		HitResult h = Minecraft.getInstance().hitResult;
 		if (h == null || mc.level == null) return;
-        // TODO: better fluid logic? just to spite microcontrollers
+		// TODO: better fluid logic? just to spite microcontrollers
 		if (h.getType() != HitResult.Type.MISS) {
 			if (!(h instanceof EntityHitResult)) {
 				pos = ((BlockHitResult) h).getBlockPos();
