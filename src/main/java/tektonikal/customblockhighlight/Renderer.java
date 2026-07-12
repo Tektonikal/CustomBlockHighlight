@@ -23,6 +23,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.piston.PistonHeadBlock;
@@ -47,6 +48,26 @@ import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
 import static net.minecraft.client.renderer.RenderPipelines.LINES;
 
 //TODO: fix thick lines not fully joining at corners
+//TODO: allow cutting away from center of lines or from corner
+//TODO: animations / visuals for block breaking progress?
+//TODO: better fluid logic. just to spite microcontrollers
+//TODO: edge line animation modes
+//TODO: option if easebox continues animating when not looking at block
+//TODO: fancier "looked at" mode
+//TODO: fancy rotations for the box. i'm vagueposting
+//TODO: in edges mode, switching between a normal block and a connected one causes the center of the outline to prioritize the position closest to 0,0?
+//not super important, but something i'd want to keep in check. can be reproduced with normal block under a bed facing north
+//TODO: more depth test options
+//there is no real solution to the Z-fighting issue without disabling depth test.
+//even if the lines are drawn correctly spaced out, the thicker line might be rotated differently, causing it to fully appear in front or z-fight. whateverrrrrr man
+//maybe it would be best into looking into creating a pipeline to draw lines that aren't in screenspace. idk
+//TODO: add notice somewhere about this to user!
+//TODO: edges mode ignores line expansion
+//TODO: separate options from the extras tab to be more specific
+//TODO: fix inverted mode in Vertexer
+//TODO: more options for the extra line layers
+//TODO: fancy config screen
+//TODO: add toggle for entities
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
 	public static final Camera camera = mc.gameRenderer.mainCamera();
@@ -80,6 +101,7 @@ public class Renderer {
 	public static VoxelShape shape = Shapes.block();
 	public static Direction connected = null;
 	public static float edgeAlpha = 0;
+	public static float scaleProg = 0;
 
 	public static StagedVertexBuffer.Draw startDrawing(boolean lines) {
 		if (lines) {
@@ -107,9 +129,12 @@ public class Renderer {
 		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
 			if (lines) {
 				switch (layer) {
-					case 0 -> renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest ? LINES : OUTLINE_THROUGH_WALLS);
-					case 1 -> renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest ? LINES : OUTLINE_THROUGH_WALLS);
-					case 2 -> renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest ? LINES : OUTLINE_THROUGH_WALLS);
+					case 0 ->
+							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest ? LINES : OUTLINE_THROUGH_WALLS);
+					case 1 ->
+							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest ? LINES : OUTLINE_THROUGH_WALLS);
+					case 2 ->
+							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest ? LINES : OUTLINE_THROUGH_WALLS);
 				}
 			} else {
 				renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().fillDepthTest ? DEBUG_QUADS : FILL_NO_DEPTH);
@@ -130,20 +155,26 @@ public class Renderer {
 	}
 
 	public static void drawBoxFill(PoseStack stack, AABB box, Color cols, Color col2, float[] alpha) {
-		stack.pushPose();
-		stack.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
+		doEvilMatrixPreparations(stack, box);
 		StagedVertexBuffer.Draw draw = startDrawing(false);
 		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
 		Vertexer.vertexBoxQuads(stack, buffer, moveToZero(box), cols, col2, alpha);
 		finishDraw(false, draw, 0);
 		stack.popPose();
 	}
-	//TODO: allow cutting away from center of lines or from corner
+
+	private static void doEvilMatrixPreparations(PoseStack stack, AABB box) {
+		stack.pushPose();
+		stack.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
+		stack.translate(0.5F, 0.5F, 0.5F);
+		stack.scale(scaleProg, scaleProg, scaleProg);
+		//TODO: fix
+		stack.translate(-0.5F, -0.5F, -0.5F);
+	}
 
 	public static void drawBoxOutline(PoseStack stack, AABB box, Color color, Color col2, float[] alpha, int layer) {
-		stack.pushPose();
+		doEvilMatrixPreparations(stack, box);
 		StagedVertexBuffer.Draw draw = startDrawing(true);
-		stack.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
 		Vertexer.vertexBoxLines(stack, buffer, moveToZero(box), color, col2, alpha, layer);
 		finishDraw(true, draw, layer);
@@ -151,8 +182,7 @@ public class Renderer {
 	}
 
 	public static void drawEdgeOutline(PoseStack matrices, VoxelShape shape, Color c1, Color c2, float alpha, int layer) {
-		matrices.pushPose();
-		matrices.translate(shape.bounds().minX - camera.position().x, shape.bounds().minY - camera.position().y, shape.bounds().minZ - camera.position().z);
+		doEvilMatrixPreparations(matrices, shape.bounds());
 		List<Line> newLines = new ArrayList<>();
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
@@ -184,7 +214,7 @@ public class Renderer {
 			finalLine.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.minPos.x, finalLine.minPos.y, finalLine.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.maxPos.x, finalLine.maxPos.y, finalLine.maxPos.z)) / normalised)), Math.round(alpha), true, layer);
 		}
 
-		toRemove.removeIf(line -> line.alphaMultiplier < 1/255f);
+		toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
 		for (Line line : toRemove) {
 			line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / normalised)), Math.round(alpha), false, layer);
 		}
@@ -251,9 +281,9 @@ public class Renderer {
 		if (isBlockOccupied(pos.above())) dirs[0] = Direction.UP;
 		if (isBlockOccupied(pos.below())) dirs[1] = Direction.DOWN;
 		if (isBlockOccupied(pos.north())) dirs[2] = Direction.NORTH;
-		if (isBlockOccupied(pos.east()))  dirs[3] = Direction.EAST;
+		if (isBlockOccupied(pos.east())) dirs[3] = Direction.EAST;
 		if (isBlockOccupied(pos.south())) dirs[4] = Direction.SOUTH;
-		if (isBlockOccupied(pos.west()))  dirs[5] = Direction.WEST;
+		if (isBlockOccupied(pos.west())) dirs[5] = Direction.WEST;
 		return dirs;
 	}
 
@@ -261,7 +291,6 @@ public class Renderer {
 		return new Color(Math.clamp(Mth.lerpInt(percent, c1.getRed(), c2.getRed()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getGreen(), c2.getGreen()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getBlue(), c2.getBlue()), 0, 255));
 	}
 
-	// TODO: better fluid logic? just to spite microcontrollers
 	public static void mainLoop(LevelRenderContext c) {
 		HitResult h = Minecraft.getInstance().hitResult;
 		if (h == null || mc.level == null) return;
@@ -277,13 +306,15 @@ public class Renderer {
 				}
 			} else if (h instanceof EntityHitResult entityHitResult) {
 				Entity entity = entityHitResult.getEntity();
-				//so, so sloppy.
+				//so, so sloppy. might also have the worst workaround of the century for hanging stuff
 				float delta = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false);
-				targetBox = moveToZero(entity.getBoundingBox()).move(entity.getPosition(delta).subtract(moveToZero(entity.getBoundingBox()).getCenter()).add(0, moveToZero(entity.getBoundingBox()).maxY / 2F, 0));
+				targetBox = moveToZero(entity.getBoundingBox()).move(entity.getPosition(delta).subtract(moveToZero(entity.getBoundingBox()).getCenter()).add(0, entity instanceof HangingEntity ? 0 : moveToZero(entity.getBoundingBox()).maxY / 2F, 0));
+
 			}
 		}
+
+
 		//get connected blocks
-		//TODO: in edges mode, switching between parts of the same connected block makes the animation act weird. fix it
 		if (BlockHighlightConfig.INSTANCE.instance().connectedBlocks && h instanceof BlockHitResult block) {
 			if (h.getType() == HitResult.Type.MISS) {
 				connected = null;
@@ -294,18 +325,18 @@ public class Renderer {
 		}
 		//calculate where to render the block
 		if (BlockHighlightConfig.INSTANCE.instance().doEasing) {
-			easeBox = new AABB(ease(easeBox.minX, targetBox.minX, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.minY, targetBox.minY, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.minZ, targetBox.minZ, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.maxX, targetBox.maxX, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.maxY, targetBox.maxY, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.maxZ, targetBox.maxZ, BlockHighlightConfig.INSTANCE.instance().easeSpeed));
+			if (BlockHighlightConfig.INSTANCE.instance().updateWhenUnfocused || h.getType() != HitResult.Type.MISS) {
+				easeBox = new AABB(ease(easeBox.minX, targetBox.minX, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.minY, targetBox.minY, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.minZ, targetBox.minZ, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.maxX, targetBox.maxX, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.maxY, targetBox.maxY, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.maxZ, targetBox.maxZ, BlockHighlightConfig.INSTANCE.instance().easeSpeed));
+			}
 		} else {
 			easeBox = targetBox;
 		}
-		//fade out without updating position if we start looking at air
-		//TODO: more depth test options
 		renderOutline(c.poseStack(), isCrystalObstructed(), h.getType() == HitResult.Type.MISS);
 	}
 
 	private static void renderOutline(PoseStack stack, boolean isCrystalObstructed, boolean shouldFade) {
 		//render the fill first, we don't want it drawn over the outline
-		updateFades(shouldFade);
+		updateProgresses(shouldFade);
 		if (edgeAlpha > 1) {
 			if (BlockHighlightConfig.INSTANCE.instance().fillEnabled) {
 				drawFill(stack, isCrystalObstructed);
@@ -346,6 +377,7 @@ public class Renderer {
 		if (mc.level == null) throw new IllegalStateException("level == null");
 		var cameraEntity = camera.entity();
 		if (cameraEntity == null) return;
+		//TODO: make check so that cut from corner and cut from center do not add up to higher than 0.95
 
 		Color finalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().outlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().lineCol;
 		Color finalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().outlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().lineCol2;
@@ -363,38 +395,46 @@ public class Renderer {
 				}
 			}
 			if (!shape.isEmpty()) {
+				Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, 0);
+				if (BlockHighlightConfig.INSTANCE.instance().secondary) {
+					Color sfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
+					Color sfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
+					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha * BlockHighlightConfig.INSTANCE.instance().slineAlphaMultiplier, 1);
+				}
 				if (BlockHighlightConfig.INSTANCE.instance().tertiary) {
 					Color tfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
 					Color tfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
-					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha, 2);
+					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha * BlockHighlightConfig.INSTANCE.instance().tlineAlphaMultiplier, 2);
 				}
-				if (BlockHighlightConfig.INSTANCE.instance().secondary) {
-					//TODO: edges mode ignores line expansion
-					Color sfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
-					Color sfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
-					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha, 1);
-				}
-				Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, 0);
 			}
 		} else {
-			if (BlockHighlightConfig.INSTANCE.instance().tertiary) {
-				Color tfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
-				Color tfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
-				Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), tfinalLineCol, tfinalLineCol2, lineFades, 2);
-			}
+			Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), finalLineCol, finalLineCol2, lineFades, 0);
 			if (BlockHighlightConfig.INSTANCE.instance().secondary) {
 				Color sfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
 				Color sfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
-				Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), sfinalLineCol, sfinalLineCol2, lineFades, 1);
+				float[] newFades = new float[6];
+				for (int i = 0; i < 6; i++) {
+					newFades[i] = lineFades[i] * BlockHighlightConfig.INSTANCE.instance().slineAlphaMultiplier;
+				}
+				Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), sfinalLineCol, sfinalLineCol2, newFades, 1);
 			}
-			Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), finalLineCol, finalLineCol2, lineFades, 0);
+			if (BlockHighlightConfig.INSTANCE.instance().tertiary) {
+				Color tfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
+				Color tfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
+				float[] newFades = new float[6];
+				for (int i = 0; i < 6; i++) {
+					newFades[i] = lineFades[i] * BlockHighlightConfig.INSTANCE.instance().tlineAlphaMultiplier;
+				}
+				Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), tfinalLineCol, tfinalLineCol2, newFades, 2);
+			}
 		}
 		// insert model data pulling render idk code here
 	}
 
-	private static void updateFades(boolean shouldFadeOut) {
+	private static void updateProgresses(boolean shouldFadeOut) {
 		if (mc.hitResult == null || mc.level == null) return;
 		//clean this up later
+		scaleProg = BlockHighlightConfig.INSTANCE.instance().scaleIn ? (float) ease(scaleProg, mc.hitResult.getType() == HitResult.Type.MISS ? 0 : 1, BlockHighlightConfig.INSTANCE.instance().scaleSpeed) : 1;
 		if (mc.hitResult.getType() == HitResult.Type.ENTITY) {
 			for (Direction dir : Direction.values()) {
 				sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().fillOpacity, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().fillOpacity;

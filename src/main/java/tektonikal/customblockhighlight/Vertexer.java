@@ -10,6 +10,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
+import org.joml.Vector3d;
+import org.joml.Vector3f;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 
 import java.awt.*;
@@ -20,13 +22,13 @@ import java.util.List;
 public class Vertexer {
 	public static Minecraft mc = Minecraft.getInstance();
 
+	record Side(float distance, Direction direction) {
+	}
+
 	public static void vertexBoxQuads(PoseStack matrices, VertexConsumer builder, AABB box, Color cols, Color col2, float[] alpha) {
 		Color firstThird = new Color(interp(cols.getRed(), col2.getRed(), 1), interp(cols.getGreen(), col2.getGreen(), 1), interp(cols.getBlue(), col2.getBlue(), 1), 255);
 		Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
-
-        record Side(float distance, Direction direction) {}
-
-        List<Side> sides = new ArrayList<>();
+		List<Side> sides = new ArrayList<>();
 		for (int i = 0; i < alpha.length; i++) {
 			AABB aabb;
 			if (mc.hitResult instanceof BlockHitResult block) {
@@ -38,10 +40,9 @@ public class Vertexer {
 			}
 			sides.add(new Side(getCenter(Direction.from3DDataValue(i), aabb).toVector3f().distance(Minecraft.getInstance().gameRenderer.mainCamera().position().toVector3f()), Direction.from3DDataValue(i)));
 		}
-
-        sides.sort(Comparator.comparing(Side::distance));
+		sides.sort(Comparator.comparing(Side::distance));
 		if (BlockHighlightConfig.INSTANCE.instance().invert) {
-            sides = sides.reversed();
+			sides = sides.reversed();
 		}
 
 		for (int i = 0; i < alpha.length; i++) {
@@ -51,14 +52,13 @@ public class Vertexer {
 	}
 
 	private static Vec3 getCenter(Direction direction, AABB box) {
-		return switch (direction) {
-			case UP -> new Vec3((box.minX + box.maxX) / 2.0F, box.maxY, (box.minZ + box.maxZ) / 2.0F);
-			case DOWN -> new Vec3((box.minX + box.maxX) / 2.0F, box.minY, (box.minZ + box.maxZ) / 2.0F);
-			case EAST -> new Vec3(box.maxX, (box.minY + box.maxY) / 2.0F, (box.minZ + box.maxZ) / 2.0F);
-			case WEST -> new Vec3(box.minX, (box.minY + box.maxY) / 2.0F, (box.minZ + box.maxZ) / 2.0F);
-			case NORTH -> new Vec3((box.minX + box.maxX) / 2.0F, (box.minY + box.maxY) / 2.0F, box.minZ);
-			case SOUTH -> new Vec3((box.minX + box.maxX) / 2.0F, (box.minY + box.maxY) / 2.0F, box.maxZ);
-		};
+		Vector3d avgVec = new Vector3d((box.minX + box.maxX) / 2.0F, (box.minY + box.maxY) / 2.0F, (box.minZ + box.maxZ) / 2.0F);
+		switch (direction.getAxis()) {
+			case X -> avgVec.x = direction == Direction.WEST ? box.minX : box.maxX;
+			case Y -> avgVec.y = direction == Direction.DOWN ? box.minY : box.maxY;
+			case Z -> avgVec.z = direction == Direction.NORTH ? box.minZ : box.maxZ;
+		}
+		return new Vec3(avgVec.x, avgVec.y, avgVec.z);
 	}
 
 	public static void drawSide(PoseStack matrices, VertexConsumer builder, AABB box, Color cols, Color col2, Color firstThird, Color secondThird, float relevantAlpha, Direction direction) {
@@ -118,7 +118,7 @@ public class Vertexer {
 		vertexLine(matrices, builder, x1, y1, z1, x1, y2, z1, firstThird, cols, Math.round(Math.max(alpha[2], alpha[4])), 0, 1, 0, layer);
 
 		//east
-		vertexLine(matrices, builder, x2, y2, z2, x2, y1, z2, secondThird, col2, Math.round(Math.max(alpha[3], alpha[5])), 0, -1, 0, layer);
+		vertexLine(matrices, builder, x2, y1, z2, x2, y2, z2, col2, secondThird, Math.round(Math.max(alpha[3], alpha[5])), 0, -1, 0, layer);
 		vertexLine(matrices, builder, x2, y1, z1, x2, y2, z1, secondThird, firstThird, Math.round(Math.max(alpha[2], alpha[5])), 0, 1, 0, layer);
 
 		//north and south are skipped, as they are not needed
@@ -140,25 +140,44 @@ public class Vertexer {
 
 	public static void vertexLine(PoseStack matrices, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, float nx, float ny, float nz, int layer) {
 		Matrix4f model = matrices.last().pose();
-		int width = switch (layer) {
-			case 0 -> BlockHighlightConfig.INSTANCE.instance().lineWidth;
-			case 1 -> BlockHighlightConfig.INSTANCE.instance().slineWidth;
-			case 2 -> BlockHighlightConfig.INSTANCE.instance().tlineWidth;
-			default -> 1;
-		};
-		builder.addVertex(model, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
-		builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+		int width = getWidth(layer);
+		Vector3f v1 = new Vector3f(x1, y1, z1);
+		Vector3f v2 = new Vector3f(x2, y2, z2);
+		Vector3f center = new Vector3f();
+		v1.lerp(v2, 0.5f, center);
+		float distanceBetweenCornersHalved = (v1.distance(v2) / 2);
+		float cutDistanceCorner = distanceBetweenCornersHalved * (1 - BlockHighlightConfig.INSTANCE.instance().cutFromCorner);
+		float cutDistanceCenter = distanceBetweenCornersHalved * (1 - BlockHighlightConfig.INSTANCE.instance().cutFromCenter);
+
+			boolean x = x1 == x2;
+			boolean y = y1 == y2;
+			boolean z = z1 == z2;
+		if (BlockHighlightConfig.INSTANCE.instance().cutFromCorner == 0) {
+			//draw only one line
+			builder.addVertex(model, x ? x1 : center.x - cutDistanceCenter, y ? y1 : center.y - cutDistanceCenter, z ? z1 : center.z - cutDistanceCenter).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			builder.addVertex(model, x ? x2 : center.x + cutDistanceCenter, y ? y2 : center.y + cutDistanceCenter, z ? z2 : center.z + cutDistanceCenter).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+		}else{
+			builder.addVertex(model, x ? x1 : center.x - cutDistanceCenter, y ? y1 : center.y - cutDistanceCenter, z ? z1 : center.z - cutDistanceCenter).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			builder.addVertex(model, x ? x1 : x1 + cutDistanceCorner, y ? y1 : y1 + cutDistanceCorner, z ? z1 : z1 + cutDistanceCorner).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+
+			builder.addVertex(model, x ? x2 : x2 - cutDistanceCorner, y ? y2 : y2 - cutDistanceCorner, z ? z2 : z2 - cutDistanceCorner).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			builder.addVertex(model, x ? x2 : center.x + cutDistanceCenter, y ? y2 : center.y + cutDistanceCenter, z ? z2 : center.z + cutDistanceCenter).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+		}
 	}
 
 	public static void vertexLine(PoseStack matrices, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, Vec3 normal, int layer) {
 		Matrix4f model = matrices.last().pose();
-		int width = switch (layer) {
+		int width = getWidth(layer);
+		builder.addVertex(model, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(width);
+		builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(width);
+	}
+
+	private static int getWidth(int layer) {
+		return switch (layer) {
 			case 0 -> BlockHighlightConfig.INSTANCE.instance().lineWidth;
 			case 1 -> BlockHighlightConfig.INSTANCE.instance().slineWidth;
 			case 2 -> BlockHighlightConfig.INSTANCE.instance().tlineWidth;
 			default -> 1;
 		};
-		builder.addVertex(model, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(width);
-		builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(width);
 	}
 }
