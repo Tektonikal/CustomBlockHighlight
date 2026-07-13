@@ -47,27 +47,29 @@ import java.util.List;
 import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
 import static net.minecraft.client.renderer.RenderPipelines.LINES;
 
+//POST V2.8
 //TODO: fix thick lines not fully joining at corners
-//TODO: allow cutting away from center of lines or from corner
 //TODO: animations / visuals for block breaking progress?
-//TODO: better fluid logic. just to spite microcontrollers
 //TODO: edge line animation modes
-//TODO: option if easebox continues animating when not looking at block
+//TODO: option for easebox to teleport to new position if it's fully faded out
 //TODO: fancier "looked at" mode
 //TODO: fancy rotations for the box. i'm vagueposting
 //TODO: in edges mode, switching between a normal block and a connected one causes the center of the outline to prioritize the position closest to 0,0?
 //not super important, but something i'd want to keep in check. can be reproduced with normal block under a bed facing north
+//TODO: separate options from the extras tab to be more specific
+//TODO: more options for the extra line layers
+//TODO: ensure iris compat
+
+//NOW
+//TODO: fluid logic. just to spite microcontrollers
+//TODO: fancy config screen
 //TODO: more depth test options
 //there is no real solution to the Z-fighting issue without disabling depth test.
 //even if the lines are drawn correctly spaced out, the thicker line might be rotated differently, causing it to fully appear in front or z-fight. whateverrrrrr man
 //maybe it would be best into looking into creating a pipeline to draw lines that aren't in screenspace. idk
 //TODO: add notice somewhere about this to user!
-//TODO: edges mode ignores line expansion
-//TODO: separate options from the extras tab to be more specific
-//TODO: fix inverted mode in Vertexer
-//TODO: more options for the extra line layers
-//TODO: fancy config screen
 //TODO: add toggle for entities
+//TODO: presets
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
 	public static final Camera camera = mc.gameRenderer.mainCamera();
@@ -75,7 +77,7 @@ public class Renderer {
 	public static final float[] sideFades = new float[6];
 	public static final float[] lineFades = new float[6];
 
-	public static final RenderPipeline OUTLINE_THROUGH_WALLS = RenderPipelines.register(
+	public static final RenderPipeline QUAD_NO_DEPTH = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/evil-lines"))
 					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
@@ -130,11 +132,11 @@ public class Renderer {
 			if (lines) {
 				switch (layer) {
 					case 0 ->
-							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest ? LINES : OUTLINE_THROUGH_WALLS);
+							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest ? LINES : QUAD_NO_DEPTH);
 					case 1 ->
-							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest ? LINES : OUTLINE_THROUGH_WALLS);
+							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest ? LINES : QUAD_NO_DEPTH);
 					case 2 ->
-							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest ? LINES : OUTLINE_THROUGH_WALLS);
+							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest ? LINES : QUAD_NO_DEPTH);
 				}
 			} else {
 				renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().fillDepthTest ? DEBUG_QUADS : FILL_NO_DEPTH);
@@ -155,7 +157,7 @@ public class Renderer {
 	}
 
 	public static void drawBoxFill(PoseStack stack, AABB box, Color cols, Color col2, float[] alpha) {
-		doEvilMatrixPreparations(stack, box);
+		doEvilMatrixPreparations(stack, box, false);
 		StagedVertexBuffer.Draw draw = startDrawing(false);
 		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
 		Vertexer.vertexBoxQuads(stack, buffer, moveToZero(box), cols, col2, alpha);
@@ -163,17 +165,21 @@ public class Renderer {
 		stack.popPose();
 	}
 
-	private static void doEvilMatrixPreparations(PoseStack stack, AABB box) {
+	private static void doEvilMatrixPreparations(PoseStack stack, AABB box, boolean horribleWorkaroundForEdges) {
 		stack.pushPose();
 		stack.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
-		stack.translate(0.5F, 0.5F, 0.5F);
+		Vec3 vec = moveToZero(box).getCenter();
+		stack.translate(vec);
 		stack.scale(scaleProg, scaleProg, scaleProg);
-		//TODO: fix
-		stack.translate(-0.5F, -0.5F, -0.5F);
+		if (horribleWorkaroundForEdges) {
+			float yeah = BlockHighlightConfig.INSTANCE.instance().lineExpand * 2 + 1;
+			stack.scale(yeah, yeah, yeah);
+		}
+		stack.translate(vec.reverse());
 	}
 
 	public static void drawBoxOutline(PoseStack stack, AABB box, Color color, Color col2, float[] alpha, int layer) {
-		doEvilMatrixPreparations(stack, box);
+		doEvilMatrixPreparations(stack, box, false);
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
 		Vertexer.vertexBoxLines(stack, buffer, moveToZero(box), color, col2, alpha, layer);
@@ -182,12 +188,12 @@ public class Renderer {
 	}
 
 	public static void drawEdgeOutline(PoseStack matrices, VoxelShape shape, Color c1, Color c2, float alpha, int layer) {
-		doEvilMatrixPreparations(matrices, shape.bounds());
+		doEvilMatrixPreparations(matrices, shape.bounds(), true);
 		List<Line> newLines = new ArrayList<>();
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-		VoxelShape finalShape = shape;
-		moveToZero(shape).forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ), getMinVec(finalShape.bounds()))));
+		moveToZero(shape).forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
+		Vec3 minVec = shape.bounds().getMinPosition();
 		if (lines.isEmpty() || !BlockHighlightConfig.INSTANCE.instance().doEasing) {
 			lines = newLines;
 		}
@@ -196,7 +202,7 @@ public class Renderer {
 //                lines.add(toRemove.getFirst());
 //                toRemove.removeFirst();
 //            } else {
-			lines.add(new Line(moveToZero(shape).bounds().getCenter(), moveToZero(shape).bounds().getCenter(), getMinVec(shape.bounds())));
+			lines.add(new Line(moveToZero(shape).bounds().getCenter(), moveToZero(shape).bounds().getCenter()));
 //            }
 		}
 		while (lines.size() > newLines.size()) {
@@ -204,16 +210,15 @@ public class Renderer {
 			lines.removeLast();
 		}
 		for (int i = 0; i < lines.size(); i++) {
-			lines.get(i).moveTo(newLines.get(i).minPos, newLines.get(i).maxPos, newLines.get(i).minVec);
+			lines.get(i).moveTo(newLines.get(i).minPos, newLines.get(i).maxPos);
 		}
-		List<Line> sortedLines = Renderer.lines.stream().sorted(Comparator.comparing(Line::getDistanceToCamera).reversed()).toList();
+		List<Line> sortedLines = Renderer.lines.stream().sorted(Comparator.comparing(o -> ((Line) o).getDistanceToCamera(minVec)).reversed()).toList();
 
 		shape = moveToZero(shape);
 		double normalised = shape.bounds().getMinPosition().distanceTo(shape.bounds().getMaxPosition());
 		for (Line finalLine : sortedLines) {
 			finalLine.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.minPos.x, finalLine.minPos.y, finalLine.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.maxPos.x, finalLine.maxPos.y, finalLine.maxPos.z)) / normalised)), Math.round(alpha), true, layer);
 		}
-
 		toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
 		for (Line line : toRemove) {
 			line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / normalised)), Math.round(alpha), false, layer);
@@ -222,16 +227,14 @@ public class Renderer {
 		matrices.popPose();
 	}
 
-	public static Vec3 getMinVec(AABB box) {
-		return new Vec3(box.minX, box.minY, box.minZ);
-	}
 
 	public static AABB moveToZero(AABB box) {
-		return box.move(getMinVec(box).reverse());
+		return box.move(box.getMinPosition().reverse());
 	}
 
 	public static VoxelShape moveToZero(VoxelShape shape) {
-		return shape.move(getMinVec(shape.bounds()).x * -1, getMinVec(shape.bounds()).y * -1, getMinVec(shape.bounds()).z * -1);
+		Vec3 minVec = shape.bounds().getMinPosition();
+		return shape.move(minVec.reverse());
 	}
 
 	private static Direction[] invert(Direction[] invertDirs) {
@@ -433,8 +436,9 @@ public class Renderer {
 
 	private static void updateProgresses(boolean shouldFadeOut) {
 		if (mc.hitResult == null || mc.level == null) return;
-		//clean this up later
-		scaleProg = BlockHighlightConfig.INSTANCE.instance().scaleIn ? (float) ease(scaleProg, mc.hitResult.getType() == HitResult.Type.MISS ? 0 : 1, BlockHighlightConfig.INSTANCE.instance().scaleSpeed) : 1;
+		//TODO: clean this up later
+		//I didn't add in/out because it would BREAKKK. TODO THIS
+		scaleProg = BlockHighlightConfig.INSTANCE.instance().scale ? (float) ease(scaleProg, shouldFadeOut ? 0 : 1, BlockHighlightConfig.INSTANCE.instance().scaleSpeed) : 1;
 		if (mc.hitResult.getType() == HitResult.Type.ENTITY) {
 			for (Direction dir : Direction.values()) {
 				sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().fillOpacity, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().fillOpacity;

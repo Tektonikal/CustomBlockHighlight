@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
@@ -20,62 +21,20 @@ import java.util.Comparator;
 import java.util.List;
 
 public class Vertexer {
-	public static Minecraft mc = Minecraft.getInstance();
-
-	record Side(float distance, Direction direction) {
-	}
-
 	public static void vertexBoxQuads(PoseStack matrices, VertexConsumer builder, AABB box, Color cols, Color col2, float[] alpha) {
 		Color firstThird = new Color(interp(cols.getRed(), col2.getRed(), 1), interp(cols.getGreen(), col2.getGreen(), 1), interp(cols.getBlue(), col2.getBlue(), 1), 255);
 		Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
-		List<Side> sides = new ArrayList<>();
-		for (int i = 0; i < alpha.length; i++) {
-			AABB aabb;
-			if (mc.hitResult instanceof BlockHitResult block) {
-				aabb = new AABB(block.getBlockPos());
-			} else if (mc.hitResult instanceof EntityHitResult entity) {
-				aabb = entity.getEntity().getBoundingBox();
-			} else {
-				aabb = new AABB(BlockPos.ZERO);
-			}
-			sides.add(new Side(getCenter(Direction.from3DDataValue(i), aabb).toVector3f().distance(Minecraft.getInstance().gameRenderer.mainCamera().position().toVector3f()), Direction.from3DDataValue(i)));
-		}
-		sides.sort(Comparator.comparing(Side::distance));
-		if (BlockHighlightConfig.INSTANCE.instance().invert) {
-			sides = sides.reversed();
-		}
 
-		for (int i = 0; i < alpha.length; i++) {
-			var direction = sides.get(i).direction();
-			drawSide(matrices, builder, box, cols, col2, firstThird, secondThird, alpha[direction.ordinal()], direction);
-		}
-	}
+		//TODO: good news and bad news!
+		//good news is that new rendering system means i don't have to sort these faces for whatever reason?
+		//bad news is that the invert feature is dead
+		vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, col2, secondThird, firstThird, Math.round(alpha[0]));
+		vertexQuad(matrices, builder, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, cols, firstThird, secondThird, firstThird, Math.round(alpha[1]));
+		vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, secondThird, firstThird, cols, firstThird, Math.round(alpha[2]));
+		vertexQuad(matrices, builder, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, firstThird, secondThird, col2, Math.round(alpha[3]));
+		vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.minY, (float) box.minZ, firstThird, cols, firstThird, secondThird, Math.round(alpha[4]));
+		vertexQuad(matrices, builder, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, col2, secondThird, firstThird, secondThird, Math.round(alpha[5]));
 
-	private static Vec3 getCenter(Direction direction, AABB box) {
-		Vector3d avgVec = new Vector3d((box.minX + box.maxX) / 2.0F, (box.minY + box.maxY) / 2.0F, (box.minZ + box.maxZ) / 2.0F);
-		switch (direction.getAxis()) {
-			case X -> avgVec.x = direction == Direction.WEST ? box.minX : box.maxX;
-			case Y -> avgVec.y = direction == Direction.DOWN ? box.minY : box.maxY;
-			case Z -> avgVec.z = direction == Direction.NORTH ? box.minZ : box.maxZ;
-		}
-		return new Vec3(avgVec.x, avgVec.y, avgVec.z);
-	}
-
-	public static void drawSide(PoseStack matrices, VertexConsumer builder, AABB box, Color cols, Color col2, Color firstThird, Color secondThird, float relevantAlpha, Direction direction) {
-		switch (direction) {
-			case UP ->
-					vertexQuad(matrices, builder, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, cols, firstThird, secondThird, firstThird, Math.round(relevantAlpha));
-			case SOUTH ->
-					vertexQuad(matrices, builder, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, firstThird, secondThird, col2, Math.round(relevantAlpha));
-			case NORTH ->
-					vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, secondThird, firstThird, cols, firstThird, Math.round(relevantAlpha));
-			case EAST ->
-					vertexQuad(matrices, builder, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, col2, secondThird, firstThird, secondThird, Math.round(relevantAlpha));
-			case WEST ->
-					vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.minX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.minY, (float) box.minZ, firstThird, cols, firstThird, secondThird, Math.round(relevantAlpha));
-			case DOWN ->
-					vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, col2, secondThird, firstThird, Math.round(relevantAlpha));
-		}
 	}
 
 	public static void vertexQuad(PoseStack matrices, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float x4, float y4, float z4, Color cols, Color col2, Color col3, Color col4, int alpha) {
@@ -140,39 +99,38 @@ public class Vertexer {
 
 	public static void vertexLine(PoseStack matrices, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, float nx, float ny, float nz, int layer) {
 		Matrix4f model = matrices.last().pose();
-		int width = getWidth(layer);
+		float width = getWidth(layer);
+		if (BlockHighlightConfig.INSTANCE.instance().cutFromCenter == 0 && BlockHighlightConfig.INSTANCE.instance().cutFromCorner == 0) {
+			builder.addVertex(model, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			return;
+		}
 		Vector3f v1 = new Vector3f(x1, y1, z1);
 		Vector3f v2 = new Vector3f(x2, y2, z2);
-		Vector3f center = new Vector3f();
-		v1.lerp(v2, 0.5f, center);
-		float distanceBetweenCornersHalved = (v1.distance(v2) / 2);
-		float cutDistanceCorner = distanceBetweenCornersHalved * (1 - BlockHighlightConfig.INSTANCE.instance().cutFromCorner);
-		float cutDistanceCenter = distanceBetweenCornersHalved * (1 - BlockHighlightConfig.INSTANCE.instance().cutFromCenter);
-
-			boolean x = x1 == x2;
-			boolean y = y1 == y2;
-			boolean z = z1 == z2;
-		if (BlockHighlightConfig.INSTANCE.instance().cutFromCorner == 0) {
+		Vector3f minOuter = new Vector3f();
+		Vector3f maxOuter = new Vector3f();
+		v1.lerp(v2, BlockHighlightConfig.INSTANCE.instance().cutFromCorner / 2, minOuter);
+		v2.lerp(v1, BlockHighlightConfig.INSTANCE.instance().cutFromCorner / 2, maxOuter);
+		if (BlockHighlightConfig.INSTANCE.instance().cutFromCenter == 0) {
 			//draw only one line
-			builder.addVertex(model, x ? x1 : center.x - cutDistanceCenter, y ? y1 : center.y - cutDistanceCenter, z ? z1 : center.z - cutDistanceCenter).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
-			builder.addVertex(model, x ? x2 : center.x + cutDistanceCenter, y ? y2 : center.y + cutDistanceCenter, z ? z2 : center.z + cutDistanceCenter).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
-		}else{
-			builder.addVertex(model, x ? x1 : center.x - cutDistanceCenter, y ? y1 : center.y - cutDistanceCenter, z ? z1 : center.z - cutDistanceCenter).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
-			builder.addVertex(model, x ? x1 : x1 + cutDistanceCorner, y ? y1 : y1 + cutDistanceCorner, z ? z1 : z1 + cutDistanceCorner).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			builder.addVertex(model, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			builder.addVertex(model, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+		} else {
+			Vector3f center = new Vector3f();
+			v1.lerp(v2, 0.5F, center);
+			Vector3f minInner = new Vector3f();
+			Vector3f maxInner = new Vector3f();
+			center.lerp(v1, BlockHighlightConfig.INSTANCE.instance().cutFromCenter, minInner);
+			center.lerp(v2, BlockHighlightConfig.INSTANCE.instance().cutFromCenter, maxInner);
+			builder.addVertex(model, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			builder.addVertex(model, minInner.x, minInner.y, minInner.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
 
-			builder.addVertex(model, x ? x2 : x2 - cutDistanceCorner, y ? y2 : y2 - cutDistanceCorner, z ? z2 : z2 - cutDistanceCorner).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
-			builder.addVertex(model, x ? x2 : center.x + cutDistanceCenter, y ? y2 : center.y + cutDistanceCenter, z ? z2 : center.z + cutDistanceCenter).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			builder.addVertex(model, maxInner.x, maxInner.y, maxInner.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			builder.addVertex(model, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
 		}
 	}
 
-	public static void vertexLine(PoseStack matrices, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, Vec3 normal, int layer) {
-		Matrix4f model = matrices.last().pose();
-		int width = getWidth(layer);
-		builder.addVertex(model, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(width);
-		builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), (float) normal.x, (float) normal.y, (float) normal.z).setLineWidth(width);
-	}
-
-	private static int getWidth(int layer) {
+	private static float getWidth(int layer) {
 		return switch (layer) {
 			case 0 -> BlockHighlightConfig.INSTANCE.instance().lineWidth;
 			case 1 -> BlockHighlightConfig.INSTANCE.instance().slineWidth;
