@@ -24,6 +24,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.HangingEntity;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.piston.PistonHeadBlock;
@@ -67,7 +69,6 @@ import static tektonikal.customblockhighlight.Blockhighlight.ease;
 //maybe it would be best into looking into creating a pipeline to draw lines that aren't in screenspace. idk
 
 //NOW
-//TODO: fluid logic. just to spite microcontrollers
 //TODO: presets
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
@@ -117,6 +118,7 @@ public class Renderer {
 	public static Direction connected = null;
 	public static float edgeAlpha = 0;
 	public static float scaleProg = 0;
+	public static HitResult evilHitResult;
 
 	public static StagedVertexBuffer.Draw startDrawing(boolean lines) {
 		if (lines) {
@@ -268,7 +270,7 @@ public class Renderer {
 	private static Direction[] getSides(OutlineType type, BlockPos pos) {
 		return switch (type) {
 			case LOOKAT ->
-					(mc.hitResult instanceof BlockHitResult block) ? new Direction[]{block.getDirection()} : Direction.values();
+					(evilHitResult instanceof BlockHitResult block) ? new Direction[]{block.getDirection()} : Direction.values();
 			case AIR_EXPOSED -> invert(getConcealedFaces(pos));
 			case CONCEALED -> getConcealedFaces(pos);
 			default -> Direction.values();
@@ -311,11 +313,19 @@ public class Renderer {
 	}
 
 	public static void mainLoop(LevelRenderContext c) {
-		HitResult h = mc.hitResult;
-		if (h == null || mc.level == null) return;
-
-		if (h.getType() != HitResult.Type.MISS) {
-			if (h instanceof BlockHitResult block) {
+		evilHitResult = mc.hitResult;
+		//this is just for the warnings to go away
+		if (evilHitResult == null || mc.level == null || mc.getCameraEntity() == null || mc.player == null) return;
+		if(BlockHighlightConfig.INSTANCE.instance().allowLiquids && (mc.player.getMainHandItem().is(Items.BUCKET) || mc.player.getOffhandItem().is(Items.BUCKET))) {
+			HitResult yeah = pick(mc.getCameraEntity(), mc.player.blockInteractionRange(), mc.getDeltaTracker().getRealtimeDeltaTicks(), true);
+			if(yeah instanceof BlockHitResult hit) {
+				if(mc.level.getFluidState(hit.getBlockPos()).isSource()){
+					evilHitResult = yeah;
+				}
+			}
+		}
+		if (evilHitResult.getType() != HitResult.Type.MISS) {
+			if (evilHitResult instanceof BlockHitResult block) {
 				BlockState state = mc.level.getBlockState(block.getBlockPos());
 				VoxelShape shape = state.getShape(mc.level, block.getBlockPos());
 				if (shape.isEmpty()) {
@@ -323,7 +333,7 @@ public class Renderer {
 				} else {
 					targetBox = shape.bounds().move(block.getBlockPos());
 				}
-			} else if (h instanceof EntityHitResult entityHitResult && BlockHighlightConfig.INSTANCE.instance().allowEntities) {
+			} else if (evilHitResult instanceof EntityHitResult entityHitResult && BlockHighlightConfig.INSTANCE.instance().allowEntities) {
 				Entity entity = entityHitResult.getEntity();
 				//so, so sloppy. might also have the worst workaround of the century for hanging stuff
 				float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
@@ -334,8 +344,8 @@ public class Renderer {
 
 
 		//get connected blocks
-		if (BlockHighlightConfig.INSTANCE.instance().connectedBlocks && h instanceof BlockHitResult block) {
-			if (h.getType() == HitResult.Type.MISS) {
+		if (BlockHighlightConfig.INSTANCE.instance().connectedBlocks && evilHitResult instanceof BlockHitResult block) {
+			if (evilHitResult.getType() == HitResult.Type.MISS) {
 				connected = null;
 			} else {
 				BlockState state = mc.level.getBlockState(block.getBlockPos());
@@ -344,13 +354,13 @@ public class Renderer {
 		}
 		//calculate where to render the block
 		if (BlockHighlightConfig.INSTANCE.instance().doEasing) {
-			if (BlockHighlightConfig.INSTANCE.instance().updateWhenUnfocused || h.getType() != HitResult.Type.MISS) {
+			if (BlockHighlightConfig.INSTANCE.instance().updateWhenUnfocused || evilHitResult.getType() != HitResult.Type.MISS) {
 				easeBox = new AABB(ease(easeBox.minX, targetBox.minX, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.minY, targetBox.minY, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.minZ, targetBox.minZ, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.maxX, targetBox.maxX, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.maxY, targetBox.maxY, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(easeBox.maxZ, targetBox.maxZ, BlockHighlightConfig.INSTANCE.instance().easeSpeed));
 			}
 		} else {
 			easeBox = targetBox;
 		}
-		renderOutline(c.poseStack(), isCrystalObstructed(), h.getType() == HitResult.Type.MISS);
+		renderOutline(c.poseStack(), isCrystalObstructed(), evilHitResult.getType() == HitResult.Type.MISS);
 	}
 
 	private static void renderOutline(PoseStack stack, boolean isCrystalObstructed, boolean shouldFade) {
@@ -369,7 +379,7 @@ public class Renderer {
 
 	private static boolean isCrystalObstructed() {
 		if (mc.level == null) throw new IllegalStateException("level == null");
-		if (!(mc.hitResult instanceof BlockHitResult block)) return false;
+		if (!(evilHitResult instanceof BlockHitResult block)) return false;
 		BlockState state = mc.level.getBlockState(block.getBlockPos());
 
 		if (BlockHighlightConfig.INSTANCE.instance().crystalHelper) {
@@ -401,15 +411,15 @@ public class Renderer {
 		Color finalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().outlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().lineCol;
 		Color finalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().outlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().lineCol2;
 		if (BlockHighlightConfig.INSTANCE.instance().outlineType == OutlineType.EDGES) {
-			if (mc.hitResult != null && mc.hitResult.getType() != HitResult.Type.MISS) {
-				if (mc.hitResult instanceof BlockHitResult block) {
+			if (evilHitResult != null && evilHitResult.getType() != HitResult.Type.MISS) {
+				if (evilHitResult instanceof BlockHitResult block) {
 					if (isBlockOccupied(block.getBlockPos())) {
 						shape = mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos(), CollisionContext.of(cameraEntity));
 						if (connected != null) {
 							shape = Shapes.joinUnoptimized(shape, mc.level.getBlockState(block.getBlockPos().relative(connected)).getShape(mc.level, block.getBlockPos().relative(connected), CollisionContext.of(cameraEntity)).move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR).optimize();
 						}
 					}
-				} else if (mc.hitResult instanceof EntityHitResult entity && BlockHighlightConfig.INSTANCE.instance().allowEntities) {
+				} else if (evilHitResult instanceof EntityHitResult entity && BlockHighlightConfig.INSTANCE.instance().allowEntities) {
 					shape = Shapes.create(entity.getEntity().getBoundingBox());
 				}
 			}
@@ -451,9 +461,9 @@ public class Renderer {
 	}
 
 	private static void updateProgresses(boolean shouldFadeOut) {
-		if (mc.hitResult == null || mc.level == null) return;
+		if (evilHitResult == null || mc.level == null) return;
 		//TODO: clean this up later
-		if (mc.hitResult.getType() == HitResult.Type.ENTITY) {
+		if (evilHitResult.getType() == HitResult.Type.ENTITY) {
 			if (BlockHighlightConfig.INSTANCE.instance().allowEntities) {
 				for (Direction dir : Direction.values()) {
 					sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().fillOpacity, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().fillOpacity;
@@ -468,7 +478,7 @@ public class Renderer {
 				}
 				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(edgeAlpha, 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
 			}
-		} else if (mc.hitResult instanceof BlockHitResult block) {
+		} else if (evilHitResult instanceof BlockHitResult block) {
 			if ((mc.level.isEmptyBlock(block.getBlockPos()) || shouldFadeOut)) {
 				for (Direction dir : Direction.values()) {
 					sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
@@ -503,6 +513,13 @@ public class Renderer {
 		scaleProg = BlockHighlightConfig.INSTANCE.instance().scale ? (float) ease(scaleProg, shouldFadeOut ? 0 : 1, BlockHighlightConfig.INSTANCE.instance().scaleSpeed) : 1;
 	}
 
+	public static HitResult pick(Entity e, final double range, final float a, final boolean withLiquids) {
+		Vec3 from = e.getEyePosition(a);
+		Vec3 viewVector = e.getViewVector(a);
+		Vec3 to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
+		return mc.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, withLiquids ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.NONE, e));
+	}
+
 	private static Direction joinConnected(BlockState state, BlockPos pos) {
 		if (mc.level == null) return null;
 
@@ -512,7 +529,7 @@ public class Renderer {
 		DoubleBlockHalf half;
 		if (state.getBlock() instanceof ChestBlock && !state.getValue(ChestBlock.TYPE).equals(ChestType.SINGLE)) {
 			dir = ChestBlock.getConnectedDirection(state);
-			if (mc.hitResult instanceof BlockHitResult block) {
+			if (evilHitResult instanceof BlockHitResult block) {
 				connectedPos = block.getBlockPos().relative(dir);
 			} else {
 				return null;

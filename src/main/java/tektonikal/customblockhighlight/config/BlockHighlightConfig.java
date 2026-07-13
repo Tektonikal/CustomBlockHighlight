@@ -29,12 +29,6 @@ import static com.sun.jna.Platform.isWindows;
 
 
 public class BlockHighlightConfig {
-	public static ConfigClassHandler<BlockHighlightConfig> INSTANCE = ConfigClassHandler.createBuilder(BlockHighlightConfig.class)
-			.id(Identifier.fromNamespaceAndPath("custom-block-highlight", "config"))
-			.serializer(config -> GsonConfigSerializerBuilder.create(config)
-					.setPath(FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json")).build()).build();
-	public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val -> Component.nullToEmpty(String.format("%.2f", val).replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
-
 	@SuppressWarnings("deprecation")
 	public static Gson gson = new GsonBuilder()
 			.setFieldNamingPolicy(FieldNamingPolicy.IDENTITY)
@@ -42,6 +36,12 @@ public class BlockHighlightConfig {
 			.registerTypeHierarchyAdapter(Color.class, new GsonConfigInstance.ColorTypeAdapter())
 			.setPrettyPrinting()
 			.create();
+	public static ConfigClassHandler<BlockHighlightConfig> INSTANCE = ConfigClassHandler.createBuilder(BlockHighlightConfig.class)
+			.id(Identifier.fromNamespaceAndPath("custom-block-highlight", "config"))
+			.serializer(config -> GsonConfigSerializerBuilder.create(config).overrideGsonBuilder(gson)
+					.setPath(FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json")).build()).build();
+	public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val -> Component.nullToEmpty(String.format("%.2f", val).replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
+
 	//@formatter:off
     //outline stuff
     @SerialEntry public boolean outlineEnabled = true;
@@ -53,14 +53,14 @@ public class BlockHighlightConfig {
         @SerialEntry public float lineWidth = 2.5F;
         @SerialEntry public float lineExpand = 0;
         @SerialEntry public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
-		@SerialEntry public float cutFromCenter = 0;
+		@SerialEntry public float cutFromCenter = 0.25F;
 		@SerialEntry public float cutFromCorner = 0;
 
 	@SerialEntry public boolean secondary = false;
 		@SerialEntry public Color slineCol = Color.BLACK;
 		@SerialEntry public Color slineCol2 = Color.WHITE;
 		@SerialEntry public float slineAlphaMultiplier = 1F;
-		@SerialEntry public boolean soutlineRainbow = true;
+		@SerialEntry public boolean soutlineRainbow = false;
 		@SerialEntry public float slineWidth = 3;
 		@SerialEntry public DepthTestMode slineDepthTest = DepthTestMode.ALWAYS_PASS;
 
@@ -68,7 +68,7 @@ public class BlockHighlightConfig {
 		@SerialEntry public Color tlineCol = Color.BLACK;
 		@SerialEntry public Color tlineCol2 = Color.WHITE;
 		@SerialEntry public float tlineAlphaMultiplier = 1F;
-		@SerialEntry public boolean toutlineRainbow = true;
+		@SerialEntry public boolean toutlineRainbow = false;
 		@SerialEntry public float tlineWidth = 3;
 		@SerialEntry public DepthTestMode tlineDepthTest = DepthTestMode.ALWAYS_PASS;
 
@@ -78,7 +78,7 @@ public class BlockHighlightConfig {
         @SerialEntry public Color fillCol2 = Color.WHITE;
         @SerialEntry public int fillOpacity = 128;
         @SerialEntry public boolean fillRainbow = false;
-        @SerialEntry public OutlineType fillType = OutlineType.AIR_EXPOSED;
+        @SerialEntry public OutlineType fillType = OutlineType.ALL;
         @SerialEntry public float fillExpand = 0.001F;
         @SerialEntry public DepthTestMode fillDepthTest = DepthTestMode.HIDDEN_ONLY;
     //extras
@@ -98,6 +98,7 @@ public class BlockHighlightConfig {
     @SerialEntry public boolean connectedBlocks = true;
 	@SerialEntry public boolean updateWhenUnfocused = true;
 	@SerialEntry public boolean allowEntities = true;
+	@SerialEntry public boolean allowLiquids = true;
 	//@formatter:on
 	@Updatable
 	public static Option<Boolean> o_outlineEnabled = Option.<Boolean>createBuilder()
@@ -140,6 +141,7 @@ public class BlockHighlightConfig {
 			.build();
 	public static Option<DepthTestMode> o_lineDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
+			.description(OptionDescription.of(Component.literal("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
 			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> BlockHighlightConfig.INSTANCE.instance().lineDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().lineDepthTest = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
@@ -160,7 +162,7 @@ public class BlockHighlightConfig {
 			.build();
 	public static Option<Float> o_cutFromCenter = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Cut From Center"))
-			.stateManager(StateManager.createInstant(0F, () -> BlockHighlightConfig.INSTANCE.instance().cutFromCenter, newVal -> BlockHighlightConfig.INSTANCE.instance().cutFromCenter = newVal))
+			.stateManager(StateManager.createInstant(0.25F, () -> BlockHighlightConfig.INSTANCE.instance().cutFromCenter, newVal -> BlockHighlightConfig.INSTANCE.instance().cutFromCenter = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	@Updatable
@@ -187,11 +189,13 @@ public class BlockHighlightConfig {
 	@Updatable
 	public static Option<Boolean> o_soutlineRainbow = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Rainbow"))
-			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().soutlineRainbow, newVal -> BlockHighlightConfig.INSTANCE.instance().soutlineRainbow = newVal))
+			.stateManager(StateManager.createInstant(false, () -> BlockHighlightConfig.INSTANCE.instance().soutlineRainbow, newVal -> BlockHighlightConfig.INSTANCE.instance().soutlineRainbow = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
 	public static Option<DepthTestMode> o_slineDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
+			.description(OptionDescription.of(Component.literal("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
+			.description(OptionDescription.of(Component.literal("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
 			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> BlockHighlightConfig.INSTANCE.instance().slineDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().slineDepthTest = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
@@ -224,11 +228,12 @@ public class BlockHighlightConfig {
 	@Updatable
 	public static Option<Boolean> o_toutlineRainbow = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Rainbow"))
-			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().toutlineRainbow, newVal -> BlockHighlightConfig.INSTANCE.instance().toutlineRainbow = newVal))
+			.stateManager(StateManager.createInstant(false, () -> BlockHighlightConfig.INSTANCE.instance().toutlineRainbow, newVal -> BlockHighlightConfig.INSTANCE.instance().toutlineRainbow = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
 	public static Option<DepthTestMode> o_tlineDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
+			.description(OptionDescription.of(Component.literal("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
 			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> BlockHighlightConfig.INSTANCE.instance().tlineDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().tlineDepthTest = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
@@ -273,11 +278,12 @@ public class BlockHighlightConfig {
 					Component.nullToEmpty("- Concealed Faces"),
 					Component.nullToEmpty("- Looked At")
 			))
-			.stateManager(StateManager.createInstant(OutlineType.AIR_EXPOSED, () -> BlockHighlightConfig.INSTANCE.instance().fillType, newVal -> BlockHighlightConfig.INSTANCE.instance().fillType = newVal))
+			.stateManager(StateManager.createInstant(OutlineType.ALL, () -> BlockHighlightConfig.INSTANCE.instance().fillType, newVal -> BlockHighlightConfig.INSTANCE.instance().fillType = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
 			.build();
 	public static Option<DepthTestMode> o_fillDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
+			.description(OptionDescription.of(Component.literal("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
 			.stateManager(StateManager.createInstant(DepthTestMode.HIDDEN_ONLY, () -> BlockHighlightConfig.INSTANCE.instance().fillDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().fillDepthTest = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
@@ -352,6 +358,7 @@ public class BlockHighlightConfig {
 			.build();
 	public static Option<Boolean> o_updateWhenUnfocused = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Update When Unfocused"))
+			.description(OptionDescription.of(Component.literal("Continues moving the outline box toward its target even when it's not being rendered.")))
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().updateWhenUnfocused, newVal -> BlockHighlightConfig.INSTANCE.instance().updateWhenUnfocused = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
@@ -370,6 +377,12 @@ public class BlockHighlightConfig {
 	public static Option<Boolean> o_allowEntities = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Select Entities"))
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().allowEntities, newVal -> BlockHighlightConfig.INSTANCE.instance().allowEntities = newVal))
+			.controller(TickBoxControllerBuilder::create)
+			.build();
+	public static Option<Boolean> o_allowLiquids = Option.<Boolean>createBuilder()
+			.name(Component.nullToEmpty("- Select Fluids"))
+			.description(OptionDescription.of(Component.literal("Makes fluid source blocks valid targets when holding a bucket.")))
+			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().allowLiquids, newVal -> BlockHighlightConfig.INSTANCE.instance().allowLiquids = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
 
@@ -409,7 +422,6 @@ public class BlockHighlightConfig {
 									.option(o_cutFromCorner)
 									.option(o_cutFromCenter)
 									.build())
-							//TODO: better formatting or something for these
 							.group(OptionGroup.createBuilder()
 									.name(Component.nullToEmpty("Secondary Layer"))
 									.option(o_secondary)
@@ -478,6 +490,7 @@ public class BlockHighlightConfig {
 									.option(o_connectedBlocks)
 									.option(o_updateWhenUnfocused)
 									.option(o_allowEntities)
+									.option(o_allowLiquids)
 									.option(o_crystalHelper)
 									.option(o_crystalHelperColor)
 									.build())
@@ -524,7 +537,7 @@ public class BlockHighlightConfig {
 											.text(Component.nullToEmpty("Open"))
 											.build())
 									.build())
-							.build())
+							.build()).save(() -> INSTANCE.save())
 					.build().generateScreen(parent);
 		}
 	}
@@ -545,7 +558,7 @@ public class BlockHighlightConfig {
 			o_secondary.setAvailable(aBoolean);
 			o_tertiary.setAvailable(aBoolean);
 		}
-		if(booleanOption.equals(o_fillEnabled)) {
+		if (booleanOption.equals(o_fillEnabled)) {
 			o_fillCol.setAvailable(aBoolean);
 			o_fillCol2.setAvailable(aBoolean);
 			o_fillOpacity.setAvailable(aBoolean);
@@ -554,24 +567,24 @@ public class BlockHighlightConfig {
 			o_fillDepthTest.setAvailable(aBoolean);
 			o_fillExpand.setAvailable(aBoolean);
 		}
-		if(booleanOption.equals(o_outlineRainbow)){
+		if (booleanOption.equals(o_outlineRainbow)) {
 			o_lineCol.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
 			o_lineCol2.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
 		}
-		if(booleanOption.equals(o_fillRainbow)){
+		if (booleanOption.equals(o_fillRainbow)) {
 			o_fillCol.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
 			o_fillCol2.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
 		}
-		if(booleanOption.equals(o_doEasing)){
+		if (booleanOption.equals(o_doEasing)) {
 			o_easeSpeed.setAvailable(aBoolean);
 		}
-		if(booleanOption.equals(o_scale)){
+		if (booleanOption.equals(o_scale)) {
 			o_scaleSpeed.setAvailable(aBoolean);
 		}
-		if(booleanOption.equals(o_crystalHelper)){
+		if (booleanOption.equals(o_crystalHelper)) {
 			o_crystalHelperColor.setAvailable(aBoolean);
 		}
-		if(booleanOption.equals(o_secondary)){
+		if (booleanOption.equals(o_secondary)) {
 			o_slineCol.setAvailable(aBoolean);
 			o_slineCol2.setAvailable(aBoolean);
 			o_slineAlphaMultiplier.setAvailable(aBoolean);
@@ -579,7 +592,7 @@ public class BlockHighlightConfig {
 			o_slineDepthTest.setAvailable(aBoolean);
 			o_slineWidth.setAvailable(aBoolean);
 		}
-		if(booleanOption.equals(o_tertiary)){
+		if (booleanOption.equals(o_tertiary)) {
 			o_tlineCol.setAvailable(aBoolean);
 			o_tlineCol2.setAvailable(aBoolean);
 			o_tlineAlphaMultiplier.setAvailable(aBoolean);

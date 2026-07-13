@@ -105,6 +105,13 @@ public class Vertexer {
 			builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
 			return;
 		}
+		/*
+
+		--------------------------------------------------------
+		^         ^                           ^         ^
+		minOuter, minInner                    maxInner, maxOuter
+
+		*/
 		Vector3f v1 = new Vector3f(x1, y1, z1);
 		Vector3f v2 = new Vector3f(x2, y2, z2);
 		Vector3f minOuter = new Vector3f();
@@ -122,10 +129,15 @@ public class Vertexer {
 			Vector3f maxInner = new Vector3f();
 			center.lerp(v1, BlockHighlightConfig.INSTANCE.instance().cutFromCenter, minInner);
 			center.lerp(v2, BlockHighlightConfig.INSTANCE.instance().cutFromCenter, maxInner);
-			builder.addVertex(model, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
-			builder.addVertex(model, minInner.x, minInner.y, minInner.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
 
-			builder.addVertex(model, maxInner.x, maxInner.y, maxInner.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			float yeah = Math.clamp(minInner.distance(minOuter) / minOuter.distance(maxOuter), 0, 1);
+			Color minInnerCol = new Color((int) Mth.lerp(yeah, cols.getRed(), col2.getRed()),  (int) Mth.lerp(yeah, cols.getGreen(), col2.getGreen()), (int) Mth.lerp(yeah, cols.getBlue(), col2.getBlue()));
+			Color maxInnerCol = new Color((int) Mth.lerp(1 - yeah, cols.getRed(), col2.getRed()), (int) Mth.lerp( 1 - yeah, cols.getGreen(), col2.getGreen()), (int) Mth.lerp( 1 - yeah, cols.getBlue(), col2.getBlue()));
+
+			builder.addVertex(model, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			builder.addVertex(model, minInner.x, minInner.y, minInner.z).setColor(minInnerCol.getRed(), minInnerCol.getGreen(), minInnerCol.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+
+			builder.addVertex(model, maxInner.x, maxInner.y, maxInner.z).setColor(maxInnerCol.getRed(), maxInnerCol.getGreen(), maxInnerCol.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
 			builder.addVertex(model, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
 		}
 	}
