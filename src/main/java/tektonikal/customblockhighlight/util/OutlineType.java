@@ -1,4 +1,4 @@
-package tektonikal.customblockhighlight;
+package tektonikal.customblockhighlight.util;
 
 import dev.isxander.yacl3.api.NameableEnum;
 import net.minecraft.network.chat.Component;

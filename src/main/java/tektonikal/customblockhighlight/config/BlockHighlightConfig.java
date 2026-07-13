@@ -14,7 +14,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import tektonikal.customblockhighlight.OutlineType;
+import tektonikal.customblockhighlight.util.DepthTestMode;
+import tektonikal.customblockhighlight.util.OutlineType;
 
 import java.awt.*;
 import java.io.File;
@@ -49,9 +50,9 @@ public class BlockHighlightConfig {
         @SerialEntry public int lineAlpha = 255;
         @SerialEntry public boolean outlineRainbow = true;
         @SerialEntry public OutlineType outlineType = OutlineType.AIR_EXPOSED;
-        @SerialEntry public float lineWidth = 3;
+        @SerialEntry public float lineWidth = 2.5F;
         @SerialEntry public float lineExpand = 0;
-        @SerialEntry public boolean lineDepthTest = false;
+        @SerialEntry public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
 		@SerialEntry public float cutFromCenter = 0;
 		@SerialEntry public float cutFromCorner = 0;
 
@@ -61,7 +62,7 @@ public class BlockHighlightConfig {
 		@SerialEntry public float slineAlphaMultiplier = 1F;
 		@SerialEntry public boolean soutlineRainbow = true;
 		@SerialEntry public float slineWidth = 3;
-		@SerialEntry public boolean slineDepthTest = false;
+		@SerialEntry public DepthTestMode slineDepthTest = DepthTestMode.ALWAYS_PASS;
 
 	@SerialEntry public boolean tertiary = false;
 		@SerialEntry public Color tlineCol = Color.BLACK;
@@ -69,7 +70,7 @@ public class BlockHighlightConfig {
 		@SerialEntry public float tlineAlphaMultiplier = 1F;
 		@SerialEntry public boolean toutlineRainbow = true;
 		@SerialEntry public float tlineWidth = 3;
-		@SerialEntry public boolean tlineDepthTest = false;
+		@SerialEntry public DepthTestMode tlineDepthTest = DepthTestMode.ALWAYS_PASS;
 
     //fill stuffs
     @SerialEntry public boolean fillEnabled = true;
@@ -79,7 +80,7 @@ public class BlockHighlightConfig {
         @SerialEntry public boolean fillRainbow = false;
         @SerialEntry public OutlineType fillType = OutlineType.AIR_EXPOSED;
         @SerialEntry public float fillExpand = 0.001F;
-        @SerialEntry public boolean fillDepthTest = false;
+        @SerialEntry public DepthTestMode fillDepthTest = DepthTestMode.HIDDEN_ONLY;
     //extras
     @SerialEntry public boolean doEasing = true;
     @SerialEntry public float easeSpeed = 20F;
@@ -96,7 +97,9 @@ public class BlockHighlightConfig {
     @SerialEntry public Color crystalHelperColor = Color.RED;
     @SerialEntry public boolean connectedBlocks = true;
 	@SerialEntry public boolean updateWhenUnfocused = true;
+	@SerialEntry public boolean allowEntities = true;
 	//@formatter:on
+	@Updatable
 	public static Option<Boolean> o_outlineEnabled = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("Enabled"))
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().outlineEnabled, newVal -> BlockHighlightConfig.INSTANCE.instance().outlineEnabled = newVal))
@@ -117,6 +120,7 @@ public class BlockHighlightConfig {
 			.controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
 			.stateManager(StateManager.createInstant(255, () -> BlockHighlightConfig.INSTANCE.instance().lineAlpha, newVal -> BlockHighlightConfig.INSTANCE.instance().lineAlpha = newVal))
 			.build();
+	@Updatable
 	public static Option<Boolean> o_outlineRainbow = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Rainbow"))
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().outlineRainbow, newVal -> BlockHighlightConfig.INSTANCE.instance().outlineRainbow = newVal))
@@ -134,11 +138,10 @@ public class BlockHighlightConfig {
 			.stateManager(StateManager.createInstant(OutlineType.AIR_EXPOSED, () -> BlockHighlightConfig.INSTANCE.instance().outlineType, newVal -> BlockHighlightConfig.INSTANCE.instance().outlineType = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
 			.build();
-	public static Option<Boolean> o_lineDepthTest = Option.<Boolean>createBuilder()
+	public static Option<DepthTestMode> o_lineDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
-			.description(OptionDescription.of(Component.nullToEmpty("Whether parts of the outline are visible through other objects.")))
-			.stateManager(StateManager.createInstant(false, () -> BlockHighlightConfig.INSTANCE.instance().lineDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().lineDepthTest = newVal))
-			.controller(TickBoxControllerBuilder::create)
+			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> BlockHighlightConfig.INSTANCE.instance().lineDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().lineDepthTest = newVal))
+			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
 	public static Option<Float> o_lineExpand = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Adjust Size By"))
@@ -148,7 +151,7 @@ public class BlockHighlightConfig {
 	public static Option<Float> o_lineWidth = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Line Width"))
 			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(0.5F, 15F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1f", value) + " px")))
-			.stateManager(StateManager.createInstant(3F, () -> BlockHighlightConfig.INSTANCE.instance().lineWidth, newVal -> BlockHighlightConfig.INSTANCE.instance().lineWidth = newVal))
+			.stateManager(StateManager.createInstant(2.5F, () -> BlockHighlightConfig.INSTANCE.instance().lineWidth, newVal -> BlockHighlightConfig.INSTANCE.instance().lineWidth = newVal))
 			.build();
 	public static Option<Float> o_cutFromCorner = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Cut From Corner"))
@@ -160,6 +163,7 @@ public class BlockHighlightConfig {
 			.stateManager(StateManager.createInstant(0F, () -> BlockHighlightConfig.INSTANCE.instance().cutFromCenter, newVal -> BlockHighlightConfig.INSTANCE.instance().cutFromCenter = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
+	@Updatable
 	public static Option<Boolean> o_secondary = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("Enabled"))
 			.stateManager(StateManager.createInstant(false, () -> BlockHighlightConfig.INSTANCE.instance().secondary, newVal -> BlockHighlightConfig.INSTANCE.instance().secondary = newVal))
@@ -178,24 +182,25 @@ public class BlockHighlightConfig {
 	public static Option<Float> o_slineAlphaMultiplier = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Opacity Multiplier"))
 			.stateManager(StateManager.createInstant(1F, () -> BlockHighlightConfig.INSTANCE.instance().slineAlphaMultiplier, newVal -> BlockHighlightConfig.INSTANCE.instance().slineAlphaMultiplier = newVal))
-			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
+	@Updatable
 	public static Option<Boolean> o_soutlineRainbow = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Rainbow"))
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().soutlineRainbow, newVal -> BlockHighlightConfig.INSTANCE.instance().soutlineRainbow = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Boolean> o_slineDepthTest = Option.<Boolean>createBuilder()
+	public static Option<DepthTestMode> o_slineDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
-			.description(OptionDescription.of(Component.nullToEmpty("Whether parts of the outline are visible through other objects.")))
-			.stateManager(StateManager.createInstant(false, () -> BlockHighlightConfig.INSTANCE.instance().slineDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().slineDepthTest = newVal))
-			.controller(TickBoxControllerBuilder::create)
+			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> BlockHighlightConfig.INSTANCE.instance().slineDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().slineDepthTest = newVal))
+			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
 	public static Option<Float> o_slineWidth = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Line Width"))
 			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1f", value) + " px")))
 			.stateManager(StateManager.createInstant(3F, () -> BlockHighlightConfig.INSTANCE.instance().slineWidth, newVal -> BlockHighlightConfig.INSTANCE.instance().slineWidth = newVal))
 			.build();
+	@Updatable
 	public static Option<Boolean> o_tertiary = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("Enabled"))
 			.stateManager(StateManager.createInstant(false, () -> BlockHighlightConfig.INSTANCE.instance().tertiary, newVal -> BlockHighlightConfig.INSTANCE.instance().tertiary = newVal))
@@ -214,24 +219,25 @@ public class BlockHighlightConfig {
 	public static Option<Float> o_tlineAlphaMultiplier = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Opacity Multiplier"))
 			.stateManager(StateManager.createInstant(1F, () -> BlockHighlightConfig.INSTANCE.instance().tlineAlphaMultiplier, newVal -> BlockHighlightConfig.INSTANCE.instance().tlineAlphaMultiplier = newVal))
-			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
+	@Updatable
 	public static Option<Boolean> o_toutlineRainbow = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Rainbow"))
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().toutlineRainbow, newVal -> BlockHighlightConfig.INSTANCE.instance().toutlineRainbow = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Boolean> o_tlineDepthTest = Option.<Boolean>createBuilder()
+	public static Option<DepthTestMode> o_tlineDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
-			.description(OptionDescription.of(Component.nullToEmpty("Whether parts of the outline are visible through other objects.")))
-			.stateManager(StateManager.createInstant(false, () -> BlockHighlightConfig.INSTANCE.instance().tlineDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().tlineDepthTest = newVal))
-			.controller(TickBoxControllerBuilder::create)
+			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> BlockHighlightConfig.INSTANCE.instance().tlineDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().tlineDepthTest = newVal))
+			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
 	public static Option<Float> o_tlineWidth = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Line Width"))
 			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1f", value) + " px")))
 			.stateManager(StateManager.createInstant(3F, () -> BlockHighlightConfig.INSTANCE.instance().tlineWidth, newVal -> BlockHighlightConfig.INSTANCE.instance().tlineWidth = newVal))
 			.build();
+	@Updatable
 	public static Option<Boolean> o_fillEnabled = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("Enabled"))
 			.controller(TickBoxControllerBuilder::create)
@@ -252,6 +258,7 @@ public class BlockHighlightConfig {
 			.stateManager(StateManager.createInstant(128, () -> BlockHighlightConfig.INSTANCE.instance().fillOpacity, newVal -> BlockHighlightConfig.INSTANCE.instance().fillOpacity = newVal))
 			.controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 255).step(1).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
 			.build();
+	@Updatable
 	public static Option<Boolean> o_fillRainbow = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Rainbow"))
 			.stateManager(StateManager.createInstant(false, () -> BlockHighlightConfig.INSTANCE.instance().fillRainbow, newVal -> BlockHighlightConfig.INSTANCE.instance().fillRainbow = newVal))
@@ -269,11 +276,10 @@ public class BlockHighlightConfig {
 			.stateManager(StateManager.createInstant(OutlineType.AIR_EXPOSED, () -> BlockHighlightConfig.INSTANCE.instance().fillType, newVal -> BlockHighlightConfig.INSTANCE.instance().fillType = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
 			.build();
-	public static Option<Boolean> o_fillDepthTest = Option.<Boolean>createBuilder()
+	public static Option<DepthTestMode> o_fillDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
-			.description(OptionDescription.of(Component.nullToEmpty("Whether parts of the fill are visible through other objects.")))
-			.stateManager(StateManager.createInstant(false, () -> BlockHighlightConfig.INSTANCE.instance().fillDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().fillDepthTest = newVal))
-			.controller(TickBoxControllerBuilder::create)
+			.stateManager(StateManager.createInstant(DepthTestMode.HIDDEN_ONLY, () -> BlockHighlightConfig.INSTANCE.instance().fillDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().fillDepthTest = newVal))
+			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
 	public static Option<Float> o_fillExpand = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Adjust Size By"))
@@ -281,6 +287,7 @@ public class BlockHighlightConfig {
 			.stateManager(StateManager.createInstant(0.001F, () -> BlockHighlightConfig.INSTANCE.instance().fillExpand, newVal -> BlockHighlightConfig.INSTANCE.instance().fillExpand = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
 			.build();
+	@Updatable
 	public static Option<Boolean> o_doEasing = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Enabled"))
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().doEasing, newVal -> BlockHighlightConfig.INSTANCE.instance().doEasing = newVal))
@@ -306,12 +313,12 @@ public class BlockHighlightConfig {
 			.stateManager(StateManager.createInstant(15F, () -> BlockHighlightConfig.INSTANCE.instance().fadeSpeed, newVal -> BlockHighlightConfig.INSTANCE.instance().fadeSpeed = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1fx", value))))
 			.build();
+	@Updatable
 	public static Option<Boolean> o_scale = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Enabled"))
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().scale, newVal -> BlockHighlightConfig.INSTANCE.instance().scale = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	;
 	public static Option<Float> o_scaleSpeed = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Speed"))
 			.stateManager(StateManager.createInstant(15F, () -> BlockHighlightConfig.INSTANCE.instance().scaleSpeed, newVal -> BlockHighlightConfig.INSTANCE.instance().scaleSpeed = newVal))
@@ -348,6 +355,7 @@ public class BlockHighlightConfig {
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().updateWhenUnfocused, newVal -> BlockHighlightConfig.INSTANCE.instance().updateWhenUnfocused = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
+	@Updatable
 	public static Option<Boolean> o_crystalHelper = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Crystal Helper"))
 			.description(OptionDescription.of(Component.nullToEmpty("highlights the block in the color below when you are looking at an obsidian block that crystals cannot be placed on.")))
@@ -358,6 +366,11 @@ public class BlockHighlightConfig {
 			.name(Component.nullToEmpty("  - Color"))
 			.controller(ColorControllerBuilder::create)
 			.stateManager(StateManager.createInstant(Color.RED, () -> BlockHighlightConfig.INSTANCE.instance().crystalHelperColor, color -> BlockHighlightConfig.INSTANCE.instance().crystalHelperColor = color))
+			.build();
+	public static Option<Boolean> o_allowEntities = Option.<Boolean>createBuilder()
+			.name(Component.nullToEmpty("- Select Entities"))
+			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().allowEntities, newVal -> BlockHighlightConfig.INSTANCE.instance().allowEntities = newVal))
+			.controller(TickBoxControllerBuilder::create)
 			.build();
 
 	public static Screen getConfigScreen(Screen parent) {
@@ -464,6 +477,7 @@ public class BlockHighlightConfig {
 									.name(Component.nullToEmpty("Miscellaneous"))
 									.option(o_connectedBlocks)
 									.option(o_updateWhenUnfocused)
+									.option(o_allowEntities)
 									.option(o_crystalHelper)
 									.option(o_crystalHelperColor)
 									.build())
@@ -512,6 +526,66 @@ public class BlockHighlightConfig {
 									.build())
 							.build())
 					.build().generateScreen(parent);
+		}
+	}
+
+	public static void update(Option<Boolean> booleanOption, Boolean aBoolean) {
+		if(booleanOption.equals(o_outlineEnabled)) {
+			o_lineCol.setAvailable(aBoolean);
+			o_lineCol2.setAvailable(aBoolean);
+			o_lineAlpha.setAvailable(aBoolean);
+			o_outlineRainbow.setAvailable(aBoolean);
+			o_outlineType.setAvailable(aBoolean);
+			o_lineDepthTest.setAvailable(aBoolean);
+			o_lineExpand.setAvailable(aBoolean);
+			o_lineWidth.setAvailable(aBoolean);
+			o_cutFromCenter.setAvailable(aBoolean);
+			o_cutFromCorner.setAvailable(aBoolean);
+
+			o_secondary.setAvailable(aBoolean);
+			o_tertiary.setAvailable(aBoolean);
+		}
+		if(booleanOption.equals(o_fillEnabled)) {
+			o_fillCol.setAvailable(aBoolean);
+			o_fillCol2.setAvailable(aBoolean);
+			o_fillOpacity.setAvailable(aBoolean);
+			o_fillRainbow.setAvailable(aBoolean);
+			o_fillType.setAvailable(aBoolean);
+			o_fillDepthTest.setAvailable(aBoolean);
+			o_fillExpand.setAvailable(aBoolean);
+		}
+		if(booleanOption.equals(o_outlineRainbow)){
+			o_lineCol.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
+			o_lineCol2.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
+		}
+		if(booleanOption.equals(o_fillRainbow)){
+			o_fillCol.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
+			o_fillCol2.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
+		}
+		if(booleanOption.equals(o_doEasing)){
+			o_easeSpeed.setAvailable(aBoolean);
+		}
+		if(booleanOption.equals(o_scale)){
+			o_scaleSpeed.setAvailable(aBoolean);
+		}
+		if(booleanOption.equals(o_crystalHelper)){
+			o_crystalHelperColor.setAvailable(aBoolean);
+		}
+		if(booleanOption.equals(o_secondary)){
+			o_slineCol.setAvailable(aBoolean);
+			o_slineCol2.setAvailable(aBoolean);
+			o_slineAlphaMultiplier.setAvailable(aBoolean);
+			o_soutlineRainbow.setAvailable(aBoolean);
+			o_slineDepthTest.setAvailable(aBoolean);
+			o_slineWidth.setAvailable(aBoolean);
+		}
+		if(booleanOption.equals(o_tertiary)){
+			o_tlineCol.setAvailable(aBoolean);
+			o_tlineCol2.setAvailable(aBoolean);
+			o_tlineAlphaMultiplier.setAvailable(aBoolean);
+			o_toutlineRainbow.setAvailable(aBoolean);
+			o_tlineDepthTest.setAvailable(aBoolean);
+			o_tlineWidth.setAvailable(aBoolean);
 		}
 	}
 }

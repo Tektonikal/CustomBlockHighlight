@@ -38,7 +38,9 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
+import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Line;
+import tektonikal.customblockhighlight.util.OutlineType;
 
 import java.awt.*;
 import java.util.*;
@@ -46,6 +48,7 @@ import java.util.List;
 
 import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
 import static net.minecraft.client.renderer.RenderPipelines.LINES;
+import static tektonikal.customblockhighlight.Blockhighlight.ease;
 
 //POST V2.8
 //TODO: fix thick lines not fully joining at corners
@@ -59,16 +62,12 @@ import static net.minecraft.client.renderer.RenderPipelines.LINES;
 //TODO: separate options from the extras tab to be more specific
 //TODO: more options for the extra line layers
 //TODO: ensure iris compat
-
-//NOW
-//TODO: fluid logic. just to spite microcontrollers
-//TODO: fancy config screen
-//TODO: more depth test options
 //there is no real solution to the Z-fighting issue without disabling depth test.
 //even if the lines are drawn correctly spaced out, the thicker line might be rotated differently, causing it to fully appear in front or z-fight. whateverrrrrr man
 //maybe it would be best into looking into creating a pipeline to draw lines that aren't in screenspace. idk
-//TODO: add notice somewhere about this to user!
-//TODO: add toggle for entities
+
+//NOW
+//TODO: fluid logic. just to spite microcontrollers
 //TODO: presets
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
@@ -77,17 +76,31 @@ public class Renderer {
 	public static final float[] sideFades = new float[6];
 	public static final float[] lineFades = new float[6];
 
-	public static final RenderPipeline QUAD_NO_DEPTH = RenderPipelines.register(
+	public static final RenderPipeline LINE_NO_DEPTH = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/evil-lines"))
-					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
 					.withCull(false)
 					.build()
 	);
 	public static final RenderPipeline FILL_NO_DEPTH = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/evil-fill"))
-					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, false))
+					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
+					.withCull(false)
+					.build()
+	);
+	public static final RenderPipeline LINES_CONCEALED_ONLY = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
+					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/eviler-lines"))
+					.withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, true))
+					.withCull(false)
+					.build()
+	);
+	public static final RenderPipeline FILL_CONCEALED_ONLY = RenderPipelines.register(
+			RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
+					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/eviler-fill"))
+					.withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, true))
 					.withCull(false)
 					.build()
 	);
@@ -125,21 +138,21 @@ public class Renderer {
 		if (info == null) return;
 
 		GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
-		RenderTarget mainTarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
+		RenderTarget mainTarget = mc.gameRenderer.mainRenderTarget();
 		GpuTextureView colorTexture = mainTarget.getColorTextureView();
 		assert colorTexture != null;
 		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
 			if (lines) {
 				switch (layer) {
 					case 0 ->
-							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest ? LINES : QUAD_NO_DEPTH);
+							renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest, true));
 					case 1 ->
-							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest ? LINES : QUAD_NO_DEPTH);
+							renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest, true));
 					case 2 ->
-							renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest ? LINES : QUAD_NO_DEPTH);
+							renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest, true));
 				}
 			} else {
-				renderPass.setPipeline(BlockHighlightConfig.INSTANCE.instance().fillDepthTest ? DEBUG_QUADS : FILL_NO_DEPTH);
+				renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().fillDepthTest, false));
 			}
 
 			RenderSystem.bindDefaultUniforms(renderPass);
@@ -154,6 +167,13 @@ public class Renderer {
 		} else {
 			stagedFaceBuffer.endFrame();
 		}
+	}
+	public static RenderPipeline getPipeline(DepthTestMode mode, boolean lines){
+		return switch (mode) {
+			case ALWAYS_PASS -> lines ? LINE_NO_DEPTH : FILL_NO_DEPTH;
+			case HIDDEN_ONLY -> lines ? LINES_CONCEALED_ONLY : FILL_CONCEALED_ONLY;
+			case NORMAL -> lines ? LINES : DEBUG_QUADS;
+		};
 	}
 
 	public static void drawBoxFill(PoseStack stack, AABB box, Color cols, Color col2, float[] alpha) {
@@ -261,10 +281,6 @@ public class Renderer {
 		return Color.getHSBColor((float) (rainbowState / 360.0f), BlockHighlightConfig.INSTANCE.instance().saturation, BlockHighlightConfig.INSTANCE.instance().brightness);
 	}
 
-	public static double ease(double start, double end, float speed) {
-		return (start + (end - start) * (1 - Math.exp(-(1.0F / mc.getFps()) * speed)));
-	}
-
 	public static boolean isBlockOccupied(BlockPos pos) {
 		if (mc.level == null) throw new IllegalStateException("level == null");
 		if (mc.level.getBlockState(pos).hasProperty(BlockStateProperties.WATERLOGGED) && !mc.level.getBlockState(pos).getValue(BlockStateProperties.WATERLOGGED) && !mc.level.getFluidState(pos).isEmpty()) {
@@ -295,7 +311,7 @@ public class Renderer {
 	}
 
 	public static void mainLoop(LevelRenderContext c) {
-		HitResult h = Minecraft.getInstance().hitResult;
+		HitResult h = mc.hitResult;
 		if (h == null || mc.level == null) return;
 
 		if (h.getType() != HitResult.Type.MISS) {
@@ -307,10 +323,10 @@ public class Renderer {
 				} else {
 					targetBox = shape.bounds().move(block.getBlockPos());
 				}
-			} else if (h instanceof EntityHitResult entityHitResult) {
+			} else if (h instanceof EntityHitResult entityHitResult && BlockHighlightConfig.INSTANCE.instance().allowEntities) {
 				Entity entity = entityHitResult.getEntity();
 				//so, so sloppy. might also have the worst workaround of the century for hanging stuff
-				float delta = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false);
+				float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
 				targetBox = moveToZero(entity.getBoundingBox()).move(entity.getPosition(delta).subtract(moveToZero(entity.getBoundingBox()).getCenter()).add(0, entity instanceof HangingEntity ? 0 : moveToZero(entity.getBoundingBox()).maxY / 2F, 0));
 
 			}
@@ -393,7 +409,7 @@ public class Renderer {
 							shape = Shapes.joinUnoptimized(shape, mc.level.getBlockState(block.getBlockPos().relative(connected)).getShape(mc.level, block.getBlockPos().relative(connected), CollisionContext.of(cameraEntity)).move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR).optimize();
 						}
 					}
-				} else if (mc.hitResult instanceof EntityHitResult entity) {
+				} else if (mc.hitResult instanceof EntityHitResult entity && BlockHighlightConfig.INSTANCE.instance().allowEntities) {
 					shape = Shapes.create(entity.getEntity().getBoundingBox());
 				}
 			}
@@ -417,7 +433,7 @@ public class Renderer {
 				Color sfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
 				float[] newFades = new float[6];
 				for (int i = 0; i < 6; i++) {
-					newFades[i] = lineFades[i] * BlockHighlightConfig.INSTANCE.instance().slineAlphaMultiplier;
+					newFades[i] = Mth.clamp(lineFades[i] * BlockHighlightConfig.INSTANCE.instance().slineAlphaMultiplier, 0, 255F);
 				}
 				Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), sfinalLineCol, sfinalLineCol2, newFades, 1);
 			}
@@ -426,7 +442,7 @@ public class Renderer {
 				Color tfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
 				float[] newFades = new float[6];
 				for (int i = 0; i < 6; i++) {
-					newFades[i] = lineFades[i] * BlockHighlightConfig.INSTANCE.instance().tlineAlphaMultiplier;
+					newFades[i] = Mth.clamp(lineFades[i] * BlockHighlightConfig.INSTANCE.instance().tlineAlphaMultiplier, 0, 255F);
 				}
 				Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), tfinalLineCol, tfinalLineCol2, newFades, 2);
 			}
@@ -437,14 +453,21 @@ public class Renderer {
 	private static void updateProgresses(boolean shouldFadeOut) {
 		if (mc.hitResult == null || mc.level == null) return;
 		//TODO: clean this up later
-		//I didn't add in/out because it would BREAKKK. TODO THIS
-		scaleProg = BlockHighlightConfig.INSTANCE.instance().scale ? (float) ease(scaleProg, shouldFadeOut ? 0 : 1, BlockHighlightConfig.INSTANCE.instance().scaleSpeed) : 1;
 		if (mc.hitResult.getType() == HitResult.Type.ENTITY) {
-			for (Direction dir : Direction.values()) {
-				sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().fillOpacity, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().fillOpacity;
-				lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
+			if (BlockHighlightConfig.INSTANCE.instance().allowEntities) {
+				for (Direction dir : Direction.values()) {
+					sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().fillOpacity, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().fillOpacity;
+					lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
+				}
+				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(edgeAlpha, BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
+			}else{
+				shouldFadeOut = true;
+				for (Direction dir : Direction.values()) {
+					sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
+					lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
+				}
+				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(edgeAlpha, 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
 			}
-			edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(edgeAlpha, BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
 		} else if (mc.hitResult instanceof BlockHitResult block) {
 			if ((mc.level.isEmptyBlock(block.getBlockPos()) || shouldFadeOut)) {
 				for (Direction dir : Direction.values()) {
@@ -476,6 +499,8 @@ public class Renderer {
 				}
 			}
 		}
+		//I didn't add in/out because it would BREAKKK. TODO THIS
+		scaleProg = BlockHighlightConfig.INSTANCE.instance().scale ? (float) ease(scaleProg, shouldFadeOut ? 0 : 1, BlockHighlightConfig.INSTANCE.instance().scaleSpeed) : 1;
 	}
 
 	private static Direction joinConnected(BlockState state, BlockPos pos) {
