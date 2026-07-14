@@ -35,16 +35,8 @@ public class BlockHighlightConfig {
 			.registerTypeHierarchyAdapter(Color.class, new GsonConfigInstance.ColorTypeAdapter())
 			.setPrettyPrinting()
 			.create();
+
 	public static ConfigClassHandler<BlockHighlightConfig> INSTANCE;
-
-	static {
-		INSTANCE = ConfigClassHandler.createBuilder(BlockHighlightConfig.class)
-				.id(Identifier.fromNamespaceAndPath("custom-block-highlight", "config"))
-				.serializer(config -> GsonConfigSerializerBuilder.create(config).overrideGsonBuilder(gson)
-						.setPath(FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json")).build()).build();
-		INSTANCE.load();
-	}
-
 	public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val -> Component.nullToEmpty(String.format("%.2f", val).replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
 
 	//@formatter:off
@@ -106,6 +98,15 @@ public class BlockHighlightConfig {
 	@SerialEntry public boolean updateWhenUnfocused = true;
 	@SerialEntry public boolean allowEntities = true;
 	@SerialEntry public boolean allowLiquids = true;
+
+	static {
+		INSTANCE = ConfigClassHandler.createBuilder(BlockHighlightConfig.class)
+				.id(Identifier.fromNamespaceAndPath("custom-block-highlight", "config"))
+				.serializer(config -> GsonConfigSerializerBuilder.create(config).overrideGsonBuilder(gson)
+						.setPath(FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json")).build()).build();
+		INSTANCE.load();
+	}
+
 	//@formatter:on
 	@Updatable
 	public static Option<Boolean> o_outlineEnabled = Option.<Boolean>createBuilder()
