@@ -3,19 +3,13 @@ package tektonikal.customblockhighlight.config;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.StringWidget;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
-import tektonikal.customblockhighlight.Blockhighlight;
 
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 public class PresetsScreen extends Screen {
 	private final boolean firstTime;
@@ -32,16 +26,18 @@ public class PresetsScreen extends Screen {
 			Path path = FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json");
 			Files.delete(path);
 			Files.createFile(path);
-			Path p = FabricLoader.getInstance().getModContainer("custom-block-highlight").get().getRootPaths().getFirst().resolve("assets/presets/" + name + ".json");
-			Files.writeString(path, Files.readString(p), StandardCharsets.UTF_8);
+			try (var preset = PresetsScreen.class.getResourceAsStream("/assets/presets/" + name + ".json")) {
+				if (preset == null) return;
+				Files.write(path, preset.readAllBytes());
+			}
 			BlockHighlightConfig.INSTANCE.load();
-		} catch (Exception _) {
+		} catch (IOException _) {
 		}
 	}
 
 	@Override
 	protected void init() {
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < 6; i++) { // faggot you should be using enums
 			addButton(height / 4 + (height / 8) * i, i);
 		}
 	}
