@@ -13,27 +13,9 @@ public class Blockhighlight implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		BlockHighlightConfig.INSTANCE.load();
-		//Classic.
-		unleashHell();
 		armSecuritySystem();
 		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((_, _) -> false);
 		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
-	}
-
-	public static void unleashHell() {
-		Arrays.stream(BlockHighlightConfig.class.getDeclaredFields())
-				.filter(field -> field.getName().startsWith("o_") && !field.getName().equals("INSTANCE"))
-				.forEach(field -> {
-					try {
-						//noinspection rawtypes
-						var option = (Option) field.get(null);
-						var valueField = BlockHighlightConfig.class.getField(field.getName().replace("o_", ""));
-						//noinspection unchecked
-						option.stateManager().set(valueField.get(BlockHighlightConfig.INSTANCE.instance()));
-						option.applyValue();
-					} catch (IllegalAccessException | NoSuchFieldException _) {
-					}
-				});
 	}
 
 	private static void armSecuritySystem() {
