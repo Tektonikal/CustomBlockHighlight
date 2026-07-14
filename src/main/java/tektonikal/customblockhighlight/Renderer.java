@@ -269,7 +269,7 @@ public class Renderer {
 
 	private static Direction[] getSides(OutlineType type, BlockPos pos) {
 		return switch (type) {
-			case LOOKAT ->
+			case LOOK_AT ->
 					(evilHitResult instanceof BlockHitResult block) ? new Direction[]{block.getDirection()} : Direction.values();
 			case AIR_EXPOSED -> invert(getConcealedFaces(pos));
 			case CONCEALED -> getConcealedFaces(pos);

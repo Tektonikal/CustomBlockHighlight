@@ -3,6 +3,7 @@ package tektonikal.customblockhighlight.config;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import dev.isxander.yacl3.config.GsonConfigInstance;
@@ -20,7 +21,6 @@ import tektonikal.customblockhighlight.util.OutlineType;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -520,14 +520,14 @@ public class BlockHighlightConfig {
 													if (yeah == null) {
 														return;
 													}
-												} catch (Exception e) {
+												} catch (JsonSyntaxException e) {
 													return;
 												}
 												try {
 													Path path = FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json");
 													Files.delete(path);
 													Files.createFile(path);
-													Files.writeString(path, Minecraft.getInstance().keyboardHandler.getClipboard(), StandardCharsets.UTF_8);
+													Files.writeString(path, Minecraft.getInstance().keyboardHandler.getClipboard());
 													BlockHighlightConfig.INSTANCE.load();
 												} catch (IOException e) {
 													throw new RuntimeException(e);
@@ -541,7 +541,7 @@ public class BlockHighlightConfig {
 											.build())
 									.build())
 							.build()).save(() -> INSTANCE.save())
-					.build().generateScreen(parent);
+					.build().generateScreen(parent); // todo?: dont rebuilt the config screen layout every time
 		Path firstOpenPath = FabricLoader.getInstance().getConfigDir().resolve(".cbh_info");
 		File f = firstOpenPath.toFile();
 		if (!f.exists()) {

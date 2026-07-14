@@ -9,6 +9,7 @@ import tektonikal.customblockhighlight.config.Updatable;
 
 import java.util.Arrays;
 
+//           this ↓ should be capitalized.
 public class Blockhighlight implements ModInitializer {
 	@Override
 	public void onInitialize() {

@@ -1,13 +1,11 @@
 package tektonikal.customblockhighlight.util;
 
-import com.mojang.blaze3d.platform.CompareOp;
 import dev.isxander.yacl3.api.NameableEnum;
 import net.minecraft.network.chat.Component;
 
 public enum DepthTestMode implements NameableEnum {
 	//GREATER_THAN_OR_EQUAL
 	NORMAL,
-	//ALWAYS_PASS
 	ALWAYS_PASS,
 	//LESS_THAN
 	HIDDEN_ONLY;
