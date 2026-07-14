@@ -14,7 +14,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import tektonikal.customblockhighlight.Blockhighlight;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.OutlineType;
 
@@ -27,7 +26,6 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
 import static com.sun.jna.Platform.isWindows;
-
 
 public class BlockHighlightConfig {
 	@SuppressWarnings("deprecation")

@@ -35,7 +35,6 @@ public class PresetsScreen extends Screen {
 			Path p = FabricLoader.getInstance().getModContainer("custom-block-highlight").get().getRootPaths().getFirst().resolve("assets/presets/" + name + ".json");
 			Files.writeString(path, Files.readString(p), StandardCharsets.UTF_8);
 			BlockHighlightConfig.INSTANCE.load();
-			Blockhighlight.unleashHell();
 		} catch (Exception _) {
 		}
 	}
