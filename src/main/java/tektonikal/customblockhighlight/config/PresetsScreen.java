@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -37,32 +38,19 @@ public class PresetsScreen extends Screen {
 
 	@Override
 	protected void init() {
-		for (int i = 0; i < 6; i++) { // faggot you should be using enums
-			addButton(height / 4 + (height / 8) * i, i);
+		for (Preset preset : Preset.values()) {
+			addButton(height / 4 + (height / 8) * preset.ordinal(), preset);
 		}
 	}
 
-	public void addButton(int y, int preset) {
-		addRenderableWidget(new Button(width / 4, y, width / 2, 18, getPresetTitle(preset), _ -> loadPreset(getPresetName(preset)), _ -> Component.empty()) {
+	public void addButton(int y, Preset preset) {
+		addRenderableWidget(new Button(width / 4, y, width / 2, 18, preset.meow, _ -> loadPreset(preset.name), _ -> Component.empty()) {
 			@Override
-			protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+			protected void extractContents(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 				extractDefaultSprite(graphics);
 				extractDefaultLabel(graphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE));
 			}
 		});
-	}
-
-	private Component getPresetTitle(int preset) {
-		return switch (preset) {
-			case 0 -> Component.literal("Give it to me plain! (Vanilla)");
-			default -> Component.literal("whar?");
-		};
-	}
-	private String getPresetName(int preset) {
-		return switch (preset) {
-			case 0 -> "vanilla";
-			default -> "vanilla";
-		};
 	}
 
 	@Override
@@ -71,8 +59,20 @@ public class PresetsScreen extends Screen {
 	}
 
 	@Override
-	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+	public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 		super.extractRenderState(graphics, mouseX, mouseY, a);
-		graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, -1);
+		graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
+	}
+
+	public enum Preset {
+		VANILLA(/*you should tap into Component.translatable tbh*/"vanilla", Component.literal("Give it to me plain! (Vanilla)"));
+
+		public final String name;
+		public final Component meow;
+
+		Preset(String name, Component meow) {
+			this.name = name;
+			this.meow = meow;
+		}
 	}
 }
