@@ -4,7 +4,7 @@
 	"version": "${version}",
 	"name": "Custom Block Highlight",
 	"description": "Revitalize the block outline.",
-	"authors": ["Tektonikal"],
+	"authors": ["Tektonikal", "kr1v"],
 	"contact": {
 		"homepage": "https://modrinth.com/mod/custom-block-highlight",
 		"sources": "https://github.com/Tektonikal/CustomBlockHighlight",
