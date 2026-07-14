@@ -397,8 +397,8 @@ public class Renderer {
 	}
 
 	private static void drawFill(PoseStack stack, boolean isCrystalObstructed) {
-		Color finalFillCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().fillRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().fillCol;
-		Color finalFillCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().fillRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().fillCol2;
+		Color finalFillCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperFillColor : BlockHighlightConfig.INSTANCE.instance().fillRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().fillCol;
+		Color finalFillCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperFillColor : BlockHighlightConfig.INSTANCE.instance().fillRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().fillCol2;
 		Renderer.drawBoxFill(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().fillExpand), finalFillCol, finalFillCol2, sideFades);
 	}
 
@@ -408,8 +408,8 @@ public class Renderer {
 		if (cameraEntity == null) return;
 		//TODO: make check so that cut from corner and cut from center do not add up to higher than 0.95
 
-		Color finalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().outlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().lineCol;
-		Color finalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().outlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().lineCol2;
+		Color finalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor : BlockHighlightConfig.INSTANCE.instance().outlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().lineCol;
+		Color finalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor : BlockHighlightConfig.INSTANCE.instance().outlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().lineCol2;
 		if (BlockHighlightConfig.INSTANCE.instance().outlineType == OutlineType.EDGES) {
 			if (evilHitResult != null && evilHitResult.getType() != HitResult.Type.MISS) {
 				if (evilHitResult instanceof BlockHitResult block) {
@@ -425,21 +425,21 @@ public class Renderer {
 			}
 			if (!shape.isEmpty()) {
 				if (BlockHighlightConfig.INSTANCE.instance().tertiary) {
-					Color tfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
-					Color tfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
+					Color tfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
+					Color tfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
 					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha * BlockHighlightConfig.INSTANCE.instance().tlineAlphaMultiplier, 2);
 				}
 				if (BlockHighlightConfig.INSTANCE.instance().secondary) {
-					Color sfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
-					Color sfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
+					Color sfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
+					Color sfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
 					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha * BlockHighlightConfig.INSTANCE.instance().slineAlphaMultiplier, 1);
 				}
 				Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, 0);
 			}
 		} else {
 			if (BlockHighlightConfig.INSTANCE.instance().tertiary) {
-				Color tfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
-				Color tfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
+				Color tfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().tlineCol;
+				Color tfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor : BlockHighlightConfig.INSTANCE.instance().toutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().tlineCol2;
 				float[] newFades = new float[6];
 				for (int i = 0; i < 6; i++) {
 					newFades[i] = Mth.clamp(lineFades[i] * BlockHighlightConfig.INSTANCE.instance().tlineAlphaMultiplier, 0, 255F);
@@ -447,8 +447,8 @@ public class Renderer {
 				Renderer.drawBoxOutline(stack, easeBox.inflate(BlockHighlightConfig.INSTANCE.instance().lineExpand), tfinalLineCol, tfinalLineCol2, newFades, 2);
 			}
 			if (BlockHighlightConfig.INSTANCE.instance().secondary) {
-				Color sfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
-				Color sfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
+				Color sfinalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().slineCol;
+				Color sfinalLineCol2 = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor : BlockHighlightConfig.INSTANCE.instance().soutlineRainbow ? getRainbowCol(BlockHighlightConfig.INSTANCE.instance().delay) : BlockHighlightConfig.INSTANCE.instance().slineCol2;
 				float[] newFades = new float[6];
 				for (int i = 0; i < 6; i++) {
 					newFades[i] = Mth.clamp(lineFades[i] * BlockHighlightConfig.INSTANCE.instance().slineAlphaMultiplier, 0, 255F);
@@ -466,45 +466,45 @@ public class Renderer {
 		if (evilHitResult.getType() == HitResult.Type.ENTITY) {
 			if (BlockHighlightConfig.INSTANCE.instance().allowEntities) {
 				for (Direction dir : Direction.values()) {
-					sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().fillOpacity, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().fillOpacity;
-					lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
+					sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().fillOpacity, BlockHighlightConfig.INSTANCE.instance().fadeInSpeed) : BlockHighlightConfig.INSTANCE.instance().fillOpacity;
+					lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeInSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
 				}
-				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(edgeAlpha, BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
+				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(edgeAlpha, BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeInSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
 			}else{
 				shouldFadeOut = true;
 				for (Direction dir : Direction.values()) {
-					sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
-					lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
+					sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed) : 0;
+					lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed) : 0;
 				}
-				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(edgeAlpha, 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
+				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(edgeAlpha, 0, BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed) : 0;
 			}
 		} else if (evilHitResult instanceof BlockHitResult block) {
 			if ((mc.level.isEmptyBlock(block.getBlockPos()) || shouldFadeOut)) {
 				for (Direction dir : Direction.values()) {
-					sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
-					lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
+					sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed) : 0;
+					lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed) : 0;
 				}
-				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(edgeAlpha, 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
+				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(edgeAlpha, 0, BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed) : 0;
 			} else {
-				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(edgeAlpha, BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
+				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(edgeAlpha, BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeInSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
 				for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.instance().fillType, block.getBlockPos())) {
 					if (dir != null) {
-						sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().fillOpacity, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().fillOpacity;
+						sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(sideFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().fillOpacity, BlockHighlightConfig.INSTANCE.instance().fadeInSpeed) : BlockHighlightConfig.INSTANCE.instance().fillOpacity;
 					}
 				}
 				for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.instance().fillType, block.getBlockPos()))) {
 					if (dir != null) {
-						sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
+						sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed) : 0;
 					}
 				}
 				for (Direction dir : getSides(BlockHighlightConfig.INSTANCE.instance().outlineType, block.getBlockPos())) {
 					if (dir != null) {
-						lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
+						lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeInSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
 					}
 				}
 				for (Direction dir : invert(getSides(BlockHighlightConfig.INSTANCE.instance().outlineType, block.getBlockPos()))) {
 					if (dir != null) {
-						lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeSpeed) : 0;
+						lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed) : 0;
 					}
 				}
 			}

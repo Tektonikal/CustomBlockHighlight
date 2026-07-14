@@ -86,8 +86,9 @@ public class BlockHighlightConfig {
     @SerialEntry public boolean doEasing = true;
     @SerialEntry public float easeSpeed = 20F;
     @SerialEntry public boolean fadeIn = true;
+	@SerialEntry public float fadeInSpeed = 15F;
     @SerialEntry public boolean fadeOut = true;
-    @SerialEntry public float fadeSpeed = 15F;
+    @SerialEntry public float fadeOutSpeed = 15F;
 	@SerialEntry public boolean scale = true;
 	@SerialEntry public float scaleSpeed = 15F;
     @SerialEntry public float rainbowSpeed = 5;
@@ -95,7 +96,8 @@ public class BlockHighlightConfig {
     @SerialEntry public float saturation = 1;
     @SerialEntry public float brightness = 1;
     @SerialEntry public boolean crystalHelper = true;
-    @SerialEntry public Color crystalHelperColor = Color.RED;
+    @SerialEntry public Color crystalHelperLineColor = Color.RED;
+	@SerialEntry public Color crystalHelperFillColor = Color.RED;
     @SerialEntry public boolean connectedBlocks = true;
 	@SerialEntry public boolean updateWhenUnfocused = true;
 	@SerialEntry public boolean allowEntities = true;
@@ -309,14 +311,19 @@ public class BlockHighlightConfig {
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().fadeIn, newVal -> BlockHighlightConfig.INSTANCE.instance().fadeIn = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
+	public static Option<Float> o_fadeInSpeed = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("  - Speed"))
+			.stateManager(StateManager.createInstant(15F, () -> BlockHighlightConfig.INSTANCE.instance().fadeInSpeed, newVal -> BlockHighlightConfig.INSTANCE.instance().fadeInSpeed = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1fx", value))))
+			.build();
 	public static Option<Boolean> o_fadeOut = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Out"))
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().fadeOut, newVal -> BlockHighlightConfig.INSTANCE.instance().fadeOut = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Float> o_fadeSpeed = Option.<Float>createBuilder()
+	public static Option<Float> o_fadeOutSpeed = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Speed"))
-			.stateManager(StateManager.createInstant(15F, () -> BlockHighlightConfig.INSTANCE.instance().fadeSpeed, newVal -> BlockHighlightConfig.INSTANCE.instance().fadeSpeed = newVal))
+			.stateManager(StateManager.createInstant(15F, () -> BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed, newVal -> BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1fx", value))))
 			.build();
 	@Updatable
@@ -333,6 +340,7 @@ public class BlockHighlightConfig {
 	public static Option<Integer> o_delay = Option.<Integer>createBuilder()
 			.name(Component.nullToEmpty("- Delay"))
 			.stateManager(StateManager.createInstant(250, () -> BlockHighlightConfig.INSTANCE.instance().delay, newVal -> BlockHighlightConfig.INSTANCE.instance().delay = newVal))
+			.description(OptionDescription.of(Component.literal("How much to delay the rainbow color used for the secondary part of the gradient.")))
 			.controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.literal(value + " ms")))
 			.build();
 	public static Option<Float> o_rainbowSpeed = Option.<Float>createBuilder()
@@ -369,10 +377,15 @@ public class BlockHighlightConfig {
 			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().crystalHelper, newVal -> BlockHighlightConfig.INSTANCE.instance().crystalHelper = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Color> o_crystalHelperColor = Option.<Color>createBuilder()
-			.name(Component.nullToEmpty("  - Color"))
+	public static Option<Color> o_crystalHelperLineColor = Option.<Color>createBuilder()
+			.name(Component.nullToEmpty("  - Line Color"))
 			.controller(ColorControllerBuilder::create)
-			.stateManager(StateManager.createInstant(Color.RED, () -> BlockHighlightConfig.INSTANCE.instance().crystalHelperColor, color -> BlockHighlightConfig.INSTANCE.instance().crystalHelperColor = color))
+			.stateManager(StateManager.createInstant(Color.RED, () -> BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor, color -> BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor = color))
+			.build();
+	public static Option<Color> o_crystalHelperFillColor = Option.<Color>createBuilder()
+			.name(Component.nullToEmpty("  - Fill Color"))
+			.controller(ColorControllerBuilder::create)
+			.stateManager(StateManager.createInstant(Color.RED, () -> BlockHighlightConfig.INSTANCE.instance().crystalHelperFillColor, color -> BlockHighlightConfig.INSTANCE.instance().crystalHelperFillColor = color))
 			.build();
 	public static Option<Boolean> o_allowEntities = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Select Entities"))
@@ -456,8 +469,9 @@ public class BlockHighlightConfig {
 							.group(OptionGroup.createBuilder()
 									.name(Component.nullToEmpty("Fade"))
 									.option(o_fadeIn)
+									.option(o_fadeInSpeed)
 									.option(o_fadeOut)
-									.option(o_fadeSpeed)
+									.option(o_fadeOutSpeed)
 									.build())
 							.group(OptionGroup.createBuilder()
 									.name(Component.nullToEmpty("Scale"))
@@ -478,7 +492,8 @@ public class BlockHighlightConfig {
 									.option(o_allowEntities)
 									.option(o_allowLiquids)
 									.option(o_crystalHelper)
-									.option(o_crystalHelperColor)
+									.option(o_crystalHelperLineColor)
+									.option(o_crystalHelperFillColor)
 									.build())
 							.group(OptionGroup.createBuilder()
 									.name(Component.nullToEmpty("Config"))
@@ -566,6 +581,12 @@ public class BlockHighlightConfig {
 			o_fillDepthTest.setAvailable(aBoolean);
 			o_fillExpand.setAvailable(aBoolean);
 		}
+		if(booleanOption.equals(o_fadeIn)){
+			o_fadeInSpeed.setAvailable(aBoolean);
+		}
+		if(booleanOption.equals(o_fadeOut)){
+			o_fadeOutSpeed.setAvailable(aBoolean);
+		}
 		if (booleanOption.equals(o_outlineRainbow)) {
 			o_lineCol.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
 			o_lineCol2.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
@@ -581,7 +602,8 @@ public class BlockHighlightConfig {
 			o_scaleSpeed.setAvailable(aBoolean);
 		}
 		if (booleanOption.equals(o_crystalHelper)) {
-			o_crystalHelperColor.setAvailable(aBoolean);
+			o_crystalHelperFillColor.setAvailable(aBoolean);
+			o_crystalHelperLineColor.setAvailable(aBoolean);
 		}
 		if (booleanOption.equals(o_secondary)) {
 			o_slineCol.setAvailable(aBoolean);

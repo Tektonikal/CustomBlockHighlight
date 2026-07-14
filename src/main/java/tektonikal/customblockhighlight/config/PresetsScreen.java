@@ -27,27 +27,47 @@ public class PresetsScreen extends Screen {
 		this.parent = parent;
 	}
 
+	public static void loadPreset(String name) {
+		try {
+			Path path = FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json");
+			Files.delete(path);
+			Files.createFile(path);
+			Path p = FabricLoader.getInstance().getModContainer("custom-block-highlight").get().getRootPaths().getFirst().resolve("assets/presets/" + name + ".json");
+			Files.writeString(path, Files.readString(p), StandardCharsets.UTF_8);
+			BlockHighlightConfig.INSTANCE.load();
+			Blockhighlight.unleashHell();
+		} catch (Exception _) {
+		}
+	}
+
 	@Override
 	protected void init() {
-		addRenderableWidget(new Button(width / 4, height / 2, width / 2, 16, Component.literal("Give it to me plain! I'll take it from there."), button -> {
-			try {
-				Path path = FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json");
-				Files.delete(path);
-				Files.createFile(path);
-				Path p = FabricLoader.getInstance().getModContainer("custom-block-highlight").get().getRootPaths().getFirst().resolve("assets/presets/vanilla.json");
-				Files.writeString(path, Files.readString(p), StandardCharsets.UTF_8);
-				BlockHighlightConfig.INSTANCE.load();
-				Blockhighlight.unleashHell();
-			} catch (Exception _) {
-			}
-		}, _ -> Component.empty()) {
+		for (int i = 0; i < 6; i++) {
+			addButton(height / 4 + (height / 8) * i, i);
+		}
+	}
 
+	public void addButton(int y, int preset) {
+		addRenderableWidget(new Button(width / 4, y, width / 2, 18, getPresetTitle(preset), _ -> loadPreset(getPresetName(preset)), _ -> Component.empty()) {
 			@Override
 			protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 				extractDefaultSprite(graphics);
 				extractDefaultLabel(graphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE));
 			}
 		});
+	}
+
+	private Component getPresetTitle(int preset) {
+		return switch (preset) {
+			case 0 -> Component.literal("Give it to me plain! (Vanilla)");
+			default -> Component.literal("whar?");
+		};
+	}
+	private String getPresetName(int preset) {
+		return switch (preset) {
+			case 0 -> "vanilla";
+			default -> "vanilla";
+		};
 	}
 
 	@Override
