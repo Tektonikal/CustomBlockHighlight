@@ -8,7 +8,7 @@ public enum OutlineType implements NameableEnum {
 	ALL,
 	CONCEALED,
 	EDGES,
-	LOOK_AT;
+	LOOKAT;
 
 	@Override
 	public Component getDisplayName() {
@@ -17,7 +17,7 @@ public enum OutlineType implements NameableEnum {
 			case EDGES -> "Edges";
 			case AIR_EXPOSED -> "Air Exposed";
 			case CONCEALED -> "Concealed Faces";
-			case LOOK_AT -> "Looked At";
+			case LOOKAT -> "Looked At";
 		});
 	}
 }

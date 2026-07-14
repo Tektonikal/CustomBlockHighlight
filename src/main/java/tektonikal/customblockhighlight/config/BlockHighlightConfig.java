@@ -15,6 +15,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import tektonikal.customblockhighlight.Blockhighlight;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.OutlineType;
 
@@ -529,6 +530,7 @@ public class BlockHighlightConfig {
 													Files.createFile(path);
 													Files.writeString(path, Minecraft.getInstance().keyboardHandler.getClipboard());
 													BlockHighlightConfig.INSTANCE.load();
+													Blockhighlight.unleashHell();
 												} catch (IOException e) {
 													throw new RuntimeException(e);
 												}

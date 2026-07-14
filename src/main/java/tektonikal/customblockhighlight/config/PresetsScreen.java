@@ -7,6 +7,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
+import tektonikal.customblockhighlight.Blockhighlight;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,6 +33,7 @@ public class PresetsScreen extends Screen {
 				Files.write(path, preset.readAllBytes());
 			}
 			BlockHighlightConfig.INSTANCE.load();
+			Blockhighlight.unleashHell();
 		} catch (IOException _) {
 		}
 	}
@@ -65,7 +67,11 @@ public class PresetsScreen extends Screen {
 	}
 
 	public enum Preset {
-		VANILLA(/*you should tap into Component.translatable tbh*/"vanilla", Component.literal("Give it to me plain! (Vanilla)"));
+		VANILLA(/*you should tap into Component.translatable tbh*/"vanilla", Component.literal("Give it to me plain! (Vanilla)")),
+		SWEAT("sweat", Component.literal("PvP sweat")),
+		TRANS("trans", Component.literal("Beautiful women!")),
+		CLASSIC("classic", Component.literal("Classic CBH experience")),
+		FANCY("fancy", Component.literal("Gimme all the bells 'n whistles!"));
 
 		public final String name;
 		public final Component meow;
