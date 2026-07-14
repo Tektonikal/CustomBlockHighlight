@@ -327,7 +327,7 @@ public class BlockHighlightConfig {
 			.controller(TickBoxControllerBuilder::create)
 			.build();
 	public static Option<Float> o_fadeOutSpeed = Option.<Float>createBuilder()
-			.name(Component.nullToEmpty("- Speed"))
+			.name(Component.nullToEmpty("  - Speed"))
 			.stateManager(StateManager.createInstant(15F, () -> BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed, newVal -> BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1fx", value))))
 			.build();
