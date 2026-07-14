@@ -556,70 +556,70 @@ public class BlockHighlightConfig {
 		}
 	}
 
-	public static void update(Option<Boolean> booleanOption, Boolean aBoolean) {
-		if(booleanOption.equals(o_outlineEnabled)) {
-			o_lineCol.setAvailable(aBoolean);
-			o_lineCol2.setAvailable(aBoolean);
-			o_lineAlpha.setAvailable(aBoolean);
-			o_outlineRainbow.setAvailable(aBoolean);
-			o_outlineType.setAvailable(aBoolean);
-			o_lineDepthTest.setAvailable(aBoolean);
-			o_lineExpand.setAvailable(aBoolean);
-			o_lineWidth.setAvailable(aBoolean);
-			o_cutFromCenter.setAvailable(aBoolean);
-			o_cutFromCorner.setAvailable(aBoolean);
+	public static void update(Option<Boolean> option, Boolean enabled) {
+		if (option == o_outlineEnabled) {
+			o_lineCol.setAvailable(enabled);
+			o_lineCol2.setAvailable(enabled);
+			o_lineAlpha.setAvailable(enabled);
+			o_outlineRainbow.setAvailable(enabled);
+			o_outlineType.setAvailable(enabled);
+			o_lineDepthTest.setAvailable(enabled);
+			o_lineExpand.setAvailable(enabled);
+			o_lineWidth.setAvailable(enabled);
+			o_cutFromCenter.setAvailable(enabled);
+			o_cutFromCorner.setAvailable(enabled);
 
-			o_secondary.setAvailable(aBoolean);
-			o_tertiary.setAvailable(aBoolean);
+			o_secondary.setAvailable(enabled);
+			o_tertiary.setAvailable(enabled);
 		}
-		if (booleanOption.equals(o_fillEnabled)) {
-			o_fillCol.setAvailable(aBoolean);
-			o_fillCol2.setAvailable(aBoolean);
-			o_fillOpacity.setAvailable(aBoolean);
-			o_fillRainbow.setAvailable(aBoolean);
-			o_fillType.setAvailable(aBoolean);
-			o_fillDepthTest.setAvailable(aBoolean);
-			o_fillExpand.setAvailable(aBoolean);
+		if (option == o_fillEnabled) {
+			o_fillCol.setAvailable(enabled);
+			o_fillCol2.setAvailable(enabled);
+			o_fillOpacity.setAvailable(enabled);
+			o_fillRainbow.setAvailable(enabled);
+			o_fillType.setAvailable(enabled);
+			o_fillDepthTest.setAvailable(enabled);
+			o_fillExpand.setAvailable(enabled);
 		}
-		if(booleanOption.equals(o_fadeIn)){
-			o_fadeInSpeed.setAvailable(aBoolean);
+		if(option == o_fadeIn){
+			o_fadeInSpeed.setAvailable(enabled);
 		}
-		if(booleanOption.equals(o_fadeOut)){
-			o_fadeOutSpeed.setAvailable(aBoolean);
+		if(option == o_fadeOut){
+			o_fadeOutSpeed.setAvailable(enabled);
 		}
-		if (booleanOption.equals(o_outlineRainbow)) {
-			o_lineCol.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
-			o_lineCol2.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
+		if (option == o_outlineRainbow) {
+			o_lineCol.setAvailable(!enabled && o_outlineEnabled.stateManager().get());
+			o_lineCol2.setAvailable(!enabled && o_outlineEnabled.stateManager().get());
 		}
-		if (booleanOption.equals(o_fillRainbow)) {
-			o_fillCol.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
-			o_fillCol2.setAvailable(!aBoolean && o_outlineEnabled.stateManager().get());
+		if (option == o_fillRainbow) {
+			o_fillCol.setAvailable(!enabled && o_outlineEnabled.stateManager().get());
+			o_fillCol2.setAvailable(!enabled && o_outlineEnabled.stateManager().get());
 		}
-		if (booleanOption.equals(o_doEasing)) {
-			o_easeSpeed.setAvailable(aBoolean);
+		if (option == o_doEasing) {
+			o_easeSpeed.setAvailable(enabled);
 		}
-		if (booleanOption.equals(o_scale)) {
-			o_scaleSpeed.setAvailable(aBoolean);
+		if (option == o_scale) {
+			o_scaleSpeed.setAvailable(enabled);
 		}
-		if (booleanOption.equals(o_crystalHelper)) {
-			o_crystalHelperFillColor.setAvailable(aBoolean);
-			o_crystalHelperLineColor.setAvailable(aBoolean);
+		if (option == o_crystalHelper) {
+			o_crystalHelperFillColor.setAvailable(enabled);
+			o_crystalHelperLineColor.setAvailable(enabled);
 		}
-		if (booleanOption.equals(o_secondary)) {
-			o_slineCol.setAvailable(aBoolean);
-			o_slineCol2.setAvailable(aBoolean);
-			o_slineAlphaMultiplier.setAvailable(aBoolean);
-			o_soutlineRainbow.setAvailable(aBoolean);
-			o_slineDepthTest.setAvailable(aBoolean);
-			o_slineWidth.setAvailable(aBoolean);
+		if (option == o_secondary) {
+			o_slineCol.setAvailable(enabled);
+			o_slineCol2.setAvailable(enabled);
+			o_slineAlphaMultiplier.setAvailable(enabled);
+			o_soutlineRainbow.setAvailable(enabled);
+			o_slineDepthTest.setAvailable(enabled);
+			o_slineWidth.setAvailable(enabled);
 		}
-		if (booleanOption.equals(o_tertiary)) {
-			o_tlineCol.setAvailable(aBoolean);
-			o_tlineCol2.setAvailable(aBoolean);
-			o_tlineAlphaMultiplier.setAvailable(aBoolean);
-			o_toutlineRainbow.setAvailable(aBoolean);
-			o_tlineDepthTest.setAvailable(aBoolean);
-			o_tlineWidth.setAvailable(aBoolean);
+		if (option == o_tertiary) {
+			o_tlineCol.setAvailable(enabled);
+			o_tlineCol2.setAvailable(enabled);
+			o_tlineAlphaMultiplier.setAvailable(enabled);
+			o_toutlineRainbow.setAvailable(enabled);
+			o_tlineDepthTest.setAvailable(enabled);
+			o_tlineWidth.setAvailable(enabled);
 		}
 	}
 }

@@ -21,27 +21,36 @@ public class Blockhighlight implements ModInitializer {
 	}
 
 	public static void unleashHell() {
-		try {
-			Arrays.stream(BlockHighlightConfig.class.getDeclaredFields()).filter(field -> field.getName().startsWith("o_") && !field.getName().equals("INSTANCE")).forEach(field -> {
-				try {
-					((Option) field.get(null)).stateManager().set(BlockHighlightConfig.class.getField(field.getName().replace("o_", "")).get(BlockHighlightConfig.INSTANCE.instance()));
-					((Option<?>) field.get(null)).applyValue();
-				} catch (IllegalAccessException | NoSuchFieldException _) {
-				}
-			});
-		} catch (SecurityException _) {
-		}
+		Arrays.stream(BlockHighlightConfig.class.getDeclaredFields())
+				.filter(field -> field.getName().startsWith("o_") && !field.getName().equals("INSTANCE"))
+				.forEach(field -> {
+					try {
+						//noinspection rawtypes
+						var option = (Option) field.get(null);
+						var valueField = BlockHighlightConfig.class.getField(field.getName().replace("o_", ""));
+						//noinspection unchecked
+						option.stateManager().set(valueField.get(BlockHighlightConfig.INSTANCE.instance()));
+						option.applyValue();
+					} catch (IllegalAccessException | NoSuchFieldException _) {
+					}
+				});
 	}
 
 	private static void armSecuritySystem() {
 		//can't add listeners while options are created for my use-case, since not everything is fully initialized
-		Arrays.stream(BlockHighlightConfig.class.getDeclaredFields()).filter(field -> field.isAnnotationPresent(Updatable.class)).forEach(field -> {
-			try {
-				((Option<Boolean>) field.get(null)).addListener(BlockHighlightConfig::update);
-				BlockHighlightConfig.update(((Option<Boolean>) field.get(null)), ((Option<Boolean>) field.get(null)).stateManager().get());
-			} catch (Exception _) {
-			}
-		});
+		// actually you're just stupid
+		Arrays.stream(BlockHighlightConfig.class.getDeclaredFields())
+				.filter(field -> field.isAnnotationPresent(Updatable.class))
+				.forEach(field -> {
+					try {
+						//noinspection unchecked
+						Option<Boolean> option = (Option<Boolean>) field.get(null);
+						//noinspection deprecation yacl sucks yo
+			            option.addListener(BlockHighlightConfig::update);
+			            BlockHighlightConfig.update(option, option.stateManager().get());
+					} catch (IllegalAccessException _) {
+					}
+				});
 	}
 
 	public static double ease(double start, double end, float speed) {
