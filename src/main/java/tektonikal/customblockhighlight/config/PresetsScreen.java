@@ -67,7 +67,7 @@ public class PresetsScreen extends Screen {
 	}
 
 	public enum Preset {
-		VANILLA(/*you should tap into Component.translatable tbh*/"vanilla", Component.literal("Give it to me plain! (Vanilla)")),
+		VANILLA(/*you should tap into Component.translatable tbh*/"vanilla", Component.literal("Give it to me plain!")),
 		SWEAT("sweat", Component.literal("PvP sweat")),
 		TRANS("trans", Component.literal("Beautiful women!")),
 		CLASSIC("classic", Component.literal("Classic CBH experience")),
