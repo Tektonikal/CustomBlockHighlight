@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import tektonikal.customblockhighlight.Blockhighlight;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.OutlineType;
 
@@ -56,12 +57,12 @@ public class BlockHighlightConfig {
 		@SerialEntry public float cutFromCenter = 0.25F;
 		@SerialEntry public float cutFromCorner = 0;
 
-	@SerialEntry public boolean secondary = false;
+	@SerialEntry public boolean secondary = true;
 		@SerialEntry public Color slineCol = Color.BLACK;
-		@SerialEntry public Color slineCol2 = Color.WHITE;
+		@SerialEntry public Color slineCol2 = Color.BLACK;
 		@SerialEntry public float slineAlphaMultiplier = 1F;
 		@SerialEntry public boolean soutlineRainbow = false;
-		@SerialEntry public float slineWidth = 3;
+		@SerialEntry public float slineWidth = 5F;
 		@SerialEntry public DepthTestMode slineDepthTest = DepthTestMode.ALWAYS_PASS;
 
 	@SerialEntry public boolean tertiary = false;
@@ -168,7 +169,7 @@ public class BlockHighlightConfig {
 	@Updatable
 	public static Option<Boolean> o_secondary = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("Enabled"))
-			.stateManager(StateManager.createInstant(false, () -> BlockHighlightConfig.INSTANCE.instance().secondary, newVal -> BlockHighlightConfig.INSTANCE.instance().secondary = newVal))
+			.stateManager(StateManager.createInstant(true, () -> BlockHighlightConfig.INSTANCE.instance().secondary, newVal -> BlockHighlightConfig.INSTANCE.instance().secondary = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
 	public static Option<Color> o_slineCol = Option.<Color>createBuilder()
@@ -178,7 +179,7 @@ public class BlockHighlightConfig {
 			.build();
 	public static Option<Color> o_slineCol2 = Option.<Color>createBuilder()
 			.name(Component.nullToEmpty("- Secondary"))
-			.stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> BlockHighlightConfig.INSTANCE.instance().slineCol2, newVal -> BlockHighlightConfig.INSTANCE.instance().slineCol2 = newVal))
+			.stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> BlockHighlightConfig.INSTANCE.instance().slineCol2, newVal -> BlockHighlightConfig.INSTANCE.instance().slineCol2 = newVal))
 			.controller(ColorControllerBuilder::create)
 			.build();
 	public static Option<Float> o_slineAlphaMultiplier = Option.<Float>createBuilder()
@@ -195,14 +196,13 @@ public class BlockHighlightConfig {
 	public static Option<DepthTestMode> o_slineDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
 			.description(OptionDescription.of(Component.literal("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
-			.description(OptionDescription.of(Component.literal("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
 			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> BlockHighlightConfig.INSTANCE.instance().slineDepthTest, newVal -> BlockHighlightConfig.INSTANCE.instance().slineDepthTest = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
 	public static Option<Float> o_slineWidth = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Line Width"))
 			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1f", value) + " px")))
-			.stateManager(StateManager.createInstant(3F, () -> BlockHighlightConfig.INSTANCE.instance().slineWidth, newVal -> BlockHighlightConfig.INSTANCE.instance().slineWidth = newVal))
+			.stateManager(StateManager.createInstant(5F, () -> BlockHighlightConfig.INSTANCE.instance().slineWidth, newVal -> BlockHighlightConfig.INSTANCE.instance().slineWidth = newVal))
 			.build();
 	@Updatable
 	public static Option<Boolean> o_tertiary = Option.<Boolean>createBuilder()
@@ -387,21 +387,7 @@ public class BlockHighlightConfig {
 			.build();
 
 	public static Screen getConfigScreen(Screen parent) {
-		Path firstOpenPath = FabricLoader.getInstance().getConfigDir().resolve(".cbh_info");
-		File f = firstOpenPath.toFile();
-		if (!f.exists()) {
-			// presets screen
-			try {
-				Files.createFile(firstOpenPath);
-				if (isWindows()) {
-					Files.setAttribute(firstOpenPath, "dos:hidden", true, LinkOption.NOFOLLOW_LINKS);
-				}
-			} catch (IOException e) {
-				//NOP
-			}
-			return new PresetsScreen(Component.literal("Custom Block Highlight Configuration"), true);
-		} else {
-			return YetAnotherConfigLib.createBuilder()
+			Screen generatedScreen = YetAnotherConfigLib.createBuilder()
 					.title(Component.literal("Custom Block Highlight"))
 					.category(ConfigCategory.createBuilder()
 							.name(Component.literal("Outline"))
@@ -523,7 +509,7 @@ public class BlockHighlightConfig {
 													Files.createFile(path);
 													Files.writeString(path, Minecraft.getInstance().keyboardHandler.getClipboard(), StandardCharsets.UTF_8);
 													BlockHighlightConfig.INSTANCE.load();
-													Minecraft.getInstance().setScreenAndShow(parent);
+													Blockhighlight.unleashHell();
 												} catch (IOException e) {
 													throw new RuntimeException(e);
 												}
@@ -531,14 +517,27 @@ public class BlockHighlightConfig {
 											.build())
 									.option(ButtonOption.createBuilder()
 											.name(Component.nullToEmpty("- Presets"))
-											.action((_, _) -> {
-												Minecraft.getInstance().setScreenAndShow(new PresetsScreen(Component.literal("Custom Block Highlight Configuration"), false));
-											})
+											.action((screen, _) -> Minecraft.getInstance().setScreenAndShow(new PresetsScreen(Component.literal("Custom Block Highlight Configuration"), false, screen)))
 											.text(Component.nullToEmpty("Open"))
 											.build())
 									.build())
 							.build()).save(() -> INSTANCE.save())
 					.build().generateScreen(parent);
+		Path firstOpenPath = FabricLoader.getInstance().getConfigDir().resolve(".cbh_info");
+		File f = firstOpenPath.toFile();
+		if (!f.exists()) {
+			// presets screen
+			try {
+				Files.createFile(firstOpenPath);
+				if (isWindows()) {
+					Files.setAttribute(firstOpenPath, "dos:hidden", true, LinkOption.NOFOLLOW_LINKS);
+				}
+			} catch (IOException e) {
+				//NOP
+			}
+			return new PresetsScreen(Component.literal("Custom Block Highlight Configuration"), true, generatedScreen);
+		} else {
+			return generatedScreen;
 		}
 	}
 
