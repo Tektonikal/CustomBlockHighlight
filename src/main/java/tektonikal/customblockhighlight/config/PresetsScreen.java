@@ -2,7 +2,7 @@ package tektonikal.customblockhighlight.config;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -48,9 +48,9 @@ public class PresetsScreen extends Screen {
 	public void addButton(int y, Preset preset) {
 		addRenderableWidget(new Button(width / 4, y, width / 2, 18, preset.meow, _ -> loadPreset(preset.name), _ -> Component.empty()) {
 			@Override
-			protected void extractContents(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
-				extractDefaultSprite(graphics);
-				extractDefaultLabel(graphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE));
+			protected void renderContents(GuiGraphics guiGraphics, int i, int j, float f) {
+				renderDefaultSprite(guiGraphics);
+				renderDefaultLabel(guiGraphics.textRendererForWidget(this, GuiGraphics.HoveredTextEffects.NONE));
 			}
 		});
 	}
@@ -61,9 +61,9 @@ public class PresetsScreen extends Screen {
 	}
 
 	@Override
-	public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
-		super.extractRenderState(graphics, mouseX, mouseY, a);
-		graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
+	public void render(GuiGraphics graphics, int mouseX, int mouseY, float a) {
+		super.render(graphics, mouseX, mouseY, a);
+		graphics.drawCenteredString(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
 	}
 
 	public enum Preset {

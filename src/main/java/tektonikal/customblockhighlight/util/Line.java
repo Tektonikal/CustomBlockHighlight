@@ -23,7 +23,7 @@ public class Line {
 	}
 
 	public float getDistanceToCamera(Vec3 minVec) {
-		return (float) minPos.add(maxPos).scale(0.5F).distanceTo(Renderer.mc.gameRenderer.mainCamera().position().subtract(minVec));
+		return (float) minPos.add(maxPos).scale(0.5F).distanceTo(Renderer.mc.gameRenderer.getMainCamera().position().subtract(minVec));
 	}
 
 	public Vec3 getNormal() {

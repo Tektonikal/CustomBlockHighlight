@@ -1,23 +1,18 @@
 package tektonikal.customblockhighlight;
 
-import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+import com.mojang.blaze3d.vertex.*;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MappableRingBuffer;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.StagedVertexBuffer;
-import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
@@ -39,6 +34,7 @@ import net.minecraft.world.phys.shapes.*;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.lwjgl.system.MemoryUtil;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Line;
@@ -69,10 +65,9 @@ import static tektonikal.customblockhighlight.Blockhighlight.ease;
 //maybe it would be best into looking into creating a pipeline to draw lines that aren't in screenspace. idk
 
 //NOW
-//TODO: presets
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
-	public static final Camera camera = mc.gameRenderer.mainCamera();
+	public static final Camera camera = mc.gameRenderer.getMainCamera();
 
 	public static final float[] sideFades = new float[6];
 	public static final float[] lineFades = new float[6];
@@ -80,33 +75,35 @@ public class Renderer {
 	public static final RenderPipeline LINE_NO_DEPTH = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/evil-lines"))
-					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
+					.withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+					.withDepthWrite(true)
 					.withCull(false)
 					.build()
 	);
 	public static final RenderPipeline FILL_NO_DEPTH = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/evil-fill"))
-					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
+					.withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+					.withDepthWrite(true)
 					.withCull(false)
 					.build()
 	);
 	public static final RenderPipeline LINES_CONCEALED_ONLY = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/eviler-lines"))
-					.withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, true))
+					.withDepthTestFunction(DepthTestFunction.GREATER_DEPTH_TEST)
+					.withDepthWrite(true)
 					.withCull(false)
 					.build()
 	);
 	public static final RenderPipeline FILL_CONCEALED_ONLY = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/eviler-fill"))
-					.withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, true))
+					.withDepthTestFunction(DepthTestFunction.GREATER_DEPTH_TEST)
+					.withDepthWrite(true)
 					.withCull(false)
 					.build()
 	);
-	public static final StagedVertexBuffer stagedFaceBuffer = new StagedVertexBuffer(() -> " CBH sides", RenderType.SMALL_BUFFER_SIZE);
-	public static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
 
 	public static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
 	public static AABB targetBox = new AABB(0, 0, 0, 0, 0, 0);
@@ -120,57 +117,70 @@ public class Renderer {
 	public static float scaleProg = 0;
 	public static HitResult evilHitResult;
 
-	public static StagedVertexBuffer.Draw startDrawing(boolean lines) {
-		if (lines) {
-			return stagedOutlineBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH, PrimitiveTopology.LINES);
-		} else {
-			return stagedFaceBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR, PrimitiveTopology.QUADS, RenderSystem.getProjectionType().vertexSorting());
-		}
+	private static MappableRingBuffer vertexBuffer;
+	private static final ByteBufferBuilder allocator = new ByteBufferBuilder(786432);
+
+	public static BufferBuilder startDrawing(boolean lines) {
+		return new BufferBuilder(allocator, lines ? VertexFormat.Mode.LINES : VertexFormat.Mode.QUADS, lines ? DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH : DefaultVertexFormat.POSITION_COLOR);
 	}
 
-	private static void finishDraw(boolean lines, StagedVertexBuffer.Draw draw, int layer) {
-		StagedVertexBuffer.ExecuteInfo info;
+	private static void yeah(MeshData builtBuffer, MeshData.DrawState state, GpuBuffer vertices, boolean lines, int layer) {
+		RenderPipeline p;
 		if (lines) {
-			stagedOutlineBuffer.upload();
-			info = stagedOutlineBuffer.getExecuteInfo(draw);
+			p = switch (layer) {
+				case 0 -> getPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest, true);
+				case 1 -> getPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest, true);
+				case 2 -> getPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest, true);
+				default -> throw new IllegalStateException("Unexpected value: " + layer);
+			};
 		} else {
-			stagedFaceBuffer.upload();
-			info = stagedFaceBuffer.getExecuteInfo(draw);
+			p = getPipeline(BlockHighlightConfig.INSTANCE.instance().fillDepthTest, false);
 		}
-		if (info == null) return;
+		RenderSystem.AutoStorageIndexBuffer shapeIndexBuffer = RenderSystem.getSequentialBuffer(p.getVertexFormatMode());
+		GpuBuffer indices = shapeIndexBuffer.getBuffer(state.indexCount());
+		VertexFormat.IndexType indexType = shapeIndexBuffer.type();
+		GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrix(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F), new Vector3f(), new Matrix4f());
 
-		GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
-		RenderTarget mainTarget = mc.gameRenderer.mainRenderTarget();
-		GpuTextureView colorTexture = mainTarget.getColorTextureView();
-		assert colorTexture != null;
-		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
-			if (lines) {
-				switch (layer) {
-					case 0 ->
-							renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest, true));
-					case 1 ->
-							renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest, true));
-					case 2 ->
-							renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest, true));
-				}
-			} else {
-				renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().fillDepthTest, false));
-			}
-
+		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "block_outline outline rendering", mc.getMainRenderTarget().getColorTextureView(), OptionalInt.empty(), mc.getMainRenderTarget().getDepthTextureView(), OptionalDouble.empty())) {
+			renderPass.setPipeline(p);
 			RenderSystem.bindDefaultUniforms(renderPass);
 			renderPass.setUniform("DynamicTransforms", dynamicTransforms);
-			renderPass.setVertexBuffer(0, info.vertexBuffer().slice());
-			renderPass.setIndexBuffer(info.indexBuffer(), info.indexType());
-			renderPass.drawIndexed(info.indexCount(), 1, info.firstIndex(), info.baseVertex(), 0);
+			renderPass.setVertexBuffer(0, vertices);
+			renderPass.setIndexBuffer(indices, indexType);
+			renderPass.drawIndexed(0, 0, state.indexCount(), 1);
 		}
 
-		if (lines) {
-			stagedOutlineBuffer.endFrame();
-		} else {
-			stagedFaceBuffer.endFrame();
-		}
+		builtBuffer.close();
 	}
-	public static RenderPipeline getPipeline(DepthTestMode mode, boolean lines){
+
+	private static void draw(BufferBuilder buffer, boolean lines, int layer) {
+		MeshData builtBuffer = buffer.build();
+		MeshData.DrawState drawParameters = builtBuffer.drawState();
+		VertexFormat format = drawParameters.format();
+		GpuBuffer vertices = upload(drawParameters, format, builtBuffer);
+		yeah(builtBuffer, drawParameters, vertices, lines, layer);
+		vertexBuffer.rotate();
+	}
+
+	private static GpuBuffer upload(MeshData.DrawState drawParameters, VertexFormat format, MeshData builtBuffer) {
+		int vertexBufferSize = drawParameters.vertexCount() * format.getVertexSize();
+		if (vertexBuffer == null || vertexBuffer.size() < vertexBufferSize) {
+			if (vertexBuffer != null) {
+				vertexBuffer.close();
+			}
+			vertexBuffer = new MappableRingBuffer(() -> "block_outline render pipeline", 34, vertexBufferSize);
+		}
+
+		CommandEncoder commandEncoder = RenderSystem.getDevice().createCommandEncoder();
+
+		try (GpuBuffer.MappedView mappedView = commandEncoder.mapBuffer(vertexBuffer.currentBuffer().slice(0L, builtBuffer.vertexBuffer().remaining()), false, true)) {
+			MemoryUtil.memCopy(builtBuffer.vertexBuffer(), mappedView.data());
+		}
+
+		return vertexBuffer.currentBuffer();
+	}
+
+	public static RenderPipeline getPipeline(DepthTestMode mode, boolean lines) {
 		return switch (mode) {
 			case ALWAYS_PASS -> lines ? LINE_NO_DEPTH : FILL_NO_DEPTH;
 			case HIDDEN_ONLY -> lines ? LINES_CONCEALED_ONLY : FILL_CONCEALED_ONLY;
@@ -180,10 +190,9 @@ public class Renderer {
 
 	public static void drawBoxFill(PoseStack stack, AABB box, Color cols, Color col2, float[] alpha) {
 		doEvilMatrixPreparations(stack, box, false);
-		StagedVertexBuffer.Draw draw = startDrawing(false);
-		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
-		Vertexer.vertexBoxQuads(stack, buffer, moveToZero(box), cols, col2, alpha);
-		finishDraw(false, draw, 0);
+		BufferBuilder buf = startDrawing(false);
+		Vertexer.vertexBoxQuads(stack, buf, moveToZero(box), cols, col2, alpha);
+		draw(buf, false, 0);
 		stack.popPose();
 	}
 
@@ -202,18 +211,16 @@ public class Renderer {
 
 	public static void drawBoxOutline(PoseStack stack, AABB box, Color color, Color col2, float[] alpha, int layer) {
 		doEvilMatrixPreparations(stack, box, false);
-		StagedVertexBuffer.Draw draw = startDrawing(true);
-		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-		Vertexer.vertexBoxLines(stack, buffer, moveToZero(box), color, col2, alpha, layer);
-		finishDraw(true, draw, layer);
+		com.mojang.blaze3d.vertex.BufferBuilder buf = startDrawing(true);
+		Vertexer.vertexBoxLines(stack, buf, moveToZero(box), color, col2, alpha, layer);
+		draw(buf, true, layer);
 		stack.popPose();
 	}
 
 	public static void drawEdgeOutline(PoseStack matrices, VoxelShape shape, Color c1, Color c2, float alpha, int layer) {
 		doEvilMatrixPreparations(matrices, shape.bounds(), true);
 		List<Line> newLines = new ArrayList<>();
-		StagedVertexBuffer.Draw draw = startDrawing(true);
-		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
+		BufferBuilder buffer = startDrawing(true);
 		moveToZero(shape).forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
 		Vec3 minVec = shape.bounds().getMinPosition();
 		if (lines.isEmpty() || !BlockHighlightConfig.INSTANCE.instance().doEasing) {
@@ -245,7 +252,7 @@ public class Renderer {
 		for (Line line : toRemove) {
 			line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / normalised)), Math.round(alpha), false, layer);
 		}
-		finishDraw(true, draw, layer);
+		draw(buffer, true, layer);
 		matrices.popPose();
 	}
 
@@ -312,14 +319,14 @@ public class Renderer {
 		return new Color(Math.clamp(Mth.lerpInt(percent, c1.getRed(), c2.getRed()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getGreen(), c2.getGreen()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getBlue(), c2.getBlue()), 0, 255));
 	}
 
-	public static void mainLoop(LevelRenderContext c) {
+	public static void mainLoop(WorldRenderContext c) {
 		evilHitResult = mc.hitResult;
 		//this is just for the warnings to go away
 		if (evilHitResult == null || mc.level == null || mc.getCameraEntity() == null || mc.player == null) return;
-		if(BlockHighlightConfig.INSTANCE.instance().allowLiquids && (mc.player.getMainHandItem().is(Items.BUCKET) || mc.player.getOffhandItem().is(Items.BUCKET))) {
+		if (BlockHighlightConfig.INSTANCE.instance().allowLiquids && (mc.player.getMainHandItem().is(Items.BUCKET) || mc.player.getOffhandItem().is(Items.BUCKET))) {
 			HitResult yeah = pick(mc.getCameraEntity(), mc.player.blockInteractionRange(), mc.getDeltaTracker().getRealtimeDeltaTicks(), true);
-			if(yeah instanceof BlockHitResult hit) {
-				if(mc.level.getFluidState(hit.getBlockPos()).isSource()){
+			if (yeah instanceof BlockHitResult hit) {
+				if (mc.level.getFluidState(hit.getBlockPos()).isSource()) {
 					evilHitResult = yeah;
 				}
 			}
@@ -360,7 +367,7 @@ public class Renderer {
 		} else {
 			easeBox = targetBox;
 		}
-		renderOutline(c.poseStack(), isCrystalObstructed(), evilHitResult.getType() == HitResult.Type.MISS);
+		renderOutline(c.matrices(), isCrystalObstructed(), evilHitResult.getType() == HitResult.Type.MISS);
 	}
 
 	private static void renderOutline(PoseStack stack, boolean isCrystalObstructed, boolean shouldFade) {
@@ -405,7 +412,6 @@ public class Renderer {
 	private static void drawOutline(PoseStack stack, boolean isCrystalObstructed) {
 		if (mc.level == null) throw new IllegalStateException("level == null");
 		var cameraEntity = camera.entity();
-		if (cameraEntity == null) return;
 		//TODO: make check so that cut from corner and cut from center do not add up to higher than 0.95
 
 		Color finalLineCol = isCrystalObstructed ? BlockHighlightConfig.INSTANCE.instance().crystalHelperLineColor : BlockHighlightConfig.INSTANCE.instance().outlineRainbow ? getRainbowCol(0) : BlockHighlightConfig.INSTANCE.instance().lineCol;
@@ -470,7 +476,7 @@ public class Renderer {
 					lineFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(lineFades[dir.ordinal()], BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeInSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
 				}
 				edgeAlpha = BlockHighlightConfig.INSTANCE.instance().fadeIn ? (float) ease(edgeAlpha, BlockHighlightConfig.INSTANCE.instance().lineAlpha, BlockHighlightConfig.INSTANCE.instance().fadeInSpeed) : BlockHighlightConfig.INSTANCE.instance().lineAlpha;
-			}else{
+			} else {
 				shouldFadeOut = true;
 				for (Direction dir : Direction.values()) {
 					sideFades[dir.ordinal()] = BlockHighlightConfig.INSTANCE.instance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, BlockHighlightConfig.INSTANCE.instance().fadeOutSpeed) : 0;
@@ -514,6 +520,7 @@ public class Renderer {
 	}
 
 	public static HitResult pick(Entity e, final double range, final float a, final boolean withLiquids) {
+		if (mc.level == null) return null;
 		Vec3 from = e.getEyePosition(a);
 		Vec3 viewVector = e.getViewVector(a);
 		Vec3 to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
