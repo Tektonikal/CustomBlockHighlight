@@ -2,7 +2,7 @@ package tektonikal.customblockhighlight;
 
 import dev.isxander.yacl3.api.Option;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.config.Updatable;
@@ -16,8 +16,8 @@ public class Blockhighlight implements ModInitializer {
 		BlockHighlightConfig.INSTANCE.load();
 		armSecuritySystem();
 		unleashHell();
-		WorldRenderEvents.BEFORE_BLOCK_OUTLINE.register((_, _) -> false);
-		WorldRenderEvents.END_MAIN.register(Renderer::mainLoop);
+		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((_, _) -> false);
+		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
 	}
 	public static void unleashHell() {
 		try {

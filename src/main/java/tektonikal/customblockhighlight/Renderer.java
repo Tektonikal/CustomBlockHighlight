@@ -2,13 +2,14 @@ package tektonikal.customblockhighlight;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MappableRingBuffer;
@@ -75,32 +76,28 @@ public class Renderer {
 	public static final RenderPipeline LINE_NO_DEPTH = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/evil-lines"))
-					.withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-					.withDepthWrite(true)
+					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
 					.withCull(false)
 					.build()
 	);
 	public static final RenderPipeline FILL_NO_DEPTH = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/evil-fill"))
-					.withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-					.withDepthWrite(true)
+					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
 					.withCull(false)
 					.build()
 	);
 	public static final RenderPipeline LINES_CONCEALED_ONLY = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/eviler-lines"))
-					.withDepthTestFunction(DepthTestFunction.GREATER_DEPTH_TEST)
-					.withDepthWrite(true)
+					.withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN, true))
 					.withCull(false)
 					.build()
 	);
 	public static final RenderPipeline FILL_CONCEALED_ONLY = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
 					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/eviler-fill"))
-					.withDepthTestFunction(DepthTestFunction.GREATER_DEPTH_TEST)
-					.withDepthWrite(true)
+					.withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN, true))
 					.withCull(false)
 					.build()
 	);
@@ -319,7 +316,7 @@ public class Renderer {
 		return new Color(Math.clamp(Mth.lerpInt(percent, c1.getRed(), c2.getRed()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getGreen(), c2.getGreen()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getBlue(), c2.getBlue()), 0, 255));
 	}
 
-	public static void mainLoop(WorldRenderContext c) {
+	public static void mainLoop(LevelRenderContext c) {
 		evilHitResult = mc.hitResult;
 		//this is just for the warnings to go away
 		if (evilHitResult == null || mc.level == null || mc.getCameraEntity() == null || mc.player == null) return;
@@ -367,7 +364,7 @@ public class Renderer {
 		} else {
 			easeBox = targetBox;
 		}
-		renderOutline(c.matrices(), isCrystalObstructed(), evilHitResult.getType() == HitResult.Type.MISS);
+		renderOutline(c.poseStack(), isCrystalObstructed(), evilHitResult.getType() == HitResult.Type.MISS);
 	}
 
 	private static void renderOutline(PoseStack stack, boolean isCrystalObstructed, boolean shouldFade) {
