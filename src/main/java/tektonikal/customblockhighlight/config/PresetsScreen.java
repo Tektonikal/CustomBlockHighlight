@@ -34,7 +34,7 @@ public class PresetsScreen extends Screen {
 			}
 			BlockHighlightConfig.INSTANCE.load();
 			Blockhighlight.unleashHell();
-		} catch (IOException _) {
+		} catch (IOException ignored) {
 		}
 	}
 
@@ -46,7 +46,7 @@ public class PresetsScreen extends Screen {
 	}
 
 	public void addButton(int y, Preset preset) {
-		addRenderableWidget(new Button(width / 4, y, width / 2, 18, preset.meow, _ -> loadPreset(preset.name), _ -> Component.empty()) {
+		addRenderableWidget(new Button(width / 4, y, width / 2, 18, preset.meow, yeah -> loadPreset(preset.name), ugh -> Component.empty()) {
 			@Override
 			protected void renderContents(GuiGraphics guiGraphics, int i, int j, float f) {
 				renderDefaultSprite(guiGraphics);
