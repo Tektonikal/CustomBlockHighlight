@@ -3,7 +3,9 @@ package tektonikal.customblockhighlight;
 import dev.isxander.yacl3.api.Option;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.PauseScreen;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.config.Updatable;
 
@@ -19,11 +21,13 @@ public class Blockhighlight implements ModInitializer {
 		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((_, _) -> false);
 		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
 	}
+
 	public static void unleashHell() {
 		try {
 			Arrays.stream(BlockHighlightConfig.class.getDeclaredFields()).filter(field -> field.getName().startsWith("o_") && !field.getName().equals("INSTANCE")).forEach(field -> {
 				try {
-					((Option) field.get(null)).stateManager().set(BlockHighlightConfig.class.getField(field.getName().replace("o_", "")).get(BlockHighlightConfig.INSTANCE.instance()));
+					//noinspection unchecked, rawtypes
+					((Option) field.get(null)).stateManager().set(BlockHighlightConfig.class.getField(field.getName().replace("o_", "")).get(BlockHighlightConfig.config()));
 					((Option<?>) field.get(null)).applyValue();
 				} catch (IllegalAccessException | NoSuchFieldException _) {
 				}
@@ -42,8 +46,8 @@ public class Blockhighlight implements ModInitializer {
 						//noinspection unchecked
 						Option<Boolean> option = (Option<Boolean>) field.get(null);
 						//noinspection deprecation yacl sucks yo
-			            option.addListener(BlockHighlightConfig::update);
-			            BlockHighlightConfig.update(option, option.stateManager().get());
+						option.addListener(BlockHighlightConfig::update);
+						BlockHighlightConfig.update(option, option.stateManager().get());
 					} catch (IllegalAccessException _) {
 					}
 				});

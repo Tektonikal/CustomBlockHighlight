@@ -17,8 +17,8 @@ public class PresetsScreen extends Screen {
 	private final boolean firstTime;
 	private final Screen parent;
 
-	protected PresetsScreen(Component title, boolean firstTime, Screen parent) {
-		super(title);
+	protected PresetsScreen(boolean firstTime, Screen parent) {
+		super(Component.literal("Custom Block Highlight Configuration"));
 		this.firstTime = firstTime;
 		this.parent = parent;
 	}

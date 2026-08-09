@@ -1,24 +1,21 @@
 package tektonikal.customblockhighlight;
 
+import com.mojang.authlib.minecraft.client.MinecraftClient;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.client.Camera;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Vector3d;
 import org.joml.Vector3f;
-import tektonikal.customblockhighlight.config.BlockHighlightConfig;
+import org.joml.Vector4f;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+
+import static tektonikal.customblockhighlight.config.BlockHighlightConfig.config;
 
 public class Vertexer {
 	public static void vertexBoxQuads(PoseStack matrices, VertexConsumer builder, AABB box, Color cols, Color col2, float[] alpha) {
@@ -26,8 +23,8 @@ public class Vertexer {
 		Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
 
 		//TODO: good news and bad news!
-		//good news is that new rendering system means i don't have to sort these faces for whatever reason?
-		//bad news is that the invert feature is dead
+		// good news is that new rendering system means i don't have to sort these faces for whatever reason?
+		// bad news is that the invert feature is dead
 		vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.maxZ, (float) box.minX, (float) box.minY, (float) box.maxZ, secondThird, col2, secondThird, firstThird, Math.round(alpha[0]));
 		vertexQuad(matrices, builder, (float) box.minX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.maxZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, cols, firstThird, secondThird, firstThird, Math.round(alpha[1]));
 		vertexQuad(matrices, builder, (float) box.minX, (float) box.minY, (float) box.minZ, (float) box.minX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.maxY, (float) box.minZ, (float) box.maxX, (float) box.minY, (float) box.minZ, secondThird, firstThird, cols, firstThird, Math.round(alpha[2]));
@@ -52,6 +49,7 @@ public class Vertexer {
 		float x2 = (float) box.maxX;
 		float y2 = (float) box.maxY;
 		float z2 = (float) box.maxZ;
+		Vec3 vec = box.getCenter();
 		Color firstThird = new Color(interp(cols.getRed(), col2.getRed(), 1), interp(cols.getGreen(), col2.getGreen(), 1), interp(cols.getBlue(), col2.getBlue(), 1), 255);
 		Color secondThird = new Color(interp(cols.getRed(), col2.getRed(), 2), interp(cols.getGreen(), col2.getGreen(), 2), interp(cols.getBlue(), col2.getBlue(), 2), 255);
         /*
@@ -87,6 +85,59 @@ public class Vertexer {
 		vertexLine(matrices, builder, x1, y2, z1, x1, y2, z2, cols, firstThird, Math.round(Math.max(alpha[4], alpha[1])), 0, 0, 1, layer);
 		vertexLine(matrices, builder, x2, y2, z1, x2, y2, z2, firstThird, secondThird, Math.round(Math.max(alpha[5], alpha[1])), 0, 0, 1, layer);
 		vertexLine(matrices, builder, x1, y2, z2, x2, y2, z2, firstThird, secondThird, Math.round(Math.max(alpha[3], alpha[1])), 1, 0, 0, layer);
+		//corner to center
+		//hmm. i know which direction the vector will be but not its length, hmm
+//		Vector3f normal = getNormal(x1, y2, z1, (float) vec.x, (float) vec.y, (float) vec.z);
+//		vertexLine(matrices, builder, x1, y2, z1, (float) vec.x, (float) vec.y, (float) vec.z, cols, firstThird, Math.round(Math.max(alpha[2], alpha[1])), normal.x, normal.y, normal.z, layer);
+	}
+
+	public static Vec3 screenSpaceToWorldSpace(double x, double y, double d) {
+		Camera camera = Renderer.mc.getEntityRenderDispatcher().camera;
+		int displayHeight = Renderer.mc.getWindow().getGuiScaledHeight();
+		int displayWidth = Renderer.mc.getWindow().getGuiScaledWidth();
+		int[] viewport = new int[4];
+		viewport[0] = 0;
+		viewport[1] = 0;
+		viewport[2] = 128;
+		viewport[3] = 128;
+		Vector3f target = new Vector3f();
+
+		Matrix4f matrixProj = new Matrix4f(Renderer.lastProjMat);
+		Matrix4f matrixModel = new Matrix4f(Renderer.lastModMat);
+
+		matrixProj.mul(matrixModel)
+				.mul(Renderer.lastWorldSpaceMatrix)
+				.unproject((float) x / displayWidth * viewport[2],
+						(float) (displayHeight - y) / displayHeight * viewport[3], (float) d, viewport, target);
+
+		return new Vec3(target.x, target.y, target.z).add(camera.position());
+	}
+	public static Vec3 worldSpaceToScreenSpace(Vec3 pos) {
+		Camera camera = Renderer.mc.getEntityRenderDispatcher().camera;
+		int displayHeight = Renderer.mc.getWindow().getGuiScaledHeight();
+		int[] viewport = new int[4];
+		viewport[0] = 0;
+		viewport[1] = 0;
+		viewport[2] = 128;
+		viewport[3] = 128;
+		Vector3f target = new Vector3f();
+
+		double deltaX = pos.x - camera.position().x;
+		double deltaY = pos.y - camera.position().y;
+		double deltaZ = pos.z - camera.position().z;
+
+		Vector4f transformedCoordinates = new Vector4f((float) deltaX, (float) deltaY, (float) deltaZ, 1.f).mul(
+				Renderer.lastWorldSpaceMatrix);
+
+		Matrix4f matrixProj = new Matrix4f(Renderer.lastProjMat);
+		Matrix4f matrixModel = new Matrix4f(Renderer.lastModMat);
+
+		matrixProj.mul(matrixModel)
+				.project(transformedCoordinates.x(), transformedCoordinates.y(), transformedCoordinates.z(), viewport,
+						target);
+
+		return new Vec3(target.x / Renderer.mc.getWindow().getGuiScale(),
+				(displayHeight - target.y) / Renderer.mc.getWindow().getGuiScale(), target.z);
 	}
 
 	private static int interp(int in1, int in2, int mul) {
@@ -100,7 +151,7 @@ public class Vertexer {
 	public static void vertexLine(PoseStack matrices, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, float nx, float ny, float nz, int layer) {
 		Matrix4f model = matrices.last().pose();
 		float width = getWidth(layer);
-		if (BlockHighlightConfig.INSTANCE.instance().cutFromCenter == 0 && BlockHighlightConfig.INSTANCE.instance().cutFromCorner == 0) {
+		if (config().cutFromCenter == 0 && config().cutFromCorner == 0) {
 			builder.addVertex(model, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
 			builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
 			return;
@@ -116,9 +167,9 @@ public class Vertexer {
 		Vector3f v2 = new Vector3f(x2, y2, z2);
 		Vector3f minOuter = new Vector3f();
 		Vector3f maxOuter = new Vector3f();
-		v1.lerp(v2, BlockHighlightConfig.INSTANCE.instance().cutFromCorner / 2, minOuter);
-		v2.lerp(v1, BlockHighlightConfig.INSTANCE.instance().cutFromCorner / 2, maxOuter);
-		if (BlockHighlightConfig.INSTANCE.instance().cutFromCenter == 0) {
+		v1.lerp(v2, config().cutFromCorner / 2, minOuter);
+		v2.lerp(v1, config().cutFromCorner / 2, maxOuter);
+		if (config().cutFromCenter == 0) {
 			//draw only one line
 			builder.addVertex(model, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
 			builder.addVertex(model, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
@@ -127,8 +178,8 @@ public class Vertexer {
 			v1.lerp(v2, 0.5F, center);
 			Vector3f minInner = new Vector3f();
 			Vector3f maxInner = new Vector3f();
-			center.lerp(v1, BlockHighlightConfig.INSTANCE.instance().cutFromCenter, minInner);
-			center.lerp(v2, BlockHighlightConfig.INSTANCE.instance().cutFromCenter, maxInner);
+			center.lerp(v1, config().cutFromCenter, minInner);
+			center.lerp(v2, config().cutFromCenter, maxInner);
 
 			float yeah = Math.clamp(minInner.distance(minOuter) / minOuter.distance(maxOuter), 0, 1);
 			Color minInnerCol = new Color((int) Mth.lerp(yeah, cols.getRed(), col2.getRed()),  (int) Mth.lerp(yeah, cols.getGreen(), col2.getGreen()), (int) Mth.lerp(yeah, cols.getBlue(), col2.getBlue()));
@@ -144,10 +195,19 @@ public class Vertexer {
 
 	private static float getWidth(int layer) {
 		return switch (layer) {
-			case 0 -> BlockHighlightConfig.INSTANCE.instance().lineWidth;
-			case 1 -> BlockHighlightConfig.INSTANCE.instance().slineWidth;
-			case 2 -> BlockHighlightConfig.INSTANCE.instance().tlineWidth;
+			case 0 -> config().lineWidth;
+			case 1 -> config().slineWidth;
+			case 2 -> config().tlineWidth;
 			default -> 1;
 		};
+	}
+
+	public static Vector3f getNormal(float x1, float y1, float z1, float x2, float y2, float z2) {
+		float xNormal = x2 - x1;
+		float yNormal = y2 - y1;
+		float zNormal = z2 - z1;
+		float normalSqrt = Mth.sqrt(xNormal * xNormal + yNormal * yNormal + zNormal * zNormal);
+
+		return new Vector3f(xNormal / normalSqrt, yNormal / normalSqrt, zNormal / normalSqrt);
 	}
 }

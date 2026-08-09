@@ -6,11 +6,11 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import tektonikal.customblockhighlight.Renderer;
 import tektonikal.customblockhighlight.Vertexer;
-import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 
 import java.awt.*;
 
 import static tektonikal.customblockhighlight.Blockhighlight.ease;
+import static tektonikal.customblockhighlight.config.BlockHighlightConfig.config;
 
 public class Line {
 	public Vec3 minPos;
@@ -38,8 +38,8 @@ public class Line {
 	}
 
 	public void moveTo(Vec3 minPosTo, Vec3 maxPosTo) {
-		this.minPos = new Vec3(ease(this.minPos.x, minPosTo.x, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(this.minPos.y, minPosTo.y, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(this.minPos.z, minPosTo.z, BlockHighlightConfig.INSTANCE.instance().easeSpeed));
-		this.maxPos = new Vec3(ease(this.maxPos.x, maxPosTo.x, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(this.maxPos.y, maxPosTo.y, BlockHighlightConfig.INSTANCE.instance().easeSpeed), ease(this.maxPos.z, maxPosTo.z, BlockHighlightConfig.INSTANCE.instance().easeSpeed));
+		this.minPos = new Vec3(ease(this.minPos.x, minPosTo.x, config().easeSpeed), ease(this.minPos.y, minPosTo.y, config().easeSpeed), ease(this.minPos.z, minPosTo.z, config().easeSpeed));
+		this.maxPos = new Vec3(ease(this.maxPos.x, maxPosTo.x, config().easeSpeed), ease(this.maxPos.y, maxPosTo.y, config().easeSpeed), ease(this.maxPos.z, maxPosTo.z, config().easeSpeed));
 	}
 
 	public void updateAndRender(PoseStack ms, VertexConsumer buf, Color c1, Color c2, int alpha, boolean b, int layer) {

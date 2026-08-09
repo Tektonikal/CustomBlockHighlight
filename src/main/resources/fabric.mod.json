@@ -22,7 +22,8 @@
 			"tektonikal.customblockhighlight.Blockhighlight"
 		]
 	},
-	"depends": {
+  "mixins": ["customblockhighlight.mixins.json"],
+  "depends": {
 		"fabricloader": ">=${loader_version}",
 		"fabric-api": "*",
 		"minecraft": "${minecraft_version}",
