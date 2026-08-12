@@ -158,12 +158,9 @@ public class Renderer {
 		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
 			if (lines) {
 				switch (layer) {
-					case 0 ->
-							renderPass.setPipeline(getPipeline(config().lineDepthTest, true));
-					case 1 ->
-							renderPass.setPipeline(getPipeline(config().slineDepthTest, true));
-					case 2 ->
-							renderPass.setPipeline(getPipeline(config().tlineDepthTest, true));
+					case 0 -> renderPass.setPipeline(getPipeline(config().lineDepthTest, true));
+					case 1 -> renderPass.setPipeline(getPipeline(config().slineDepthTest, true));
+					case 2 -> renderPass.setPipeline(getPipeline(config().tlineDepthTest, true));
 				}
 			} else {
 				renderPass.setPipeline(getPipeline(config().fillDepthTest, false));
@@ -182,7 +179,8 @@ public class Renderer {
 			stagedFaceBuffer.endFrame();
 		}
 	}
-	public static RenderPipeline getPipeline(DepthTestMode mode, boolean lines){
+
+	public static RenderPipeline getPipeline(DepthTestMode mode, boolean lines) {
 		return switch (mode) {
 			case ALWAYS_PASS -> lines ? LINE_NO_DEPTH : FILL_NO_DEPTH;
 			case HIDDEN_ONLY -> lines ? LINES_CONCEALED_ONLY : FILL_CONCEALED_ONLY;
@@ -194,6 +192,19 @@ public class Renderer {
 		doEvilMatrixPreparations(stack, box, false);
 		StagedVertexBuffer.Draw draw = startDrawing(false);
 		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
+//		if (evilHitResult instanceof BlockHitResult bhr) {
+//			List<BlockStateModelPart> s = new ArrayList();
+//			mc.getModelManager().getBlockStateModelSet().get(mc.level.getBlockState(bhr.getBlockPos())).collectParts(RandomSource.create(), s);
+//			s.forEach(blockStateModelPart -> {
+//				((SimpleModelWrapper) blockStateModelPart).quads().getAll().forEach(quad -> {
+//					Vector3fc p0 = new Vector3f(quad.position0());
+//					Vector3fc p1 = new Vector3f(quad.position1());
+//					Vector3fc p2 = new Vector3f(quad.position2());
+//					Vector3fc p3 = new Vector3f(quad.position3());
+//					Vertexer.vertexQuad(stack, buffer, p0.x(), p0.y(), p0.z(), p1.x(), p1.y(), p1.z(), p2.x(), p2.y(), p2.z(), p3.x(), p3.y(), p3.z(), Color.BLACK, Color.WHITE, Color.RED, Color.BLUE, 255);
+//				});
+//			});
+//		}
 		Vertexer.vertexBoxQuads(stack, buffer, moveToZero(box), cols, col2, alpha);
 		finishDraw(false, draw, 0);
 		stack.popPose();
@@ -216,16 +227,7 @@ public class Renderer {
 		doEvilMatrixPreparations(stack, box, false);
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-//		Vertexer.vertexBoxLines(stack, buffer, moveToZero(box), color, col2, alpha, layer);
-		List<BlockStateModelPart> s = new ArrayList();
-		mc.getModelManager().getBlockStateModelSet().get(mc.level.getBlockState(new BlockPos(0, 0, 0))).collectParts(RandomSource.create(), s);
-		((SimpleModelWrapper) s.getFirst()).quads().getAll().forEach(quad -> {
-			Vector3fc p0 = new Vector3f(quad.position0());
-			Vector3fc p1 = new Vector3f(quad.position1());
-			Vector3fc p2 = new Vector3f(quad.position2());
-			Vector3fc p3 = new Vector3f(quad.position3());
-			Vertexer.vertexQuad(stack, buffer, p0.x(), p0.y(), p0.z(), p1.x(), p1.y(), p1.z(), p2.x(), p2.y(), p2.z(), p3.x(), p3.y(), p3.z(), Color.BLACK, Color.WHITE, Color.RED, Color.BLUE, 255);
-		});
+		Vertexer.vertexBoxLines(stack, buffer, moveToZero(box), color, col2, alpha, layer);
 //		stack.pushPose();
 //		stack.translate(0.5F, 0.5F, 0.5F);
 //		float scale = 1 / (float) Math.sqrt(3);
@@ -353,10 +355,10 @@ public class Renderer {
 		evilHitResult = mc.hitResult;
 		//this is just for the warnings to go away
 		if (evilHitResult == null || mc.level == null || mc.getCameraEntity() == null || mc.player == null) return;
-		if(config().allowLiquids && (mc.player.getMainHandItem().is(Items.BUCKET) || mc.player.getOffhandItem().is(Items.BUCKET))) {
+		if (config().allowLiquids && (mc.player.getMainHandItem().is(Items.BUCKET) || mc.player.getOffhandItem().is(Items.BUCKET))) {
 			HitResult yeah = pick(mc.getCameraEntity(), mc.player.blockInteractionRange(), mc.getDeltaTracker().getRealtimeDeltaTicks(), true);
-			if(yeah instanceof BlockHitResult hit) {
-				if(mc.level.getFluidState(hit.getBlockPos()).isSource()){
+			if (yeah instanceof BlockHitResult hit) {
+				if (mc.level.getFluidState(hit.getBlockPos()).isSource()) {
 					evilHitResult = yeah;
 				}
 			}
@@ -507,7 +509,7 @@ public class Renderer {
 					lineFades[dir.ordinal()] = config().fadeIn ? (float) ease(lineFades[dir.ordinal()], config().lineAlpha, config().fadeInSpeed) : config().lineAlpha;
 				}
 				edgeAlpha = config().fadeIn ? (float) ease(edgeAlpha, config().lineAlpha, config().fadeInSpeed) : config().lineAlpha;
-			}else{
+			} else {
 				shouldFadeOut = true;
 				for (Direction dir : Direction.values()) {
 					sideFades[dir.ordinal()] = config().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, config().fadeOutSpeed) : 0;

@@ -1,14 +1,24 @@
 package tektonikal.customblockhighlight.config;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.model.object.book.BookModel;
+import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.phys.AABB;
 import org.jspecify.annotations.NonNull;
 import tektonikal.customblockhighlight.Blockhighlight;
+import tektonikal.customblockhighlight.EvilRenderState;
+import tektonikal.customblockhighlight.Renderer;
+import tektonikal.customblockhighlight.Vertexer;
 
+import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,6 +74,7 @@ public class PresetsScreen extends Screen {
 	public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 		super.extractRenderState(graphics, mouseX, mouseY, a);
 		graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
+		graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(0, 0, width, height, 50, graphics.scissorStack.peek()));
 	}
 
 	public enum Preset {

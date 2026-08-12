@@ -2,9 +2,14 @@ package tektonikal.customblockhighlight;
 
 import dev.isxander.yacl3.api.Option;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderPipeline;
+import net.fabricmc.fabric.api.client.rendering.v1.FeatureRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.impl.client.rendering.GuiRendererExtensions;
+import net.fabricmc.fabric.impl.client.rendering.PictureInPictureRendererRegistryImpl;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.screens.PauseScreen;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.config.Updatable;
@@ -20,6 +25,9 @@ public class Blockhighlight implements ModInitializer {
 		unleashHell();
 		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((_, _) -> false);
 		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
+		FeatureRendererRegistry.register(CBHFeatureRenderer.TYPE, CBHFeatureRenderer::new);
+		PictureInPictureRendererRegistryImpl.register(ctx -> new GuiOutlineRenderer());
+
 	}
 
 	public static void unleashHell() {
