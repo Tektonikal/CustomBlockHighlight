@@ -294,7 +294,7 @@ public class BlockHighlightConfig {
 					Component.nullToEmpty("- Looked At")
 			))
 			.stateManager(StateManager.createInstant(OutlineType.ALL, () -> config().fillType, newVal -> config().fillType = newVal))
-			.addListener((option, _) -> {
+			.addListener((option, value) -> {
 				if (option.pendingValue() == OutlineType.EDGES) {
 					option.requestSet(OutlineType.LOOKAT);
 				}
@@ -516,7 +516,7 @@ public class BlockHighlightConfig {
 									.name(Component.nullToEmpty("Config"))
 									.option(ButtonOption.createBuilder()
 											.name(Component.nullToEmpty("- Copy To Clipboard"))
-											.action((_, _) -> {
+											.action((screen, opt) -> {
 												BlockHighlightConfig.INSTANCE.save();
 												Minecraft.getInstance().keyboardHandler.setClipboard(BlockHighlightConfig.gson.toJson(config()));
 											})
@@ -526,7 +526,7 @@ public class BlockHighlightConfig {
 											.name(Component.literal("- Load From Clipboard"))
 											.description(OptionDescription.of(Component.nullToEmpty("Loads settings from your clipboard if they're valid. The screen will close, reopen it to see your new values.")))
 											.text(Component.nullToEmpty("Load"))
-											.action((_, _) -> {
+											.action((screen, opt) -> {
 												try {
 													BlockHighlightConfig yeah = BlockHighlightConfig.gson.fromJson(Minecraft.getInstance().keyboardHandler.getClipboard(), BlockHighlightConfig.class);
 													if (yeah == null) {
@@ -549,8 +549,14 @@ public class BlockHighlightConfig {
 											.build())
 									.option(ButtonOption.createBuilder()
 											.name(Component.nullToEmpty("- Presets"))
-											.action((screen, _) -> Minecraft.getInstance().setScreenAndShow(new PresetsScreen(false, screen)))
+											.action((screen, opt) -> Minecraft.getInstance().setScreenAndShow(new PresetsScreen(false, screen)))
 											.text(Component.nullToEmpty("Open"))
+											.build())
+									.option(ButtonOption.createBuilder()
+											.name(Component.nullToEmpty("- Onboarding"))
+											.description(OptionDescription.of(Component.nullToEmpty("Shows the welcome screen you got the first time you opened this config again.")))
+											.action((screen, opt) -> Minecraft.getInstance().setScreenAndShow(new PresetsScreen(true, screen)))
+											.text(Component.nullToEmpty("Replay"))
 											.build())
 									.build())
 							.build()).save(() -> INSTANCE.save())

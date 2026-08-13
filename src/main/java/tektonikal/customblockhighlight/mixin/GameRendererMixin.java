@@ -1,3 +1,4 @@
+//? if >=26.2 {
 package tektonikal.customblockhighlight.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
@@ -21,3 +22,5 @@ public class GameRendererMixin {
 		Renderer.lastWorldSpaceMatrix.set(camState.viewRotationMatrix);
 	}
 }
+
+//?}

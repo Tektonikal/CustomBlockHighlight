@@ -1,9 +1,7 @@
 package tektonikal.customblockhighlight;
 
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.model.object.book.BookModel;
 import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
-import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
 public record EvilRenderState(

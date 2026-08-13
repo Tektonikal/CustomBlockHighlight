@@ -1,3 +1,4 @@
+//? if >=26.2 {
 package tektonikal.customblockhighlight.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
@@ -25,3 +26,5 @@ public class ShapeOutlineFeatureRendererMixin {
 		});
 	}
 }
+
+//?}

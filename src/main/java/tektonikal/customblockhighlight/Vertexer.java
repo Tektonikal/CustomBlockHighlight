@@ -1,16 +1,16 @@
 package tektonikal.customblockhighlight;
 
-import com.mojang.authlib.minecraft.client.MinecraftClient;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+//? if >=26.2
 import net.minecraft.client.Camera;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.joml.Matrix4f;
-import org.joml.Vector3d;
 import org.joml.Vector3f;
+//? if >=26.2
 import org.joml.Vector4f;
 
 import java.awt.*;
@@ -91,6 +91,7 @@ public class Vertexer {
 //		vertexLine(matrices, builder, x1, y2, z1, (float) vec.x, (float) vec.y, (float) vec.z, cols, firstThird, Math.round(Math.max(alpha[2], alpha[1])), normal.x, normal.y, normal.z, layer);
 	}
 
+	//? if >=26.2 {
 	public static Vec3 screenSpaceToWorldSpace(double x, double y, double d) {
 		Camera camera = Renderer.mc.getEntityRenderDispatcher().camera;
 		int displayHeight = Renderer.mc.getWindow().getGuiScaledHeight();
@@ -138,6 +139,16 @@ public class Vertexer {
 
 		return new Vec3(target.x / Renderer.mc.getWindow().getGuiScale(),
 				(displayHeight - target.y) / Renderer.mc.getWindow().getGuiScale(), target.z);
+	}
+	//?}
+
+	public static void vertexShapeEdges(PoseStack.Pose pose, VertexConsumer builder, VoxelShape shape, int color, float width) {
+		Vector3f normal = new Vector3f();
+		shape.forAllEdges((x1, y1, z1, x2, y2, z2) -> {
+			normal.set((float) (x2 - x1), (float) (y2 - y1), (float) (z2 - z1)).normalize();
+			builder.addVertex(pose, (float) x1, (float) y1, (float) z1).setColor(color).setNormal(pose, normal).setLineWidth(width);
+			builder.addVertex(pose, (float) x2, (float) y2, (float) z2).setColor(color).setNormal(pose, normal).setLineWidth(width);
+		});
 	}
 
 	private static int interp(int in1, int in2, int mul) {

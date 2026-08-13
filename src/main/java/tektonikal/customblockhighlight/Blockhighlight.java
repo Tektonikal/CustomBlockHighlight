@@ -2,15 +2,13 @@ package tektonikal.customblockhighlight;
 
 import dev.isxander.yacl3.api.Option;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderPipeline;
+//? if >=26.2 {
 import net.fabricmc.fabric.api.client.rendering.v1.FeatureRendererRegistry;
+//?}
+//? if >=26.1
+import net.fabricmc.fabric.api.client.rendering.v1.PictureInPictureRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.fabricmc.fabric.impl.client.rendering.GuiRendererExtensions;
-import net.fabricmc.fabric.impl.client.rendering.PictureInPictureRendererRegistryImpl;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.screens.PauseScreen;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.config.Updatable;
 
@@ -23,11 +21,14 @@ public class Blockhighlight implements ModInitializer {
 		BlockHighlightConfig.INSTANCE.load();
 		armSecuritySystem();
 		unleashHell();
-		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((_, _) -> false);
+		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((ctx, hit) -> false);
 		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
+		//? if >=26.2 {
 		FeatureRendererRegistry.register(CBHFeatureRenderer.TYPE, CBHFeatureRenderer::new);
-		PictureInPictureRendererRegistryImpl.register(ctx -> new GuiOutlineRenderer());
-
+		PictureInPictureRendererRegistry.register(ctx -> new GuiOutlineRenderer());
+		//?} elif >=26.1 {
+		/*PictureInPictureRendererRegistry.register(ctx -> new GuiOutlineRenderer(ctx.bufferSource()));
+		*///?}
 	}
 
 	public static void unleashHell() {
@@ -37,15 +38,15 @@ public class Blockhighlight implements ModInitializer {
 					//noinspection unchecked, rawtypes
 					((Option) field.get(null)).stateManager().set(BlockHighlightConfig.class.getField(field.getName().replace("o_", "")).get(BlockHighlightConfig.config()));
 					((Option<?>) field.get(null)).applyValue();
-				} catch (IllegalAccessException | NoSuchFieldException _) {
+				} catch (IllegalAccessException | NoSuchFieldException ignored) {
 				}
 			});
-		} catch (SecurityException _) {
+		} catch (SecurityException ignored) {
 		}
 	}
 
 	private static void armSecuritySystem() {
-		//can't add listeners while options are created for my use-case, since not everything is fully initialized
+		// can't add listeners while options are created for my use-case, since not everything is fully initialized
 		// actually you're just stupid
 		Arrays.stream(BlockHighlightConfig.class.getDeclaredFields())
 				.filter(field -> field.isAnnotationPresent(Updatable.class))
@@ -56,7 +57,7 @@ public class Blockhighlight implements ModInitializer {
 						//noinspection deprecation yacl sucks yo
 						option.addListener(BlockHighlightConfig::update);
 						BlockHighlightConfig.update(option, option.stateManager().get());
-					} catch (IllegalAccessException _) {
+					} catch (IllegalAccessException ignored) {
 					}
 				});
 	}

@@ -1,11 +1,11 @@
 {
 	"schemaVersion": 1,
-	"id": "custom-block-highlight",
+	"id": "${id}",
 	"version": "${version}",
-	"name": "Custom Block Highlight",
+	"name": "${name}",
 	"description": "Revitalize the block outline.",
 	"authors": ["Tektonikal"],
-    "contributors": ["kr1v"],
+	"contributors": ["kr1v"],
 	"contact": {
 		"homepage": "https://modrinth.com/mod/custom-block-highlight",
 		"sources": "https://github.com/Tektonikal/CustomBlockHighlight",
@@ -22,11 +22,11 @@
 			"tektonikal.customblockhighlight.Blockhighlight"
 		]
 	},
-  "mixins": ["customblockhighlight.mixins.json"],
-  "depends": {
-		"fabricloader": ">=${loader_version}",
+	"mixins": ["customblockhighlight.mixins.json"],
+	"depends": {
+		"fabricloader": ">=${loader}",
 		"fabric-api": "*",
-		"minecraft": "${minecraft_version}",
+		"minecraft": "${minecraft}",
 		"yet_another_config_lib_v3": "*"
 	},
 	"custom": {
