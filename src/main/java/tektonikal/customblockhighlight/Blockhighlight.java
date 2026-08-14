@@ -5,8 +5,10 @@ import net.fabricmc.api.ModInitializer;
 //? if >=26.2 {
 import net.fabricmc.fabric.api.client.rendering.v1.FeatureRendererRegistry;
 //?}
-//? if >=26.1
+//? if >=26.1 {
 import net.fabricmc.fabric.api.client.rendering.v1.PictureInPictureRendererRegistry;
+//?} else
+//import net.fabricmc.fabric.api.client.rendering.v1.SpecialGuiElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
@@ -28,6 +30,8 @@ public class Blockhighlight implements ModInitializer {
 		PictureInPictureRendererRegistry.register(ctx -> new GuiOutlineRenderer());
 		//?} elif >=26.1 {
 		/*PictureInPictureRendererRegistry.register(ctx -> new GuiOutlineRenderer(ctx.bufferSource()));
+		*///?} else {
+		/*SpecialGuiElementRegistry.register(ctx -> new GuiOutlineRenderer(ctx.vertexConsumers()));
 		*///?}
 	}
 
