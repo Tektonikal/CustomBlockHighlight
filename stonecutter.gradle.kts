@@ -15,6 +15,10 @@ stonecutter parameters {
     dependencies["yacl"] = node.project.property("deps.yacl") as String
 
     replacements {
+        string(current.parsed >= "1.21.11") {
+            replace("ResourceLocation", "Identifier")
+            replace("camera.getEntity()", "camera.entity()")
+        }
         string(current.parsed >= "26.1") {
             replace("rendering.v1.world", "rendering.v1.level")
             replace("WorldRenderEvents", "LevelRenderEvents")
@@ -32,6 +36,7 @@ stonecutter parameters {
         }
         string(current.parsed >= "26.2") {
             replace("getMainCamera", "mainCamera")
+            replace("getModelViewMatrix()", "getModelViewMatrixCopy()")
         }
     }
 }

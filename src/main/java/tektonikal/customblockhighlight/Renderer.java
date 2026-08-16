@@ -130,6 +130,24 @@ public class Renderer {
 	private static BufferBuilder currentDraw;
 	*///?}
 
+	private static VertexFormat lineFormat() {
+		//? if >=1.21.11 {
+		return DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH;
+		//?} else
+		/*return DefaultVertexFormat.POSITION_COLOR_NORMAL;*/
+	}
+
+	private static GpuBufferSlice transformUniform(float width) {
+		//? if >=1.21.11 {
+		return RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
+		//?} else
+		/*return RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f(), width);*/
+	}
+
+	private static float lineWidthFor(boolean lines, int layer) {
+		return lines ? Vertexer.getWidth(layer) : 1F;
+	}
+
 	private static RenderPipeline pipelineFor(boolean lines, int layer) {
 		if (!lines) return getPipeline(BlockHighlightConfig.INSTANCE.instance().fillDepthTest, false);
 		return switch (layer) {
@@ -162,7 +180,7 @@ public class Renderer {
 		}
 		if (info == null) return;
 
-		GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
+		GpuBufferSlice dynamicTransforms = transformUniform(lineWidthFor(lines, layer));
 		RenderTarget mainTarget = mc.gameRenderer.mainRenderTarget();
 		GpuTextureView colorTexture = mainTarget.getColorTextureView();
 		assert colorTexture != null;
@@ -183,7 +201,7 @@ public class Renderer {
 	}
 	//?} else {
 	/*public static VertexConsumer startDrawing(boolean lines) {
-		currentDraw = new BufferBuilder(allocator, lines ? VertexFormat.Mode.LINES : VertexFormat.Mode.QUADS, lines ? DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH : DefaultVertexFormat.POSITION_COLOR);
+		currentDraw = new BufferBuilder(allocator, lines ? VertexFormat.Mode.LINES : VertexFormat.Mode.QUADS, lines ? lineFormat() : DefaultVertexFormat.POSITION_COLOR);
 		return currentDraw;
 	}
 
@@ -201,7 +219,7 @@ public class Renderer {
 		RenderSystem.AutoStorageIndexBuffer shapeIndexBuffer = RenderSystem.getSequentialBuffer(p.getVertexFormatMode());
 		GpuBuffer indices = shapeIndexBuffer.getBuffer(state.indexCount());
 		VertexFormat.IndexType indexType = shapeIndexBuffer.type();
-		GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrix(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F), new Vector3f(), new Matrix4f());
+		GpuBufferSlice dynamicTransforms = transformUniform(lineWidthFor(lines, layer));
 
 		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", mc.getMainRenderTarget().getColorTextureView(), OptionalInt.empty(), mc.getMainRenderTarget().getDepthTextureView(), OptionalDouble.empty())) {
 			renderPass.setPipeline(p);
@@ -226,7 +244,7 @@ public class Renderer {
 
 		CommandEncoder commandEncoder = RenderSystem.getDevice().createCommandEncoder();
 
-		try (GpuBuffer.MappedView mappedView = commandEncoder.mapBuffer(vertexBuffer.currentBuffer().slice(0L, builtBuffer.vertexBuffer().remaining()), false, true)) {
+		try (GpuBuffer.MappedView mappedView = commandEncoder.mapBuffer(vertexBuffer.currentBuffer().slice(0, builtBuffer.vertexBuffer().remaining()), false, true)) {
 			MemoryUtil.memCopy(builtBuffer.vertexBuffer(), mappedView.data());
 		}
 
