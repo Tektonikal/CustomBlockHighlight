@@ -2,18 +2,20 @@ package tektonikal.customblockhighlight;
 
 import dev.isxander.yacl3.api.Option;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderPipeline;
 import net.fabricmc.fabric.api.client.rendering.v1.FeatureRendererRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.fabricmc.fabric.impl.client.rendering.GuiRendererExtensions;
 import net.fabricmc.fabric.impl.client.rendering.PictureInPictureRendererRegistryImpl;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.world.phys.shapes.Shapes;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.config.Updatable;
+import tektonikal.customblockhighlight.config.screenrenderbullshit.CBHLineRenderInfo;
+import tektonikal.customblockhighlight.config.screenrenderbullshit.GuiOutlineRenderer;
+import tektonikal.customblockhighlight.util.DepthTestMode;
 
+import java.awt.*;
 import java.util.Arrays;
 
 //           this ↓ should be capitalized.

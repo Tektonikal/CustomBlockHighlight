@@ -53,6 +53,6 @@ public class Line {
 
 	public void render(PoseStack ms, VertexConsumer buf, Color c1, Color c2, int alpha, int layer) {
 		Vec3 normal = getNormal();
-		Vertexer.vertexLine(ms, buf, (float) minPos.x, (float) minPos.y, (float) minPos.z, (float) maxPos.x, (float) maxPos.y, (float) maxPos.z, c1, c2, Math.round(alpha * alphaMultiplier), (float) normal.x, (float) normal.y, (float) normal.z, layer);
+		Vertexer.vertexLine(ms.last(), buf, (float) minPos.x, (float) minPos.y, (float) minPos.z, (float) maxPos.x, (float) maxPos.y, (float) maxPos.z, c1, c2, Math.round(alpha * alphaMultiplier), (float) normal.x, (float) normal.y, (float) normal.z, 5, 0, 0);
 	}
 }

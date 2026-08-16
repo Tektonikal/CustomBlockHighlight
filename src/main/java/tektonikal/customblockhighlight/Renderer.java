@@ -205,7 +205,7 @@ public class Renderer {
 //				});
 //			});
 //		}
-		Vertexer.vertexBoxQuads(stack, buffer, moveToZero(box), cols, col2, alpha);
+		Vertexer.vertexBoxQuads(stack.last(), buffer, moveToZero(box), cols, col2, alpha);
 		finishDraw(false, draw, 0);
 		stack.popPose();
 	}
@@ -227,7 +227,7 @@ public class Renderer {
 		doEvilMatrixPreparations(stack, box, false);
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-		Vertexer.vertexBoxLines(stack, buffer, moveToZero(box), color, col2, alpha, layer);
+		Vertexer.vertexBoxLines(stack.last(), buffer, moveToZero(box), color, col2, alpha, 5, 0, 0);
 //		stack.pushPose();
 //		stack.translate(0.5F, 0.5F, 0.5F);
 //		float scale = 1 / (float) Math.sqrt(3);
