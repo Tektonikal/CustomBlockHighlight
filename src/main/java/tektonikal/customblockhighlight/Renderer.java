@@ -1,23 +1,31 @@
 package tektonikal.customblockhighlight;
 
+//? if >=26.2 {
 import com.mojang.blaze3d.PrimitiveTopology;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.DepthStencilState;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.textures.GpuTextureView;
+import net.minecraft.client.renderer.StagedVertexBuffer;
+import net.minecraft.client.renderer.rendertype.RenderType;
+//?} else {
+/*import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.systems.CommandEncoder;
+import net.minecraft.client.renderer.MappableRingBuffer;
+import org.lwjgl.system.MemoryUtil;
+*///?}
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+//? if >=26.1 {
+import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.platform.CompareOp;
+//?} else
+//import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.*;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.StagedVertexBuffer;
-import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
@@ -77,36 +85,29 @@ public class Renderer {
 	public static final float[] sideFades = new float[6];
 	public static final float[] lineFades = new float[6];
 
-	public static final RenderPipeline LINE_NO_DEPTH = RenderPipelines.register(
-			RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
-					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/evil-lines"))
-					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
-					.withCull(false)
-					.build()
-	);
-	public static final RenderPipeline FILL_NO_DEPTH = RenderPipelines.register(
-			RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
-					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/evil-fill"))
-					.withDepthStencilState(new DepthStencilState(CompareOp.ALWAYS_PASS, true))
-					.withCull(false)
-					.build()
-	);
-	public static final RenderPipeline LINES_CONCEALED_ONLY = RenderPipelines.register(
-			RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
-					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/eviler-lines"))
-					.withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, true))
-					.withCull(false)
-					.build()
-	);
-	public static final RenderPipeline FILL_CONCEALED_ONLY = RenderPipelines.register(
-			RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
-					.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", "pipeline/eviler-fill"))
-					.withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, true))
-					.withCull(false)
-					.build()
-	);
+	public static final RenderPipeline LINE_NO_DEPTH = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/evil-lines", true);
+	public static final RenderPipeline FILL_NO_DEPTH = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/evil-fill", true);
+	public static final RenderPipeline LINES_CONCEALED_ONLY = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/eviler-lines", false);
+	public static final RenderPipeline FILL_CONCEALED_ONLY = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/eviler-fill", false);
+
+	private static RenderPipeline evilPipeline(RenderPipeline.Snippet snippet, String path, boolean alwaysPass) {
+		RenderPipeline.Builder builder = RenderPipeline.builder(snippet)
+				.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", path))
+				.withCull(false);
+		//? if >=26.2 {
+		builder = builder.withDepthStencilState(new DepthStencilState(alwaysPass ? CompareOp.ALWAYS_PASS : CompareOp.LESS_THAN, true));
+		//?} elif >=26.1 {
+		/*builder = builder.withDepthStencilState(new DepthStencilState(alwaysPass ? CompareOp.ALWAYS_PASS : CompareOp.GREATER_THAN, true));
+		*///?} else {
+		/*builder = builder.withDepthTestFunction(alwaysPass ? DepthTestFunction.NO_DEPTH_TEST : DepthTestFunction.GREATER_DEPTH_TEST).withDepthWrite(true);
+		*///?}
+		return RenderPipelines.register(builder.build());
+	}
+
+	//? if >=26.2 {
 	public static final StagedVertexBuffer stagedFaceBuffer = new StagedVertexBuffer(() -> " CBH sides", RenderType.SMALL_BUFFER_SIZE);
 	public static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
+	//?}
 
 	public static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
 	public static AABB targetBox = new AABB(0, 0, 0, 0, 0, 0);
@@ -120,22 +121,44 @@ public class Renderer {
 	public static float scaleProg = 0;
 	public static HitResult evilHitResult;
 
-	public static StagedVertexBuffer.Draw startDrawing(boolean lines) {
+	//? if >=26.2 {
+	private static StagedVertexBuffer.Draw currentDraw;
+	//?} else {
+	/*private static MappableRingBuffer vertexBuffer;
+	private static final ByteBufferBuilder allocator = new ByteBufferBuilder(786432);
+
+	private static BufferBuilder currentDraw;
+	*///?}
+
+	private static RenderPipeline pipelineFor(boolean lines, int layer) {
+		if (!lines) return getPipeline(BlockHighlightConfig.INSTANCE.instance().fillDepthTest, false);
+		return switch (layer) {
+			case 0 -> getPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest, true);
+			case 1 -> getPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest, true);
+			case 2 -> getPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest, true);
+			default -> throw new IllegalStateException("Unexpected value: " + layer);
+		};
+	}
+
+	//? if >=26.2 {
+	public static VertexConsumer startDrawing(boolean lines) {
 		if (lines) {
-			return stagedOutlineBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH, PrimitiveTopology.LINES);
+			currentDraw = stagedOutlineBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH, PrimitiveTopology.LINES);
+			return stagedOutlineBuffer.getVertexBuilder(currentDraw);
 		} else {
-			return stagedFaceBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR, PrimitiveTopology.QUADS, RenderSystem.getProjectionType().vertexSorting());
+			currentDraw = stagedFaceBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR, PrimitiveTopology.QUADS, RenderSystem.getProjectionType().vertexSorting());
+			return stagedFaceBuffer.getVertexBuilder(currentDraw);
 		}
 	}
 
-	private static void finishDraw(boolean lines, StagedVertexBuffer.Draw draw, int layer) {
+	private static void finishDraw(boolean lines, int layer) {
 		StagedVertexBuffer.ExecuteInfo info;
 		if (lines) {
 			stagedOutlineBuffer.upload();
-			info = stagedOutlineBuffer.getExecuteInfo(draw);
+			info = stagedOutlineBuffer.getExecuteInfo(currentDraw);
 		} else {
 			stagedFaceBuffer.upload();
-			info = stagedFaceBuffer.getExecuteInfo(draw);
+			info = stagedFaceBuffer.getExecuteInfo(currentDraw);
 		}
 		if (info == null) return;
 
@@ -144,19 +167,7 @@ public class Renderer {
 		GpuTextureView colorTexture = mainTarget.getColorTextureView();
 		assert colorTexture != null;
 		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
-			if (lines) {
-				switch (layer) {
-					case 0 ->
-							renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().lineDepthTest, true));
-					case 1 ->
-							renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().slineDepthTest, true));
-					case 2 ->
-							renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().tlineDepthTest, true));
-				}
-			} else {
-				renderPass.setPipeline(getPipeline(BlockHighlightConfig.INSTANCE.instance().fillDepthTest, false));
-			}
-
+			renderPass.setPipeline(pipelineFor(lines, layer));
 			RenderSystem.bindDefaultUniforms(renderPass);
 			renderPass.setUniform("DynamicTransforms", dynamicTransforms);
 			renderPass.setVertexBuffer(0, info.vertexBuffer().slice());
@@ -170,6 +181,59 @@ public class Renderer {
 			stagedFaceBuffer.endFrame();
 		}
 	}
+	//?} else {
+	/*public static VertexConsumer startDrawing(boolean lines) {
+		currentDraw = new BufferBuilder(allocator, lines ? VertexFormat.Mode.LINES : VertexFormat.Mode.QUADS, lines ? DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH : DefaultVertexFormat.POSITION_COLOR);
+		return currentDraw;
+	}
+
+	private static void finishDraw(boolean lines, int layer) {
+		MeshData builtBuffer = currentDraw.build();
+		if (builtBuffer == null) return;
+		MeshData.DrawState drawParameters = builtBuffer.drawState();
+		GpuBuffer vertices = upload(drawParameters, drawParameters.format(), builtBuffer);
+		draw(builtBuffer, drawParameters, vertices, lines, layer);
+		vertexBuffer.rotate();
+	}
+
+	private static void draw(MeshData builtBuffer, MeshData.DrawState state, GpuBuffer vertices, boolean lines, int layer) {
+		RenderPipeline p = pipelineFor(lines, layer);
+		RenderSystem.AutoStorageIndexBuffer shapeIndexBuffer = RenderSystem.getSequentialBuffer(p.getVertexFormatMode());
+		GpuBuffer indices = shapeIndexBuffer.getBuffer(state.indexCount());
+		VertexFormat.IndexType indexType = shapeIndexBuffer.type();
+		GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrix(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F), new Vector3f(), new Matrix4f());
+
+		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", mc.getMainRenderTarget().getColorTextureView(), OptionalInt.empty(), mc.getMainRenderTarget().getDepthTextureView(), OptionalDouble.empty())) {
+			renderPass.setPipeline(p);
+			RenderSystem.bindDefaultUniforms(renderPass);
+			renderPass.setUniform("DynamicTransforms", dynamicTransforms);
+			renderPass.setVertexBuffer(0, vertices);
+			renderPass.setIndexBuffer(indices, indexType);
+			renderPass.drawIndexed(0, 0, state.indexCount(), 1);
+		}
+
+		builtBuffer.close();
+	}
+
+	private static GpuBuffer upload(MeshData.DrawState drawParameters, VertexFormat format, MeshData builtBuffer) {
+		int vertexBufferSize = drawParameters.vertexCount() * format.getVertexSize();
+		if (vertexBuffer == null || vertexBuffer.size() < vertexBufferSize) {
+			if (vertexBuffer != null) {
+				vertexBuffer.close();
+			}
+			vertexBuffer = new MappableRingBuffer(() -> "CBH render pipeline", 34, vertexBufferSize);
+		}
+
+		CommandEncoder commandEncoder = RenderSystem.getDevice().createCommandEncoder();
+
+		try (GpuBuffer.MappedView mappedView = commandEncoder.mapBuffer(vertexBuffer.currentBuffer().slice(0L, builtBuffer.vertexBuffer().remaining()), false, true)) {
+			MemoryUtil.memCopy(builtBuffer.vertexBuffer(), mappedView.data());
+		}
+
+		return vertexBuffer.currentBuffer();
+	}
+	*///?}
+
 	public static RenderPipeline getPipeline(DepthTestMode mode, boolean lines){
 		return switch (mode) {
 			case ALWAYS_PASS -> lines ? LINE_NO_DEPTH : FILL_NO_DEPTH;
@@ -180,10 +244,9 @@ public class Renderer {
 
 	public static void drawBoxFill(PoseStack stack, AABB box, Color cols, Color col2, float[] alpha) {
 		doEvilMatrixPreparations(stack, box, false);
-		StagedVertexBuffer.Draw draw = startDrawing(false);
-		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
+		VertexConsumer buffer = startDrawing(false);
 		Vertexer.vertexBoxQuads(stack, buffer, moveToZero(box), cols, col2, alpha);
-		finishDraw(false, draw, 0);
+		finishDraw(false, 0);
 		stack.popPose();
 	}
 
@@ -202,18 +265,16 @@ public class Renderer {
 
 	public static void drawBoxOutline(PoseStack stack, AABB box, Color color, Color col2, float[] alpha, int layer) {
 		doEvilMatrixPreparations(stack, box, false);
-		StagedVertexBuffer.Draw draw = startDrawing(true);
-		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
+		VertexConsumer buffer = startDrawing(true);
 		Vertexer.vertexBoxLines(stack, buffer, moveToZero(box), color, col2, alpha, layer);
-		finishDraw(true, draw, layer);
+		finishDraw(true, layer);
 		stack.popPose();
 	}
 
 	public static void drawEdgeOutline(PoseStack matrices, VoxelShape shape, Color c1, Color c2, float alpha, int layer) {
 		doEvilMatrixPreparations(matrices, shape.bounds(), true);
 		List<Line> newLines = new ArrayList<>();
-		StagedVertexBuffer.Draw draw = startDrawing(true);
-		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
+		VertexConsumer buffer = startDrawing(true);
 		moveToZero(shape).forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
 		Vec3 minVec = shape.bounds().getMinPosition();
 		if (lines.isEmpty() || !BlockHighlightConfig.INSTANCE.instance().doEasing) {
@@ -245,7 +306,7 @@ public class Renderer {
 		for (Line line : toRemove) {
 			line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / normalised)), Math.round(alpha), false, layer);
 		}
-		finishDraw(true, draw, layer);
+		finishDraw(true, layer);
 		matrices.popPose();
 	}
 

@@ -34,7 +34,7 @@ public class PresetsScreen extends Screen {
 			}
 			BlockHighlightConfig.INSTANCE.load();
 			Blockhighlight.unleashHell();
-		} catch (IOException _) {
+		} catch (IOException ignored) {
 		}
 	}
 
@@ -46,7 +46,7 @@ public class PresetsScreen extends Screen {
 	}
 
 	public void addButton(int y, Preset preset) {
-		addRenderableWidget(new Button(width / 4, y, width / 2, 18, preset.meow, _ -> loadPreset(preset.name), _ -> Component.empty()) {
+		addRenderableWidget(new Button(width / 4, y, width / 2, 18, preset.meow, button -> loadPreset(preset.name), value -> Component.empty()) {
 			@Override
 			protected void extractContents(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 				extractDefaultSprite(graphics);
@@ -60,9 +60,21 @@ public class PresetsScreen extends Screen {
 		Minecraft.getInstance().setScreenAndShow(parent);
 	}
 
+	//? if >=26.1 {
 	@Override
 	public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 		super.extractRenderState(graphics, mouseX, mouseY, a);
+		drawOverlay(graphics);
+	}
+	//?} else {
+	/*@Override
+	public void render(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+		super.render(graphics, mouseX, mouseY, a);
+		drawOverlay(graphics);
+	}
+	*///?}
+
+	private void drawOverlay(GuiGraphicsExtractor graphics) {
 		graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
 	}
 

@@ -1,0 +1,32 @@
+mod.id = "custom-block-highlight"
+mod.name = "Custom Block Highlight"
+mod.archives_name = "blockhighlight"
+mod.group = "tektonikal"
+mod.version = "2.8"
+
+deps.fabric_loader = "0.19.3"
+loomx.loom_version = "1.17-SNAPSHOT"
+
+["1.21.11"]
+mod.mc_compat = "1.21.11"
+mod.mc_releases = ["1.21.11"]
+
+deps.fabric_api = "0.141.6+1.21.11"
+deps.yacl = "3.8.1+1.21.11"
+deps.modmenu = "17.0.0"
+
+["26.1.x"]
+mod.mc_compat = "~26.1"
+mod.mc_releases = ["26.1", "26.1.1", "26.1.2"]
+
+deps.fabric_api = "0.155.0+26.1.2"
+deps.yacl = "3.9.5+26.1"
+deps.modmenu = "18.0.0"
+
+["26.2.x"]
+mod.mc_compat = "~26.2"
+mod.mc_releases = ["26.2"]
+
+deps.fabric_api = "0.153.0+26.2"
+deps.yacl = "3.9.5+26.2"
+deps.modmenu = "20.0.0-beta.4"
