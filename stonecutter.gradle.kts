@@ -15,6 +15,18 @@ stonecutter parameters {
     dependencies["yacl"] = node.project.property("deps.yacl") as String
 
     replacements {
+        string(current.parsed < "1.21.2") {
+            replace("getDeltaTracker()", "getTimer()")
+        }
+        string(current.parsed < "1.21.5") {
+            replace(".position()", ".getPosition()")
+        }
+        string(current.parsed < "1.21.9") {
+            replace("rendering.v1.world", "rendering.v1")
+            replace("setScreenAndShow", "setScreen")
+            replace("END_MAIN", "LAST")
+            replace("c.matrices()", "c.matrixStack()")
+        }
         string(current.parsed >= "1.21.11") {
             replace("ResourceLocation", "Identifier")
             replace("camera.getEntity()", "camera.entity()")

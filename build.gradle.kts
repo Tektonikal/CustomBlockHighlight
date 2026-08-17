@@ -43,6 +43,8 @@ loom {
         options.put("mark-corresponding-synthetics", "1")
     }
 
+    runConfigs.remove(runConfigs.getByName("server"))
+
     runConfigs.all {
         preferGradleTask = true
         generateRunConfig = true
