@@ -101,8 +101,8 @@ public class Vertexer {
 		Matrix4f model = matrices.last().pose();
 		float width = getWidth(layer);
 		if (BlockHighlightConfig.INSTANCE.instance().cutFromCenter == 0 && BlockHighlightConfig.INSTANCE.instance().cutFromCorner == 0) {
-			builder.addVertex(model, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
-			builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			lineWidth(builder.addVertex(model, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz), width);
+			lineWidth(builder.addVertex(model, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz), width);
 			return;
 		}
 		/*
@@ -120,8 +120,8 @@ public class Vertexer {
 		v2.lerp(v1, BlockHighlightConfig.INSTANCE.instance().cutFromCorner / 2, maxOuter);
 		if (BlockHighlightConfig.INSTANCE.instance().cutFromCenter == 0) {
 			//draw only one line
-			builder.addVertex(model, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
-			builder.addVertex(model, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			lineWidth(builder.addVertex(model, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz), width);
+			lineWidth(builder.addVertex(model, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz), width);
 		} else {
 			Vector3f center = new Vector3f();
 			v1.lerp(v2, 0.5F, center);
@@ -134,15 +134,24 @@ public class Vertexer {
 			Color minInnerCol = new Color((int) Mth.lerp(yeah, cols.getRed(), col2.getRed()),  (int) Mth.lerp(yeah, cols.getGreen(), col2.getGreen()), (int) Mth.lerp(yeah, cols.getBlue(), col2.getBlue()));
 			Color maxInnerCol = new Color((int) Mth.lerp(1 - yeah, cols.getRed(), col2.getRed()), (int) Mth.lerp( 1 - yeah, cols.getGreen(), col2.getGreen()), (int) Mth.lerp( 1 - yeah, cols.getBlue(), col2.getBlue()));
 
-			builder.addVertex(model, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
-			builder.addVertex(model, minInner.x, minInner.y, minInner.z).setColor(minInnerCol.getRed(), minInnerCol.getGreen(), minInnerCol.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			lineWidth(builder.addVertex(model, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz), width);
+			lineWidth(builder.addVertex(model, minInner.x, minInner.y, minInner.z).setColor(minInnerCol.getRed(), minInnerCol.getGreen(), minInnerCol.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz), width);
 
-			builder.addVertex(model, maxInner.x, maxInner.y, maxInner.z).setColor(maxInnerCol.getRed(), maxInnerCol.getGreen(), maxInnerCol.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
-			builder.addVertex(model, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz).setLineWidth(width);
+			lineWidth(builder.addVertex(model, maxInner.x, maxInner.y, maxInner.z).setColor(maxInnerCol.getRed(), maxInnerCol.getGreen(), maxInnerCol.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz), width);
+			lineWidth(builder.addVertex(model, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(matrices.last(), nx, ny, nz), width);
 		}
 	}
 
-	private static float getWidth(int layer) {
+	//? if >=1.21.11 {
+	private static void lineWidth(VertexConsumer builder, float width) {
+		builder.setLineWidth(width);
+	}
+	//?} else {
+	/*private static void lineWidth(VertexConsumer builder, float width) {
+	}
+	*///?}
+
+	public static float getWidth(int layer) {
 		return switch (layer) {
 			case 0 -> BlockHighlightConfig.INSTANCE.instance().lineWidth;
 			case 1 -> BlockHighlightConfig.INSTANCE.instance().slineWidth;

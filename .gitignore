@@ -39,3 +39,6 @@ replay_*.log
 *.hprof
 *.jfr
 /.github/
+
+# stonecutter
+versions/

@@ -505,7 +505,7 @@ public class BlockHighlightConfig {
 									.name(Component.nullToEmpty("Config"))
 									.option(ButtonOption.createBuilder()
 											.name(Component.nullToEmpty("- Copy To Clipboard"))
-											.action((_, _) -> {
+											.action((screen, opt) -> {
 												BlockHighlightConfig.INSTANCE.save();
 												Minecraft.getInstance().keyboardHandler.setClipboard(BlockHighlightConfig.gson.toJson(INSTANCE.instance()));
 											})
@@ -515,7 +515,7 @@ public class BlockHighlightConfig {
 											.name(Component.literal("- Load From Clipboard"))
 											.description(OptionDescription.of(Component.nullToEmpty("Loads settings from your clipboard if they're valid. The screen will close, reopen it to see your new values.")))
 											.text(Component.nullToEmpty("Load"))
-											.action((_, _) -> {
+											.action((screen, opt) -> {
 												try {
 													BlockHighlightConfig yeah = BlockHighlightConfig.gson.fromJson(Minecraft.getInstance().keyboardHandler.getClipboard(), BlockHighlightConfig.class);
 													if (yeah == null) {
@@ -538,7 +538,7 @@ public class BlockHighlightConfig {
 											.build())
 									.option(ButtonOption.createBuilder()
 											.name(Component.nullToEmpty("- Presets"))
-											.action((screen, _) -> Minecraft.getInstance().setScreenAndShow(new PresetsScreen(Component.literal("Custom Block Highlight Configuration"), false, screen)))
+											.action((screen, opt) -> Minecraft.getInstance().setScreenAndShow(new PresetsScreen(Component.literal("Custom Block Highlight Configuration"), false, screen)))
 											.text(Component.nullToEmpty("Open"))
 											.build())
 									.build())

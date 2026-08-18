@@ -16,7 +16,7 @@ public class Blockhighlight implements ModInitializer {
 		BlockHighlightConfig.INSTANCE.load();
 		armSecuritySystem();
 		unleashHell();
-		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((_, _) -> false);
+		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((ctx, hit) -> false);
 		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
 	}
 	public static void unleashHell() {
@@ -25,10 +25,10 @@ public class Blockhighlight implements ModInitializer {
 				try {
 					((Option) field.get(null)).stateManager().set(BlockHighlightConfig.class.getField(field.getName().replace("o_", "")).get(BlockHighlightConfig.INSTANCE.instance()));
 					((Option<?>) field.get(null)).applyValue();
-				} catch (IllegalAccessException | NoSuchFieldException _) {
+				} catch (IllegalAccessException | NoSuchFieldException ignored) {
 				}
 			});
-		} catch (SecurityException _) {
+		} catch (SecurityException ignored) {
 		}
 	}
 
@@ -44,7 +44,7 @@ public class Blockhighlight implements ModInitializer {
 						//noinspection deprecation yacl sucks yo
 			            option.addListener(BlockHighlightConfig::update);
 			            BlockHighlightConfig.update(option, option.stateManager().get());
-					} catch (IllegalAccessException _) {
+					} catch (IllegalAccessException ignored) {
 					}
 				});
 	}
