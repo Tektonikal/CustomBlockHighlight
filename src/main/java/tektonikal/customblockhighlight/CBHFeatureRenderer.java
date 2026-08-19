@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.feature.FeatureRendererType;
 import net.minecraft.client.renderer.feature.RenderTypeFeatureRenderer;
 import net.minecraft.client.renderer.feature.submit.SubmitNode;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.CBHLineRenderInfo;
 
@@ -19,12 +20,13 @@ public class CBHFeatureRenderer extends RenderTypeFeatureRenderer<CBHFeatureRend
 	protected void buildGroup(FeatureFrameContext context, List<Submit> submits) {
 		for (CBHFeatureRenderer.Submit submit : submits) {
 			PoseStack.Pose pose = submit.pose();
-			VertexConsumer builder = this.getVertexBuilder(submit.renderType());
-			Vertexer.vertexBoxLines(pose, builder, submit.shape().bounds(), submit.info().primaryCol(), submit.info().secondaryCol(), submit.info().alphas(), submit.info.width(), 0, 0);
+			//TODO:
+			VertexConsumer builder = this.getVertexBuilder(RenderTypes.lines());
+			Vertexer.vertexBoxLines(pose, builder, submit.info.shape().bounds(), submit.info().primaryCol(), submit.info().secondaryCol(), submit.info().alphas(), submit.info.width(), 0, 0);
 		}
 	}
 
-	public record Submit(CBHLineRenderInfo info, PoseStack.Pose pose, VoxelShape shape, RenderType renderType, int color, float width) implements SubmitNode {
+	public record Submit(CBHLineRenderInfo info, PoseStack.Pose pose) implements SubmitNode {
 		@Override
 		public FeatureRendererType<CBHFeatureRenderer.Submit> featureType() {
 			return CBHFeatureRenderer.TYPE;

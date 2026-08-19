@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
 import org.jspecify.annotations.Nullable;
 
 public record EvilRenderState(
+		float y,
 		PresetsScreen.Preset preset,
 		int x0,
 		int y0,
@@ -15,7 +16,8 @@ public record EvilRenderState(
 		@Nullable ScreenRectangle bounds
 ) implements PictureInPictureRenderState {
 	public EvilRenderState(
-			PresetsScreen.Preset preset,
+			final float y,
+			final PresetsScreen.Preset preset,
 			final int x0,
 			final int y0,
 			final int x1,
@@ -23,6 +25,6 @@ public record EvilRenderState(
 			final float scale,
 			@Nullable final ScreenRectangle scissorArea
 	) {
-		this(preset, x0, y0, x1, y1, scale, scissorArea, PictureInPictureRenderState.getBounds(x0, y0, x1, y1, scissorArea));
+		this(y, preset, x0, y0, x1, y1, scale, scissorArea, PictureInPictureRenderState.getBounds(x0, y0, x1, y1, scissorArea));
 	}
 }
