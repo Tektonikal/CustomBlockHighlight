@@ -76,13 +76,21 @@ public class PresetsScreen extends Screen {
 
 	@Override
 	public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
-		tweener.update();
 		super.extractRenderState(graphics, mouseX, mouseY, a);
 		graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
 		for (Preset preset : Preset.values()) {
-			graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState((preset.ordinal() * height) - (tweener.getF() * height), preset, 0, 0, width, height, 100F, null));
+			graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(0, (preset.ordinal() * height) - (tweener.getF() * height), preset, 0, 0, width, height, 100F, null));
 		}
+	}
 
+	@Override
+	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+		tweener.update();
+		for (Preset preset : Preset.values()) {
+			graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(0, (preset.ordinal() * height) - (tweener.getF() * height), preset, 0, 0, width, height, 100F, null));
+		}
+		graphics.nextStratum();
+		super.extractBackground(graphics, mouseX, mouseY, a);
 	}
 
 	public enum Preset {

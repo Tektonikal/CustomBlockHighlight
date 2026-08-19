@@ -43,6 +43,7 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
 		var blockModelRenderState = new BlockModelRenderState();
 			blockModelResolver.update(blockModelRenderState, renderState.preset().block.defaultBlockState(), BlockDisplayContext.create());
 		poseStack.translate(0, renderState.y() / renderState.scale(), 0.0D);
+		poseStack.translate(renderState.x() / renderState.scale(), 0, 0.0D);
 		poseStack.translate(renderState.x1() / 3F / renderState.scale(), 0, 0.0D);
 		float centerX = (renderState.x1() / 6F) * 5F;
 		float centerY = renderState.y1() / 2F;
