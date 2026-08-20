@@ -24,6 +24,7 @@ import tektonikal.customblockhighlight.CBHFeatureRenderer;
 import tektonikal.customblockhighlight.Renderer;
 import tektonikal.customblockhighlight.Vertexer;
 import tektonikal.customblockhighlight.util.DepthTestMode;
+import tektonikal.customblockhighlight.util.Tweener;
 
 import java.awt.*;
 
@@ -45,19 +46,14 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
 		poseStack.translate(0, renderState.y() / renderState.scale(), 0.0D);
 		poseStack.translate(renderState.x() / renderState.scale(), 0, 0.0D);
 		poseStack.translate(renderState.x1() / 3F / renderState.scale(), 0, 0.0D);
-		float centerX = (renderState.x1() / 6F) * 5F;
-		float centerY = renderState.y1() / 2F;
-		float xAngle = (float) Math.atan((centerX - Minecraft.getInstance().mouseHandler.getScaledXPos(Minecraft.getInstance().getWindow())) / 40.0F);
-		float yAngle = (float) Math.atan((centerY - Minecraft.getInstance().mouseHandler.getScaledYPos(Minecraft.getInstance().getWindow())) / 40.0F);
 		//sometimes it just decides to flip around ? and i don't know why?
 		Quaternionf rotation = new Quaternionf().rotateZ((float) Math.PI);
-		Quaternionf xRotation = new Quaternionf().rotateX(yAngle * 20.0F * (float) (Math.PI / 180.0));
-		xRotation.rotateLocalY(-xAngle * 20.0F * (float) (Math.PI / 180.0));
+		Quaternionf xRotation = new Quaternionf().rotateX(renderState.yAngle() * 30.0F * (float) (Math.PI / 180.0));
+		xRotation.rotateLocalY(-renderState.xAngle() * 30.0F * (float) (Math.PI / 180.0));
 		rotation.mul(xRotation);
-		var info = new CBHLineRenderInfo(renderState.preset().renderInfo.shape(), renderState.preset().renderInfo.primaryCol(), renderState.preset().renderInfo.secondaryCol(), renderState.preset().renderInfo.alphas(), renderState.preset().renderInfo.width(), renderState.preset().renderInfo.mode());
+		var info = new CBHLineRenderInfo(renderState.preset().renderInfo.shape(), renderState.preset().renderInfo.primaryCol(), renderState.preset().renderInfo.secondaryCol(), renderState.preset().renderInfo.alphas(), renderState.preset().renderInfo.width(), renderState.preset().renderInfo.mode(), renderState.preset().renderInfo.cutFromCenter(), renderState.preset().renderInfo.cutFromCorner());
 		PoseStack.Pose linePose = poseStack.last().copy();
 		//world's worst workaround
-		linePose.pose().scaleLocal(256.0F / 255.0F);
 		linePose.rotate(rotation);
 		poseStack.rotateAround(rotation, 0, 0, 0);
 		poseStack.translate(-0.5F, -0.5F, -0.5F);

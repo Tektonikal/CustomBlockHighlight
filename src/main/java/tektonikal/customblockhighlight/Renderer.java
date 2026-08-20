@@ -75,6 +75,7 @@ import static tektonikal.customblockhighlight.config.BlockHighlightConfig.config
 //there is no real solution to the Z-fighting issue without disabling depth test.
 //even if the lines are drawn correctly spaced out, the thicker line might be rotated differently, causing it to fully appear in front or z-fight. whateverrrrrr man
 //maybe it would be best into looking into creating a pipeline to draw lines that aren't in screenspace. idk
+//TODO: hotkey toggle?
 
 //NOW
 //TODO: presets

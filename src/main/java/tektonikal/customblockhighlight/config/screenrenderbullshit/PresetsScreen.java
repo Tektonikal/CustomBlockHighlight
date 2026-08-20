@@ -27,7 +27,10 @@ public class PresetsScreen extends Screen {
 	private final Screen parent;
 	private Preset hoveredPreset = Preset.VANILLA;
 	Tweener tweener = new Tweener(() -> hoveredPreset.ordinal(), 15);
-
+	float[] presetVals = new float[Preset.values().length];
+	float xAngle, yAngle;
+	Tweener xAngleTweener = new  Tweener(() -> xAngle, 20);
+	Tweener yAngleTweener = new  Tweener(() -> yAngle, 20);
 	public PresetsScreen(boolean firstTime, Screen parent) {
 		super(Component.literal("Custom Block Highlight Configuration"));
 		this.firstTime = firstTime;
@@ -79,26 +82,33 @@ public class PresetsScreen extends Screen {
 		super.extractRenderState(graphics, mouseX, mouseY, a);
 		graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
 		for (Preset preset : Preset.values()) {
-			graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(0, (preset.ordinal() * height) - (tweener.getF() * height), preset, 0, 0, width, height, 100F, null));
+			graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(-presetVals[preset.ordinal()] * 100, (preset.ordinal() * height) - (tweener.getF() * height), xAngleTweener.getF(), yAngleTweener.getF(), preset, 0, 0, width, height, 50F + (50 * (1 - presetVals[preset.ordinal()])), null));
 		}
 	}
 
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 		tweener.update();
+		xAngleTweener.update();
+		yAngleTweener.update();
+		float centerX = (width / 6F) * 5F;
+		float centerY = height / 2F;
+		xAngle = (float) Math.atan((centerX - Minecraft.getInstance().mouseHandler.getScaledXPos(Minecraft.getInstance().getWindow())) / 40.0F);
+		yAngle = (float) Math.atan((centerY - Minecraft.getInstance().mouseHandler.getScaledYPos(Minecraft.getInstance().getWindow())) / 40.0F);
 		for (Preset preset : Preset.values()) {
-			graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(0, (preset.ordinal() * height) - (tweener.getF() * height), preset, 0, 0, width, height, 100F, null));
+			presetVals[preset.ordinal()] = (float) Blockhighlight.ease(presetVals[preset.ordinal()], hoveredPreset == preset ? 0 : 1, 15);
+			graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(-presetVals[preset.ordinal()] * 100, (preset.ordinal() * height) - (tweener.getF() * height), xAngleTweener.getF(), yAngleTweener.getF(), preset, 0, 0, width, height, 50F + (50 * (1 - presetVals[preset.ordinal()])), null));
 		}
 		graphics.nextStratum();
 		super.extractBackground(graphics, mouseX, mouseY, a);
 	}
 
 	public enum Preset {
-		VANILLA(/*you should tap into Component.translatable tbh*/"vanilla", Component.literal("Give it to me plain!"), Blocks.COBBLESTONE, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.BLACK, Color.BLACK, new float[]{102, 102, 102, 102, 102, 102}, 2.5F, DepthTestMode.NORMAL)),
-		SWEAT("sweat", Component.literal("PvP sweat"), Blocks.SMITHING_TABLE, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.BLACK, Color.BLACK, new float[]{102, 102, 102, 102, 102, 102}, 2.5F, DepthTestMode.NORMAL)),
-		TRANS("trans", Component.literal("Beautiful women!"), Blocks.AMETHYST_BLOCK, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.BLACK, Color.BLACK, new float[]{102, 102, 102, 102, 102, 102}, 2.5F, DepthTestMode.NORMAL)),
-		CLASSIC("classic", Component.literal("Classic CBH experience"), Blocks.OAK_PLANKS, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.BLACK, Color.BLACK, new float[]{102, 102, 102, 102, 102, 102}, 2.5F, DepthTestMode.NORMAL)),
-		FANCY("fancy", Component.literal("Gimme all the bells 'n whistles!"), Blocks.BREWING_STAND, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.BLACK, Color.BLACK, new float[]{102, 102, 102, 102, 102, 102}, 2.5F, DepthTestMode.NORMAL));
+		VANILLA("vanilla", Component.literal("Give it to me plain!"), Blocks.COBBLESTONE, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.BLACK, Color.BLACK, new float[]{102, 102, 102, 102, 102, 102}, 2.5F, DepthTestMode.NORMAL, 0, 0)),
+		SWEAT("sweat", Component.literal("PvP sweat"), Blocks.SMITHING_TABLE, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.RED, Color.RED, new float[]{255, 255, 255, 255, 255, 255}, 2.5F, DepthTestMode.ALWAYS_PASS, 0.75F, 0)),
+		TRANS("trans", Component.literal("Beautiful women!"), Blocks.AMETHYST_BLOCK, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.PINK, Color.PINK, new float[]{102, 102, 102, 102, 102, 102}, 5F, DepthTestMode.NORMAL, 0, 0)),
+		CLASSIC("classic", Component.literal("Classic CBH experience"), Blocks.OAK_PLANKS, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.BLACK, Color.BLACK, new float[]{102, 102, 102, 102, 102, 102}, 2.5F, DepthTestMode.NORMAL, 0, 0)),
+		FANCY("fancy", Component.literal("Gimme all the bells 'n whistles!"), Blocks.BREWING_STAND, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.BLACK, Color.BLACK, new float[]{102, 102, 102, 102, 102, 102}, 2.5F, DepthTestMode.NORMAL, 0, 0));
 
 		public final String name;
 		public final Component meow;

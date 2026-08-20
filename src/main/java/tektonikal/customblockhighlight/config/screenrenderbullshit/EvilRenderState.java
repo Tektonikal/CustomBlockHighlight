@@ -7,6 +7,8 @@ import org.jspecify.annotations.Nullable;
 public record EvilRenderState(
 		float x,
 		float y,
+		float xAngle,
+		float yAngle,
 		PresetsScreen.Preset preset,
 		int x0,
 		int y0,
@@ -19,6 +21,8 @@ public record EvilRenderState(
 	public EvilRenderState(
 			final float x,
 			final float y,
+			final float xAngle,
+			final float yAngle,
 			final PresetsScreen.Preset preset,
 			final int x0,
 			final int y0,
@@ -27,6 +31,6 @@ public record EvilRenderState(
 			final float scale,
 			@Nullable final ScreenRectangle scissorArea
 	) {
-		this(x, y, preset, x0, y0, x1, y1, scale, scissorArea, PictureInPictureRenderState.getBounds(x0, y0, x1, y1, scissorArea));
+		this(x, y, xAngle, yAngle, preset, x0, y0, x1, y1, scale, scissorArea, PictureInPictureRenderState.getBounds(x0, y0, x1, y1, scissorArea));
 	}
 }
