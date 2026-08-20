@@ -1,12 +1,9 @@
 package tektonikal.customblockhighlight.config.screenrenderbullshit;
 
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.state.gui.GuiItemRenderState;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -14,41 +11,32 @@ import net.minecraft.world.phys.shapes.Shapes;
 import org.jspecify.annotations.NonNull;
 import tektonikal.customblockhighlight.Blockhighlight;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
+import tektonikal.customblockhighlight.config.ConfigManager;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Tweener;
 
 import java.awt.*;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 public class PresetsScreen extends Screen {
 	private final boolean firstTime;
 	private final Screen parent;
+
 	private Preset hoveredPreset = Preset.VANILLA;
-	Tweener tweener = new Tweener(() -> hoveredPreset.ordinal(), 15);
-	float[] presetVals = new float[Preset.values().length];
-	float xAngle, yAngle;
-	Tweener xAngleTweener = new  Tweener(() -> xAngle, 20);
-	Tweener yAngleTweener = new  Tweener(() -> yAngle, 20);
+	private float xAngle, yAngle;
+	private final float[] presetVals = new float[Preset.values().length];
+
+	private final Tweener tweener = new Tweener(() -> hoveredPreset.ordinal(), 15);
+	private final Tweener xAngleTweener = new Tweener(() -> xAngle, 20);
+	private final Tweener yAngleTweener = new Tweener(() -> yAngle, 20);
+
 	public PresetsScreen(boolean firstTime, Screen parent) {
 		super(Component.literal("Custom Block Highlight Configuration"));
 		this.firstTime = firstTime;
 		this.parent = parent;
 	}
 
-	public static void loadPreset(String name) {
-		try {
-			Path path = FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json");
-			Files.delete(path);
-			Files.createFile(path);
-			try (var preset = PresetsScreen.class.getResourceAsStream("/assets/presets/" + name + ".json")) {
-				if (preset == null) return;
-				Files.write(path, preset.readAllBytes());
-			}
-			BlockHighlightConfig.INSTANCE.load();
-		} catch (IOException _) {
-		}
+	public static void loadPreset(Preset preset) {
+		BlockHighlightConfig.ACTIVE_INSTANCE = ConfigManager.loadPreset(preset.name);
 	}
 
 	@Override
@@ -59,7 +47,7 @@ public class PresetsScreen extends Screen {
 	}
 
 	public void addButton(int y, Preset preset) {
-		addRenderableWidget(new Button(width / 32, y, width / 2, 18, preset.meow, _ -> loadPreset(preset.name), _ -> Component.empty()) {
+		addRenderableWidget(new Button(width / 32, y, width / 2, 18, preset.meow, _ -> loadPreset(preset), _ -> Component.empty()) {
 			@Override
 			protected void extractContents(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
 				extractDefaultSprite(graphics);
@@ -87,13 +75,14 @@ public class PresetsScreen extends Screen {
 
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
-		tweener.update();
-		xAngleTweener.update();
-		yAngleTweener.update();
+		tweener.update(); xAngleTweener.update(); yAngleTweener.update();
+
 		float centerX = (width / 6F) * 5F;
 		float centerY = height / 2F;
+
 		xAngle = (float) Math.atan((centerX - Minecraft.getInstance().mouseHandler.getScaledXPos(Minecraft.getInstance().getWindow())) / 40.0F);
 		yAngle = (float) Math.atan((centerY - Minecraft.getInstance().mouseHandler.getScaledYPos(Minecraft.getInstance().getWindow())) / 40.0F);
+
 		for (Preset preset : Preset.values()) {
 			presetVals[preset.ordinal()] = (float) Blockhighlight.ease(presetVals[preset.ordinal()], hoveredPreset == preset ? 0 : 1, 15);
 			graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(-presetVals[preset.ordinal()] * 100, (preset.ordinal() * height) - (tweener.getF() * height), xAngleTweener.getF(), yAngleTweener.getF(), preset, 0, 0, width, height, 50F + (50 * (1 - presetVals[preset.ordinal()])), null));

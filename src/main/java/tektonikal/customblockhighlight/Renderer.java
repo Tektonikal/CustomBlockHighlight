@@ -12,23 +12,17 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.fabricmc.fabric.api.client.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.StagedVertexBuffer;
-import net.minecraft.client.renderer.block.ModelBlockRenderer;
-import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
-import net.minecraft.client.renderer.block.model.BlockModel;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.resources.model.ModelManager;
-import net.minecraft.client.resources.model.SimpleModelWrapper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
+import net.minecraft.util.profiling.Profiler;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.item.Items;
@@ -52,13 +46,11 @@ import java.awt.*;
 import java.lang.Math;
 import java.util.*;
 import java.util.List;
-import java.util.Random;
 
 import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
 import static net.minecraft.client.renderer.RenderPipelines.LINES;
 import static tektonikal.customblockhighlight.Blockhighlight.ease;
-import static tektonikal.customblockhighlight.Vertexer.worldSpaceToScreenSpace;
-import static tektonikal.customblockhighlight.config.BlockHighlightConfig.config;
+import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
 
 //POST V2.8
 //TODO: fix thick lines not fully joining at corners
@@ -159,12 +151,12 @@ public class Renderer {
 		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
 			if (lines) {
 				switch (layer) {
-					case 0 -> renderPass.setPipeline(getPipeline(config().lineDepthTest, true));
-					case 1 -> renderPass.setPipeline(getPipeline(config().slineDepthTest, true));
-					case 2 -> renderPass.setPipeline(getPipeline(config().tlineDepthTest, true));
+					case 0 -> renderPass.setPipeline(getPipeline(getActiveInstance().lineDepthTest, true));
+					case 1 -> renderPass.setPipeline(getPipeline(getActiveInstance().slineDepthTest, true));
+					case 2 -> renderPass.setPipeline(getPipeline(getActiveInstance().tlineDepthTest, true));
 				}
 			} else {
-				renderPass.setPipeline(getPipeline(config().fillDepthTest, false));
+				renderPass.setPipeline(getPipeline(getActiveInstance().fillDepthTest, false));
 			}
 
 			RenderSystem.bindDefaultUniforms(renderPass);
@@ -218,7 +210,7 @@ public class Renderer {
 		stack.translate(vec);
 		stack.scale(scaleProg, scaleProg, scaleProg);
 		if (horribleWorkaroundForEdges) {
-			float yeah = config().lineExpand * 2 + 1;
+			float yeah = getActiveInstance().lineExpand * 2 + 1;
 			stack.scale(yeah, yeah, yeah);
 		}
 		stack.translate(vec.reverse());
@@ -256,7 +248,7 @@ public class Renderer {
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
 		moveToZero(shape).forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
 		Vec3 minVec = shape.bounds().getMinPosition();
-		if (lines.isEmpty() || !config().doEasing) {
+		if (lines.isEmpty() || !getActiveInstance().doEasing) {
 			lines = newLines;
 		}
 		while (lines.size() < newLines.size()) {
@@ -318,9 +310,9 @@ public class Renderer {
 	}
 
 	public static Color getRainbowCol(float delay) {
-		double rainbowState = Math.ceil((System.currentTimeMillis() + (int) (delay))) * config().rainbowSpeed / 50;
+		double rainbowState = Math.ceil((System.currentTimeMillis() + (int) (delay))) * getActiveInstance().rainbowSpeed / 50;
 		rainbowState %= 360;
-		return Color.getHSBColor((float) (rainbowState / 360.0f), config().saturation, config().brightness);
+		return Color.getHSBColor((float) (rainbowState / 360.0f), getActiveInstance().saturation, getActiveInstance().brightness);
 	}
 
 	public static boolean isBlockOccupied(BlockPos pos) {
@@ -353,10 +345,11 @@ public class Renderer {
 	}
 
 	public static void mainLoop(LevelRenderContext c) {
+		Profiler.get().push("Custom block outline pre");
 		evilHitResult = mc.hitResult;
 		//this is just for the warnings to go away
 		if (evilHitResult == null || mc.level == null || mc.getCameraEntity() == null || mc.player == null) return;
-		if (config().allowLiquids && (mc.player.getMainHandItem().is(Items.BUCKET) || mc.player.getOffhandItem().is(Items.BUCKET))) {
+		if (getActiveInstance().allowLiquids && (mc.player.getMainHandItem().is(Items.BUCKET) || mc.player.getOffhandItem().is(Items.BUCKET))) {
 			HitResult yeah = pick(mc.getCameraEntity(), mc.player.blockInteractionRange(), mc.getDeltaTracker().getRealtimeDeltaTicks(), true);
 			if (yeah instanceof BlockHitResult hit) {
 				if (mc.level.getFluidState(hit.getBlockPos()).isSource()) {
@@ -373,7 +366,7 @@ public class Renderer {
 				} else {
 					targetBox = shape.bounds().move(block.getBlockPos());
 				}
-			} else if (evilHitResult instanceof EntityHitResult entityHitResult && config().allowEntities) {
+			} else if (evilHitResult instanceof EntityHitResult entityHitResult && getActiveInstance().allowEntities) {
 				Entity entity = entityHitResult.getEntity();
 				//so, so sloppy. might also have the worst workaround of the century for hanging stuff
 				float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
@@ -384,7 +377,7 @@ public class Renderer {
 
 
 		//get connected blocks
-		if (config().connectedBlocks && evilHitResult instanceof BlockHitResult block) {
+		if (getActiveInstance().connectedBlocks && evilHitResult instanceof BlockHitResult block) {
 			if (evilHitResult.getType() == HitResult.Type.MISS) {
 				connected = null;
 			} else {
@@ -393,28 +386,34 @@ public class Renderer {
 			}
 		}
 		//calculate where to render the block
-		if (config().doEasing) {
-			if (config().updateWhenUnfocused || evilHitResult.getType() != HitResult.Type.MISS) {
-				easeBox = new AABB(ease(easeBox.minX, targetBox.minX, config().easeSpeed), ease(easeBox.minY, targetBox.minY, config().easeSpeed), ease(easeBox.minZ, targetBox.minZ, config().easeSpeed), ease(easeBox.maxX, targetBox.maxX, config().easeSpeed), ease(easeBox.maxY, targetBox.maxY, config().easeSpeed), ease(easeBox.maxZ, targetBox.maxZ, config().easeSpeed));
+		if (getActiveInstance().doEasing) {
+			if (getActiveInstance().updateWhenUnfocused || evilHitResult.getType() != HitResult.Type.MISS) {
+				easeBox = new AABB(ease(easeBox.minX, targetBox.minX, getActiveInstance().easeSpeed), ease(easeBox.minY, targetBox.minY, getActiveInstance().easeSpeed), ease(easeBox.minZ, targetBox.minZ, getActiveInstance().easeSpeed), ease(easeBox.maxX, targetBox.maxX, getActiveInstance().easeSpeed), ease(easeBox.maxY, targetBox.maxY, getActiveInstance().easeSpeed), ease(easeBox.maxZ, targetBox.maxZ, getActiveInstance().easeSpeed));
 			}
 		} else {
 			easeBox = targetBox;
 		}
+		Profiler.get().popPush("Custom block outline render");
 		renderOutline(c.poseStack(), isCrystalObstructed(), evilHitResult.getType() == HitResult.Type.MISS);
+		Profiler.get().pop();
 	}
 
 	private static void renderOutline(PoseStack stack, boolean isCrystalObstructed, boolean shouldFade) {
 		//render the fill first, we don't want it drawn over the outline
+		Profiler.get().push("updateProgresses");
 		updateProgresses(shouldFade);
 		if (edgeAlpha > 1) {
-			if (config().fillEnabled) {
+			if (getActiveInstance().fillEnabled) {
+				Profiler.get().popPush("drawFill");
 				drawFill(stack, isCrystalObstructed);
 			}
 			//now the outline itself
-			if (config().outlineEnabled) {
+			if (getActiveInstance().outlineEnabled) {
+				Profiler.get().popPush("drawOutline");
 				drawOutline(stack, isCrystalObstructed);
 			}
 		}
+		Profiler.get().pop();
 	}
 
 	private static boolean isCrystalObstructed() {
@@ -422,7 +421,7 @@ public class Renderer {
 		if (!(evilHitResult instanceof BlockHitResult block)) return false;
 		BlockState state = mc.level.getBlockState(block.getBlockPos());
 
-		if (config().crystalHelper) {
+		if (getActiveInstance().crystalHelper) {
 			if (state.getBlock().equals(Blocks.OBSIDIAN) || state.getBlock().equals(Blocks.BEDROCK)) {
 				double pd = block.getBlockPos().above().getX();
 				double pe = block.getBlockPos().above().getY();
@@ -437,20 +436,22 @@ public class Renderer {
 	}
 
 	private static void drawFill(PoseStack stack, boolean isCrystalObstructed) {
-		Color finalFillCol = isCrystalObstructed ? config().crystalHelperFillColor : config().fillRainbow ? getRainbowCol(0) : config().fillCol;
-		Color finalFillCol2 = isCrystalObstructed ? config().crystalHelperFillColor : config().fillRainbow ? getRainbowCol(config().delay) : config().fillCol2;
-		boolean b = config().fillDepthTest != DepthTestMode.ALWAYS_PASS && config().fillExpand == 0;
-		Renderer.drawBoxFill(stack, easeBox.inflate(config().fillExpand + (b ? 0.001 : 0)), finalFillCol, finalFillCol2, sideFades);
+		Color finalFillCol = isCrystalObstructed ? getActiveInstance().crystalHelperFillColor : getActiveInstance().fillRainbow ? getRainbowCol(0) : getActiveInstance().fillCol;
+		Color finalFillCol2 = isCrystalObstructed ? getActiveInstance().crystalHelperFillColor : getActiveInstance().fillRainbow ? getRainbowCol(getActiveInstance().delay) : getActiveInstance().fillCol2;
+		boolean b = getActiveInstance().fillDepthTest != DepthTestMode.ALWAYS_PASS && getActiveInstance().fillExpand == 0;
+		Renderer.drawBoxFill(stack, easeBox.inflate(getActiveInstance().fillExpand + (b ? 0.001 : 0)), finalFillCol, finalFillCol2, sideFades);
 	}
 
 	private static void drawOutline(PoseStack stack, boolean isCrystalObstructed) {
+		var profiler = Profiler.get();
+		profiler.push("pre");
 		if (mc.level == null) throw new IllegalStateException("level == null");
 		var cameraEntity = camera.entity();
 		if (cameraEntity == null) return;
 		//TODO: make check so that cut from corner and cut from center do not add up to higher than 0.95
-		Color finalLineCol = isCrystalObstructed ? config().crystalHelperLineColor : config().outlineRainbow ? getRainbowCol(0) : config().lineCol;
-		Color finalLineCol2 = isCrystalObstructed ? config().crystalHelperLineColor : config().outlineRainbow ? getRainbowCol(config().delay) : config().lineCol2;
-		if (config().outlineType == OutlineType.EDGES) {
+		Color finalLineCol = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().outlineRainbow ? getRainbowCol(0) : getActiveInstance().lineCol;
+		Color finalLineCol2 = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().outlineRainbow ? getRainbowCol(getActiveInstance().delay) : getActiveInstance().lineCol2;
+		if (getActiveInstance().outlineType == OutlineType.EDGES) {
 			if (evilHitResult != null && evilHitResult.getType() != HitResult.Type.MISS) {
 				if (evilHitResult instanceof BlockHitResult block) {
 					if (isBlockOccupied(block.getBlockPos())) {
@@ -459,43 +460,43 @@ public class Renderer {
 							shape = Shapes.joinUnoptimized(shape, mc.level.getBlockState(block.getBlockPos().relative(connected)).getShape(mc.level, block.getBlockPos().relative(connected), CollisionContext.of(cameraEntity)).move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR).optimize();
 						}
 					}
-				} else if (evilHitResult instanceof EntityHitResult entity && config().allowEntities) {
+				} else if (evilHitResult instanceof EntityHitResult entity && getActiveInstance().allowEntities) {
 					shape = Shapes.create(entity.getEntity().getBoundingBox());
 				}
 			}
 			if (!shape.isEmpty()) {
-				if (config().tertiary) {
-					Color tfinalLineCol = isCrystalObstructed ? config().crystalHelperLineColor : config().toutlineRainbow ? getRainbowCol(0) : config().tlineCol;
-					Color tfinalLineCol2 = isCrystalObstructed ? config().crystalHelperLineColor : config().toutlineRainbow ? getRainbowCol(config().delay) : config().tlineCol2;
-					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha * config().tlineAlphaMultiplier, 2);
+				if (getActiveInstance().tertiary) {
+					Color tfinalLineCol = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().toutlineRainbow ? getRainbowCol(0) : getActiveInstance().tlineCol;
+					Color tfinalLineCol2 = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().toutlineRainbow ? getRainbowCol(getActiveInstance().delay) : getActiveInstance().tlineCol2;
+					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha * getActiveInstance().tlineAlphaMultiplier, 2);
 				}
-				if (config().secondary) {
-					Color sfinalLineCol = isCrystalObstructed ? config().crystalHelperLineColor : config().soutlineRainbow ? getRainbowCol(0) : config().slineCol;
-					Color sfinalLineCol2 = isCrystalObstructed ? config().crystalHelperLineColor : config().soutlineRainbow ? getRainbowCol(config().delay) : config().slineCol2;
-					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha * config().slineAlphaMultiplier, 1);
+				if (getActiveInstance().secondary) {
+					Color sfinalLineCol = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().soutlineRainbow ? getRainbowCol(0) : getActiveInstance().slineCol;
+					Color sfinalLineCol2 = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().soutlineRainbow ? getRainbowCol(getActiveInstance().delay) : getActiveInstance().slineCol2;
+					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha * getActiveInstance().slineAlphaMultiplier, 1);
 				}
 				Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, 0);
 			}
 		} else {
-			if (config().tertiary) {
-				Color tfinalLineCol = isCrystalObstructed ? config().crystalHelperLineColor : config().toutlineRainbow ? getRainbowCol(0) : config().tlineCol;
-				Color tfinalLineCol2 = isCrystalObstructed ? config().crystalHelperLineColor : config().toutlineRainbow ? getRainbowCol(config().delay) : config().tlineCol2;
+			if (getActiveInstance().tertiary) {
+				Color tfinalLineCol = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().toutlineRainbow ? getRainbowCol(0) : getActiveInstance().tlineCol;
+				Color tfinalLineCol2 = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().toutlineRainbow ? getRainbowCol(getActiveInstance().delay) : getActiveInstance().tlineCol2;
 				float[] newFades = new float[6];
 				for (int i = 0; i < 6; i++) {
-					newFades[i] = Mth.clamp(lineFades[i] * config().tlineAlphaMultiplier, 0, 255F);
+					newFades[i] = Mth.clamp(lineFades[i] * getActiveInstance().tlineAlphaMultiplier, 0, 255F);
 				}
-				Renderer.drawBoxOutline(stack, easeBox.inflate(config().lineExpand), tfinalLineCol, tfinalLineCol2, newFades, 2);
+				Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), tfinalLineCol, tfinalLineCol2, newFades, 2);
 			}
-			if (config().secondary) {
-				Color sfinalLineCol = isCrystalObstructed ? config().crystalHelperLineColor : config().soutlineRainbow ? getRainbowCol(0) : config().slineCol;
-				Color sfinalLineCol2 = isCrystalObstructed ? config().crystalHelperLineColor : config().soutlineRainbow ? getRainbowCol(config().delay) : config().slineCol2;
+			if (getActiveInstance().secondary) {
+				Color sfinalLineCol = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().soutlineRainbow ? getRainbowCol(0) : getActiveInstance().slineCol;
+				Color sfinalLineCol2 = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().soutlineRainbow ? getRainbowCol(getActiveInstance().delay) : getActiveInstance().slineCol2;
 				float[] newFades = new float[6];
 				for (int i = 0; i < 6; i++) {
-					newFades[i] = Mth.clamp(lineFades[i] * config().slineAlphaMultiplier, 0, 255F);
+					newFades[i] = Mth.clamp(lineFades[i] * getActiveInstance().slineAlphaMultiplier, 0, 255F);
 				}
-				Renderer.drawBoxOutline(stack, easeBox.inflate(config().lineExpand), sfinalLineCol, sfinalLineCol2, newFades, 1);
+				Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), sfinalLineCol, sfinalLineCol2, newFades, 1);
 			}
-			Renderer.drawBoxOutline(stack, easeBox.inflate(config().lineExpand), finalLineCol, finalLineCol2, lineFades, 0);
+			Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), finalLineCol, finalLineCol2, lineFades, 0);
 		}
 		// insert model data pulling render idk code here
 	}
@@ -504,53 +505,53 @@ public class Renderer {
 		if (evilHitResult == null || mc.level == null) return;
 		//TODO: clean this up later
 		if (evilHitResult.getType() == HitResult.Type.ENTITY) {
-			if (config().allowEntities) {
+			if (getActiveInstance().allowEntities) {
 				for (Direction dir : Direction.values()) {
-					sideFades[dir.ordinal()] = config().fadeIn ? (float) ease(sideFades[dir.ordinal()], config().fillOpacity, config().fadeInSpeed) : config().fillOpacity;
-					lineFades[dir.ordinal()] = config().fadeIn ? (float) ease(lineFades[dir.ordinal()], config().lineAlpha, config().fadeInSpeed) : config().lineAlpha;
+					sideFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(sideFades[dir.ordinal()], getActiveInstance().fillOpacity, getActiveInstance().fadeInSpeed) : getActiveInstance().fillOpacity;
+					lineFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(lineFades[dir.ordinal()], getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
 				}
-				edgeAlpha = config().fadeIn ? (float) ease(edgeAlpha, config().lineAlpha, config().fadeInSpeed) : config().lineAlpha;
+				edgeAlpha = getActiveInstance().fadeIn ? (float) ease(edgeAlpha, getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
 			} else {
 				shouldFadeOut = true;
 				for (Direction dir : Direction.values()) {
-					sideFades[dir.ordinal()] = config().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, config().fadeOutSpeed) : 0;
-					lineFades[dir.ordinal()] = config().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, config().fadeOutSpeed) : 0;
+					sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
+					lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 				}
-				edgeAlpha = config().fadeOut ? (float) ease(edgeAlpha, 0, config().fadeOutSpeed) : 0;
+				edgeAlpha = getActiveInstance().fadeOut ? (float) ease(edgeAlpha, 0, getActiveInstance().fadeOutSpeed) : 0;
 			}
 		} else if (evilHitResult instanceof BlockHitResult block) {
 			if ((mc.level.isEmptyBlock(block.getBlockPos()) || shouldFadeOut)) {
 				for (Direction dir : Direction.values()) {
-					sideFades[dir.ordinal()] = config().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, config().fadeOutSpeed) : 0;
-					lineFades[dir.ordinal()] = config().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, config().fadeOutSpeed) : 0;
+					sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
+					lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 				}
-				edgeAlpha = config().fadeOut ? (float) ease(edgeAlpha, 0, config().fadeOutSpeed) : 0;
+				edgeAlpha = getActiveInstance().fadeOut ? (float) ease(edgeAlpha, 0, getActiveInstance().fadeOutSpeed) : 0;
 			} else {
-				edgeAlpha = config().fadeIn ? (float) ease(edgeAlpha, config().lineAlpha, config().fadeInSpeed) : config().lineAlpha;
-				for (Direction dir : getSides(config().fillType, block.getBlockPos())) {
+				edgeAlpha = getActiveInstance().fadeIn ? (float) ease(edgeAlpha, getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
+				for (Direction dir : getSides(getActiveInstance().fillType, block.getBlockPos())) {
 					if (dir != null) {
-						sideFades[dir.ordinal()] = config().fadeIn ? (float) ease(sideFades[dir.ordinal()], config().fillOpacity, config().fadeInSpeed) : config().fillOpacity;
+						sideFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(sideFades[dir.ordinal()], getActiveInstance().fillOpacity, getActiveInstance().fadeInSpeed) : getActiveInstance().fillOpacity;
 					}
 				}
-				for (Direction dir : invert(getSides(config().fillType, block.getBlockPos()))) {
+				for (Direction dir : invert(getSides(getActiveInstance().fillType, block.getBlockPos()))) {
 					if (dir != null) {
-						sideFades[dir.ordinal()] = config().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, config().fadeOutSpeed) : 0;
+						sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 					}
 				}
-				for (Direction dir : getSides(config().outlineType, block.getBlockPos())) {
+				for (Direction dir : getSides(getActiveInstance().outlineType, block.getBlockPos())) {
 					if (dir != null) {
-						lineFades[dir.ordinal()] = config().fadeIn ? (float) ease(lineFades[dir.ordinal()], config().lineAlpha, config().fadeInSpeed) : config().lineAlpha;
+						lineFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(lineFades[dir.ordinal()], getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
 					}
 				}
-				for (Direction dir : invert(getSides(config().outlineType, block.getBlockPos()))) {
+				for (Direction dir : invert(getSides(getActiveInstance().outlineType, block.getBlockPos()))) {
 					if (dir != null) {
-						lineFades[dir.ordinal()] = config().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, config().fadeOutSpeed) : 0;
+						lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 					}
 				}
 			}
 		}
 		//I didn't add in/out because it would BREAKKK. TODO THIS
-		scaleProg = config().scale ? (float) ease(scaleProg, shouldFadeOut ? 0 : 1, config().scaleSpeed) : 1;
+		scaleProg = getActiveInstance().scale ? (float) ease(scaleProg, shouldFadeOut ? 0 : 1, getActiveInstance().scaleSpeed) : 1;
 	}
 
 	public static HitResult pick(Entity e, final double range, final float a, final boolean withLiquids) {

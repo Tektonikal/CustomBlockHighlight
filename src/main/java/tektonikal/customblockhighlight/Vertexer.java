@@ -1,7 +1,5 @@
 package tektonikal.customblockhighlight;
 
-import com.mojang.authlib.minecraft.client.MinecraftClient;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
@@ -9,13 +7,10 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
-import org.joml.Vector3d;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 import java.awt.*;
-
-import static tektonikal.customblockhighlight.config.BlockHighlightConfig.config;
 
 public class Vertexer {
 	public static void vertexBoxQuads(PoseStack.Pose pose, VertexConsumer builder, AABB box, Color cols, Color col2, float[] alpha) {

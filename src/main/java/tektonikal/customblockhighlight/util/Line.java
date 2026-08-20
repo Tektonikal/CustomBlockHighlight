@@ -10,7 +10,7 @@ import tektonikal.customblockhighlight.Vertexer;
 import java.awt.*;
 
 import static tektonikal.customblockhighlight.Blockhighlight.ease;
-import static tektonikal.customblockhighlight.config.BlockHighlightConfig.config;
+import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
 
 public class Line {
 	public Vec3 minPos;
@@ -38,8 +38,8 @@ public class Line {
 	}
 
 	public void moveTo(Vec3 minPosTo, Vec3 maxPosTo) {
-		this.minPos = new Vec3(ease(this.minPos.x, minPosTo.x, config().easeSpeed), ease(this.minPos.y, minPosTo.y, config().easeSpeed), ease(this.minPos.z, minPosTo.z, config().easeSpeed));
-		this.maxPos = new Vec3(ease(this.maxPos.x, maxPosTo.x, config().easeSpeed), ease(this.maxPos.y, maxPosTo.y, config().easeSpeed), ease(this.maxPos.z, maxPosTo.z, config().easeSpeed));
+		this.minPos = new Vec3(ease(this.minPos.x, minPosTo.x, getActiveInstance().easeSpeed), ease(this.minPos.y, minPosTo.y, getActiveInstance().easeSpeed), ease(this.minPos.z, minPosTo.z, getActiveInstance().easeSpeed));
+		this.maxPos = new Vec3(ease(this.maxPos.x, maxPosTo.x, getActiveInstance().easeSpeed), ease(this.maxPos.y, maxPosTo.y, getActiveInstance().easeSpeed), ease(this.maxPos.z, maxPosTo.z, getActiveInstance().easeSpeed));
 	}
 
 	public void updateAndRender(PoseStack ms, VertexConsumer buf, Color c1, Color c2, int alpha, boolean b, int layer) {

@@ -1,7 +1,5 @@
 package tektonikal.customblockhighlight.config.screenrenderbullshit;
 
-import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 

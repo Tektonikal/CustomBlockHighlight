@@ -3,28 +3,15 @@ package tektonikal.customblockhighlight.config.screenrenderbullshit;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.gui.render.pip.PictureInPictureRenderer;
-import net.minecraft.client.renderer.Lightmap;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.block.BlockModelRenderState;
 import net.minecraft.client.renderer.block.BlockModelResolver;
-import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.block.model.BlockDisplayContext;
-import net.minecraft.client.renderer.feature.FeatureRendererType;
-import net.minecraft.client.renderer.feature.ShapeOutlineFeatureRenderer;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.LightCoordsUtil;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.phys.shapes.Shapes;
 import org.joml.Quaternionf;
 import tektonikal.customblockhighlight.CBHFeatureRenderer;
-import tektonikal.customblockhighlight.Renderer;
-import tektonikal.customblockhighlight.Vertexer;
-import tektonikal.customblockhighlight.util.DepthTestMode;
-import tektonikal.customblockhighlight.util.Tweener;
 
 import java.awt.*;
 
@@ -37,7 +24,7 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
 
 	@Override
 	protected void renderToTexture(EvilRenderState renderState, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
-		if(renderState.preset() == null){
+		if (renderState.preset() == null) {
 			return;
 		}
 		var blockModelResolver = new BlockModelResolver(Minecraft.getInstance().getModelManager());
