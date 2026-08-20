@@ -40,69 +40,70 @@ public class BlockHighlightConfig {
 	public static ConfigClassHandler<BlockHighlightConfig> INSTANCE;
 	public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val -> Component.nullToEmpty(String.format("%.2f", val).replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
 
+	public static final BlockHighlightConfig ACTIVE_INSTANCE = INSTANCE.instance();
 	public static BlockHighlightConfig config() {
-		return INSTANCE.instance();
+		return ACTIVE_INSTANCE;
 	}
 
 	//@formatter:off
     //outline stuff
-    @SerialEntry public boolean outlineEnabled = true;
-        @SerialEntry public Color lineCol = Color.BLACK;
-        @SerialEntry public Color lineCol2 = Color.WHITE;
-        @SerialEntry public int lineAlpha = 255;
-        @SerialEntry public boolean outlineRainbow = true;
-        @SerialEntry public OutlineType outlineType = OutlineType.AIR_EXPOSED;
-        @SerialEntry public float lineWidth = 2.5F;
-        @SerialEntry public float lineExpand = 0;
-        @SerialEntry public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
-		@SerialEntry public float cutFromCenter = 0.25F;
-		@SerialEntry public float cutFromCorner = 0;
+    public boolean outlineEnabled = true;
+        public Color lineCol = Color.BLACK;
+        public Color lineCol2 = Color.WHITE;
+        public int lineAlpha = 255;
+        public boolean outlineRainbow = true;
+        public OutlineType outlineType = OutlineType.AIR_EXPOSED;
+        public float lineWidth = 2.5F;
+        public float lineExpand = 0;
+        public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
+	 	public float cutFromCenter = 0.25F;
+	 	public float cutFromCorner = 0;
 
-	@SerialEntry public boolean secondary = true;
-		@SerialEntry public Color slineCol = Color.BLACK;
-		@SerialEntry public Color slineCol2 = Color.BLACK;
-		@SerialEntry public float slineAlphaMultiplier = 1F;
-		@SerialEntry public boolean soutlineRainbow = false;
-		@SerialEntry public float slineWidth = 5F;
-		@SerialEntry public DepthTestMode slineDepthTest = DepthTestMode.ALWAYS_PASS;
+ 	public boolean secondary = true;
+	 	public Color slineCol = Color.BLACK;
+	 	public Color slineCol2 = Color.BLACK;
+	 	public float slineAlphaMultiplier = 1F;
+	 	public boolean soutlineRainbow = false;
+	 	public float slineWidth = 5F;
+	 	public DepthTestMode slineDepthTest = DepthTestMode.ALWAYS_PASS;
 
-	@SerialEntry public boolean tertiary = false;
-		@SerialEntry public Color tlineCol = Color.BLACK;
-		@SerialEntry public Color tlineCol2 = Color.WHITE;
-		@SerialEntry public float tlineAlphaMultiplier = 1F;
-		@SerialEntry public boolean toutlineRainbow = false;
-		@SerialEntry public float tlineWidth = 3;
-		@SerialEntry public DepthTestMode tlineDepthTest = DepthTestMode.ALWAYS_PASS;
+ 	public boolean tertiary = false;
+	 	public Color tlineCol = Color.BLACK;
+	 	public Color tlineCol2 = Color.WHITE;
+	 	public float tlineAlphaMultiplier = 1F;
+	 	public boolean toutlineRainbow = false;
+	 	public float tlineWidth = 3;
+	 	public DepthTestMode tlineDepthTest = DepthTestMode.ALWAYS_PASS;
 
     //fill stuffs
-    @SerialEntry public boolean fillEnabled = true;
-        @SerialEntry public Color fillCol = Color.BLACK;
-        @SerialEntry public Color fillCol2 = Color.WHITE;
-        @SerialEntry public int fillOpacity = 128;
-        @SerialEntry public boolean fillRainbow = false;
-        @SerialEntry public OutlineType fillType = OutlineType.ALL;
-        @SerialEntry public float fillExpand = 0.001F;
-        @SerialEntry public DepthTestMode fillDepthTest = DepthTestMode.HIDDEN_ONLY;
+    public boolean fillEnabled = true;
+        public Color fillCol = Color.BLACK;
+        public Color fillCol2 = Color.WHITE;
+        public int fillOpacity = 128;
+        public boolean fillRainbow = false;
+        public OutlineType fillType = OutlineType.ALL;
+        public float fillExpand = 0.001F;
+        public DepthTestMode fillDepthTest = DepthTestMode.HIDDEN_ONLY;
     //extras
-    @SerialEntry public boolean doEasing = true;
-    @SerialEntry public float easeSpeed = 20F;
-    @SerialEntry public boolean fadeIn = true;
-	@SerialEntry public float fadeInSpeed = 15F;
-    @SerialEntry public boolean fadeOut = true;
-    @SerialEntry public float fadeOutSpeed = 15F;
-	@SerialEntry public boolean scale = true;
-	@SerialEntry public float scaleSpeed = 15F;
-    @SerialEntry public float rainbowSpeed = 5;
-    @SerialEntry public int delay = 250;
-    @SerialEntry public float saturation = 1;
-    @SerialEntry public float brightness = 1;
-    @SerialEntry public boolean crystalHelper = true;
-    @SerialEntry public Color crystalHelperLineColor = Color.RED;
-	@SerialEntry public Color crystalHelperFillColor = Color.RED;
-    @SerialEntry public boolean connectedBlocks = true;
-	@SerialEntry public boolean updateWhenUnfocused = true;
-	@SerialEntry public boolean allowEntities = true;
-	@SerialEntry public boolean allowLiquids = true;
+    public boolean doEasing = true;
+    public float easeSpeed = 20F;
+    public boolean fadeIn = true;
+ 	public float fadeInSpeed = 15F;
+    public boolean fadeOut = true;
+    public float fadeOutSpeed = 15F;
+ 	public boolean scale = true;
+ 	public float scaleSpeed = 15F;
+    public float rainbowSpeed = 5;
+    public int delay = 250;
+    public float saturation = 1;
+    public float brightness = 1;
+    public boolean crystalHelper = true;
+    public Color crystalHelperLineColor = Color.RED;
+ 	public Color crystalHelperFillColor = Color.RED;
+    public boolean connectedBlocks = true;
+ 	public boolean updateWhenUnfocused = true;
+ 	public boolean allowEntities = true;
+ 	public boolean allowLiquids = true;
 
 	static {
 		INSTANCE = ConfigClassHandler.createBuilder(BlockHighlightConfig.class)
@@ -117,33 +118,33 @@ public class BlockHighlightConfig {
 
 	//@formatter:on
 	@Updatable
-	public static Option<Boolean> o_outlineEnabled = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_outlineEnabled = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("Enabled"))
-			.stateManager(StateManager.createInstant(true, () -> config().outlineEnabled, newVal -> config().outlineEnabled = newVal))
+			.stateManager(StateManager.createInstant(true, () -> outlineEnabled, newVal -> outlineEnabled = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Color> o_lineCol = Option.<Color>createBuilder()
+	public Option<Color> o_lineCol = Option.<Color>createBuilder()
 			.name(Component.nullToEmpty("- Primary"))
-			.stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> config().lineCol, newVal -> config().lineCol = newVal))
+			.stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> lineCol, newVal -> lineCol = newVal))
 			.controller(ColorControllerBuilder::create)
 			.build();
-	public static Option<Color> o_lineCol2 = Option.<Color>createBuilder()
+	public Option<Color> o_lineCol2 = Option.<Color>createBuilder()
 			.name(Component.nullToEmpty("- Secondary"))
-			.stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> config().lineCol2, newVal -> config().lineCol2 = newVal))
+			.stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> lineCol2, newVal -> lineCol2 = newVal))
 			.controller(ColorControllerBuilder::create)
 			.build();
-	public static Option<Integer> o_lineAlpha = Option.<Integer>createBuilder()
+	public Option<Integer> o_lineAlpha = Option.<Integer>createBuilder()
 			.name(Component.nullToEmpty("- Opacity"))
 			.controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
-			.stateManager(StateManager.createInstant(255, () -> config().lineAlpha, newVal -> config().lineAlpha = newVal))
+			.stateManager(StateManager.createInstant(255, () -> lineAlpha, newVal -> lineAlpha = newVal))
 			.build();
 	@Updatable
-	public static Option<Boolean> o_outlineRainbow = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_outlineRainbow = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Rainbow"))
-			.stateManager(StateManager.createInstant(true, () -> config().outlineRainbow, newVal -> config().outlineRainbow = newVal))
+			.stateManager(StateManager.createInstant(true, () -> outlineRainbow, newVal -> outlineRainbow = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<OutlineType> o_outlineType = Option.<OutlineType>createBuilder()
+	public Option<OutlineType> o_outlineType = Option.<OutlineType>createBuilder()
 			.name(Component.nullToEmpty("- Mode"))
 			.description(OptionDescription.of(Component.nullToEmpty("Modes:"),
 					Component.nullToEmpty("- Air Exposed"),
@@ -152,139 +153,139 @@ public class BlockHighlightConfig {
 					Component.nullToEmpty("- Edges: Uses model shape."),
 					Component.nullToEmpty("- Looked At")
 			))
-			.stateManager(StateManager.createInstant(OutlineType.AIR_EXPOSED, () -> config().outlineType, newVal -> config().outlineType = newVal))
+			.stateManager(StateManager.createInstant(OutlineType.AIR_EXPOSED, () -> outlineType, newVal -> outlineType = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
 			.build();
-	public static Option<DepthTestMode> o_lineDepthTest = Option.<DepthTestMode>createBuilder()
+	public Option<DepthTestMode> o_lineDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
 			.description(OptionDescription.of(Component.literal("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
-			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> config().lineDepthTest, newVal -> config().lineDepthTest = newVal))
+			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> lineDepthTest, newVal -> lineDepthTest = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
-	public static Option<Float> o_lineExpand = Option.<Float>createBuilder()
+	public Option<Float> o_lineExpand = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Adjust Size By"))
-			.stateManager(StateManager.createInstant(0F, () -> config().lineExpand, newVal -> config().lineExpand = newVal))
+			.stateManager(StateManager.createInstant(0F, () -> lineExpand, newVal -> lineExpand = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
 			.build();
-	public static Option<Float> o_lineWidth = Option.<Float>createBuilder()
+	public Option<Float> o_lineWidth = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Line Width"))
 			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(0.5F, 15F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1f", value) + " px")))
-			.stateManager(StateManager.createInstant(2.5F, () -> config().lineWidth, newVal -> config().lineWidth = newVal))
+			.stateManager(StateManager.createInstant(2.5F, () -> lineWidth, newVal -> lineWidth = newVal))
 			.build();
-	public static Option<Float> o_cutFromCorner = Option.<Float>createBuilder()
+	public Option<Float> o_cutFromCorner = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Cut From Corner"))
-			.stateManager(StateManager.createInstant(0F, () -> config().cutFromCorner, newVal -> config().cutFromCorner = newVal))
+			.stateManager(StateManager.createInstant(0F, () -> cutFromCorner, newVal -> cutFromCorner = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
-	public static Option<Float> o_cutFromCenter = Option.<Float>createBuilder()
+	public Option<Float> o_cutFromCenter = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Cut From Center"))
-			.stateManager(StateManager.createInstant(0.25F, () -> config().cutFromCenter, newVal -> config().cutFromCenter = newVal))
+			.stateManager(StateManager.createInstant(0.25F, () -> cutFromCenter, newVal -> cutFromCenter = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	@Updatable
-	public static Option<Boolean> o_secondary = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_secondary = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("Enabled"))
-			.stateManager(StateManager.createInstant(true, () -> config().secondary, newVal -> config().secondary = newVal))
+			.stateManager(StateManager.createInstant(true, () -> secondary, newVal -> secondary = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Color> o_slineCol = Option.<Color>createBuilder()
+	public Option<Color> o_slineCol = Option.<Color>createBuilder()
 			.name(Component.nullToEmpty("- Primary"))
-			.stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> config().slineCol, newVal -> config().slineCol = newVal))
+			.stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> slineCol, newVal -> slineCol = newVal))
 			.controller(ColorControllerBuilder::create)
 			.build();
-	public static Option<Color> o_slineCol2 = Option.<Color>createBuilder()
+	public Option<Color> o_slineCol2 = Option.<Color>createBuilder()
 			.name(Component.nullToEmpty("- Secondary"))
-			.stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> config().slineCol2, newVal -> config().slineCol2 = newVal))
+			.stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> slineCol2, newVal -> slineCol2 = newVal))
 			.controller(ColorControllerBuilder::create)
 			.build();
-	public static Option<Float> o_slineAlphaMultiplier = Option.<Float>createBuilder()
+	public Option<Float> o_slineAlphaMultiplier = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Opacity Multiplier"))
-			.stateManager(StateManager.createInstant(1F, () -> config().slineAlphaMultiplier, newVal -> config().slineAlphaMultiplier = newVal))
+			.stateManager(StateManager.createInstant(1F, () -> slineAlphaMultiplier, newVal -> slineAlphaMultiplier = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	@Updatable
-	public static Option<Boolean> o_soutlineRainbow = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_soutlineRainbow = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Rainbow"))
-			.stateManager(StateManager.createInstant(false, () -> config().soutlineRainbow, newVal -> config().soutlineRainbow = newVal))
+			.stateManager(StateManager.createInstant(false, () -> soutlineRainbow, newVal -> soutlineRainbow = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<DepthTestMode> o_slineDepthTest = Option.<DepthTestMode>createBuilder()
+	public Option<DepthTestMode> o_slineDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
 			.description(OptionDescription.of(Component.literal("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
-			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> config().slineDepthTest, newVal -> config().slineDepthTest = newVal))
+			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> slineDepthTest, newVal -> slineDepthTest = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
-	public static Option<Float> o_slineWidth = Option.<Float>createBuilder()
+	public Option<Float> o_slineWidth = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Line Width"))
 			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1f", value) + " px")))
-			.stateManager(StateManager.createInstant(5F, () -> config().slineWidth, newVal -> config().slineWidth = newVal))
+			.stateManager(StateManager.createInstant(5F, () -> slineWidth, newVal -> slineWidth = newVal))
 			.build();
 	@Updatable
-	public static Option<Boolean> o_tertiary = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_tertiary = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("Enabled"))
-			.stateManager(StateManager.createInstant(false, () -> config().tertiary, newVal -> config().tertiary = newVal))
+			.stateManager(StateManager.createInstant(false, () -> tertiary, newVal -> tertiary = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Color> o_tlineCol = Option.<Color>createBuilder()
+	public Option<Color> o_tlineCol = Option.<Color>createBuilder()
 			.name(Component.nullToEmpty("- Primary"))
-			.stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> config().tlineCol, newVal -> config().tlineCol = newVal))
+			.stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> tlineCol, newVal -> tlineCol = newVal))
 			.controller(ColorControllerBuilder::create)
 			.build();
-	public static Option<Color> o_tlineCol2 = Option.<Color>createBuilder()
+	public Option<Color> o_tlineCol2 = Option.<Color>createBuilder()
 			.name(Component.nullToEmpty("- Secondary"))
-			.stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> config().tlineCol2, newVal -> config().tlineCol2 = newVal))
+			.stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> tlineCol2, newVal -> tlineCol2 = newVal))
 			.controller(ColorControllerBuilder::create)
 			.build();
-	public static Option<Float> o_tlineAlphaMultiplier = Option.<Float>createBuilder()
+	public Option<Float> o_tlineAlphaMultiplier = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Opacity Multiplier"))
-			.stateManager(StateManager.createInstant(1F, () -> config().tlineAlphaMultiplier, newVal -> config().tlineAlphaMultiplier = newVal))
+			.stateManager(StateManager.createInstant(1F, () -> tlineAlphaMultiplier, newVal -> tlineAlphaMultiplier = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	@Updatable
-	public static Option<Boolean> o_toutlineRainbow = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_toutlineRainbow = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Rainbow"))
-			.stateManager(StateManager.createInstant(false, () -> config().toutlineRainbow, newVal -> config().toutlineRainbow = newVal))
+			.stateManager(StateManager.createInstant(false, () -> toutlineRainbow, newVal -> toutlineRainbow = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<DepthTestMode> o_tlineDepthTest = Option.<DepthTestMode>createBuilder()
+	public Option<DepthTestMode> o_tlineDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
 			.description(OptionDescription.of(Component.literal("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
-			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> config().tlineDepthTest, newVal -> config().tlineDepthTest = newVal))
+			.stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> tlineDepthTest, newVal -> tlineDepthTest = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
-	public static Option<Float> o_tlineWidth = Option.<Float>createBuilder()
+	public Option<Float> o_tlineWidth = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Line Width"))
 			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1f", value) + " px")))
-			.stateManager(StateManager.createInstant(3F, () -> config().tlineWidth, newVal -> config().tlineWidth = newVal))
+			.stateManager(StateManager.createInstant(3F, () -> tlineWidth, newVal -> tlineWidth = newVal))
 			.build();
 	@Updatable
-	public static Option<Boolean> o_fillEnabled = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_fillEnabled = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("Enabled"))
 			.controller(TickBoxControllerBuilder::create)
-			.stateManager(StateManager.createInstant(true, () -> config().fillEnabled, newVal -> config().fillEnabled = newVal))
+			.stateManager(StateManager.createInstant(true, () -> fillEnabled, newVal -> fillEnabled = newVal))
 			.build();
-	public static Option<Color> o_fillCol = Option.<Color>createBuilder()
+	public Option<Color> o_fillCol = Option.<Color>createBuilder()
 			.name(Component.nullToEmpty("- Primary"))
-			.stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> config().fillCol, newVal -> config().fillCol = newVal))
+			.stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> fillCol, newVal -> fillCol = newVal))
 			.controller(ColorControllerBuilder::create)
 			.build();
-	public static Option<Color> o_fillCol2 = Option.<Color>createBuilder()
+	public Option<Color> o_fillCol2 = Option.<Color>createBuilder()
 			.name(Component.nullToEmpty("- Secondary"))
-			.stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> config().fillCol2, newVal -> config().fillCol2 = newVal))
+			.stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> fillCol2, newVal -> fillCol2 = newVal))
 			.controller(ColorControllerBuilder::create)
 			.build();
-	public static Option<Integer> o_fillOpacity = Option.<Integer>createBuilder()
+	public Option<Integer> o_fillOpacity = Option.<Integer>createBuilder()
 			.name(Component.nullToEmpty("- Opacity"))
-			.stateManager(StateManager.createInstant(128, () -> config().fillOpacity, newVal -> config().fillOpacity = newVal))
+			.stateManager(StateManager.createInstant(128, () -> fillOpacity, newVal -> fillOpacity = newVal))
 			.controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 255).step(1).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
 			.build();
 	@Updatable
-	public static Option<Boolean> o_fillRainbow = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_fillRainbow = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Rainbow"))
-			.stateManager(StateManager.createInstant(false, () -> config().fillRainbow, newVal -> config().fillRainbow = newVal))
+			.stateManager(StateManager.createInstant(false, () -> fillRainbow, newVal -> fillRainbow = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<OutlineType> o_fillType = Option.<OutlineType>createBuilder()
+	public Option<OutlineType> o_fillType = Option.<OutlineType>createBuilder()
 			.name(Component.nullToEmpty("- Mode"))
 			.description(OptionDescription.of(Component.nullToEmpty("Modes:"),
 					Component.nullToEmpty("- Air Exposed"),
@@ -292,7 +293,7 @@ public class BlockHighlightConfig {
 					Component.nullToEmpty("- Concealed Faces"),
 					Component.nullToEmpty("- Looked At")
 			))
-			.stateManager(StateManager.createInstant(OutlineType.ALL, () -> config().fillType, newVal -> config().fillType = newVal))
+			.stateManager(StateManager.createInstant(OutlineType.ALL, () -> fillType, newVal -> fillType = newVal))
 			.addListener((option, _) -> {
 				if (option.pendingValue() == OutlineType.EDGES) {
 					option.requestSet(OutlineType.LOOKAT);
@@ -300,122 +301,122 @@ public class BlockHighlightConfig {
 			})
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
 			.build();
-	public static Option<DepthTestMode> o_fillDepthTest = Option.<DepthTestMode>createBuilder()
+	public Option<DepthTestMode> o_fillDepthTest = Option.<DepthTestMode>createBuilder()
 			.name(Component.nullToEmpty("- Depth Test"))
 			.description(OptionDescription.of(Component.literal("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
-			.stateManager(StateManager.createInstant(DepthTestMode.HIDDEN_ONLY, () -> config().fillDepthTest, newVal -> config().fillDepthTest = newVal))
+			.stateManager(StateManager.createInstant(DepthTestMode.HIDDEN_ONLY, () -> fillDepthTest, newVal -> fillDepthTest = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
 			.build();
-	public static Option<Float> o_fillExpand = Option.<Float>createBuilder()
+	public Option<Float> o_fillExpand = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Adjust Size By"))
-			.stateManager(StateManager.createInstant(0F, () -> config().fillExpand, newVal -> config().fillExpand = newVal))
+			.stateManager(StateManager.createInstant(0F, () -> fillExpand, newVal -> fillExpand = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
 			.build();
 	@Updatable
-	public static Option<Boolean> o_doEasing = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_doEasing = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Enabled"))
-			.stateManager(StateManager.createInstant(true, () -> config().doEasing, newVal -> config().doEasing = newVal))
+			.stateManager(StateManager.createInstant(true, () -> doEasing, newVal -> doEasing = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Float> o_easeSpeed = Option.<Float>createBuilder()
+	public Option<Float> o_easeSpeed = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Speed"))
-			.stateManager(StateManager.createInstant(20F, () -> config().easeSpeed, newVal -> config().easeSpeed = newVal))
+			.stateManager(StateManager.createInstant(20F, () -> easeSpeed, newVal -> easeSpeed = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 50F).step(0.5F).formatValue(value -> Component.literal(String.format("%.1fx", value))))
 			.build();
-	public static Option<Boolean> o_fadeIn = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_fadeIn = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- In"))
-			.stateManager(StateManager.createInstant(true, () -> config().fadeIn, newVal -> config().fadeIn = newVal))
+			.stateManager(StateManager.createInstant(true, () -> fadeIn, newVal -> fadeIn = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Float> o_fadeInSpeed = Option.<Float>createBuilder()
+	public Option<Float> o_fadeInSpeed = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("  - Speed"))
-			.stateManager(StateManager.createInstant(15F, () -> config().fadeInSpeed, newVal -> config().fadeInSpeed = newVal))
+			.stateManager(StateManager.createInstant(15F, () -> fadeInSpeed, newVal -> fadeInSpeed = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1fx", value))))
 			.build();
-	public static Option<Boolean> o_fadeOut = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_fadeOut = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Out"))
-			.stateManager(StateManager.createInstant(true, () -> config().fadeOut, newVal -> config().fadeOut = newVal))
+			.stateManager(StateManager.createInstant(true, () -> fadeOut, newVal -> fadeOut = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Float> o_fadeOutSpeed = Option.<Float>createBuilder()
+	public Option<Float> o_fadeOutSpeed = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("  - Speed"))
-			.stateManager(StateManager.createInstant(15F, () -> config().fadeOutSpeed, newVal -> config().fadeOutSpeed = newVal))
+			.stateManager(StateManager.createInstant(15F, () -> fadeOutSpeed, newVal -> fadeOutSpeed = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1fx", value))))
 			.build();
 	@Updatable
-	public static Option<Boolean> o_scale = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_scale = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Enabled"))
-			.stateManager(StateManager.createInstant(true, () -> config().scale, newVal -> config().scale = newVal))
+			.stateManager(StateManager.createInstant(true, () -> scale, newVal -> scale = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Float> o_scaleSpeed = Option.<Float>createBuilder()
+	public Option<Float> o_scaleSpeed = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Speed"))
-			.stateManager(StateManager.createInstant(15F, () -> config().scaleSpeed, newVal -> config().scaleSpeed = newVal))
+			.stateManager(StateManager.createInstant(15F, () -> scaleSpeed, newVal -> scaleSpeed = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1fx", value))))
 			.build();
-	public static Option<Integer> o_delay = Option.<Integer>createBuilder()
+	public Option<Integer> o_delay = Option.<Integer>createBuilder()
 			.name(Component.nullToEmpty("- Delay"))
-			.stateManager(StateManager.createInstant(250, () -> config().delay, newVal -> config().delay = newVal))
+			.stateManager(StateManager.createInstant(250, () -> delay, newVal -> delay = newVal))
 			.description(OptionDescription.of(Component.literal("How much to delay the rainbow color used for the secondary part of the gradient.")))
 			.controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.literal(value + " ms")))
 			.build();
-	public static Option<Float> o_rainbowSpeed = Option.<Float>createBuilder()
+	public Option<Float> o_rainbowSpeed = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Speed"))
-			.stateManager(StateManager.createInstant(5F, () -> config().rainbowSpeed, newVal -> config().rainbowSpeed = newVal))
+			.stateManager(StateManager.createInstant(5F, () -> rainbowSpeed, newVal -> rainbowSpeed = newVal))
 			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 10F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1fx", value))))
 			.build();
-	public static Option<Float> o_saturation = Option.<Float>createBuilder()
+	public Option<Float> o_saturation = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Saturation"))
-			.stateManager(StateManager.createInstant(1F, () -> config().saturation, newVal -> config().saturation = newVal))
+			.stateManager(StateManager.createInstant(1F, () -> saturation, newVal -> saturation = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
-	public static Option<Float> o_brightness = Option.<Float>createBuilder()
+	public Option<Float> o_brightness = Option.<Float>createBuilder()
 			.name(Component.nullToEmpty("- Brightness"))
-			.stateManager(StateManager.createInstant(1F, () -> config().brightness, newVal -> config().brightness = newVal))
+			.stateManager(StateManager.createInstant(1F, () -> brightness, newVal -> brightness = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
-	public static Option<Boolean> o_connectedBlocks = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_connectedBlocks = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Connected Outlines"))
 			.description(OptionDescription.of(Component.nullToEmpty("This applies to both the fill and outline. Maybe I'll change it later, who knows?")))
-			.stateManager(StateManager.createInstant(true, () -> config().connectedBlocks, newVal -> config().connectedBlocks = newVal))
+			.stateManager(StateManager.createInstant(true, () -> connectedBlocks, newVal -> connectedBlocks = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Boolean> o_updateWhenUnfocused = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_updateWhenUnfocused = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Update When Unfocused"))
 			.description(OptionDescription.of(Component.literal("Continues moving the outline box toward its target even when it's not being rendered.")))
-			.stateManager(StateManager.createInstant(true, () -> config().updateWhenUnfocused, newVal -> config().updateWhenUnfocused = newVal))
+			.stateManager(StateManager.createInstant(true, () -> updateWhenUnfocused, newVal -> updateWhenUnfocused = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
 	@Updatable
-	public static Option<Boolean> o_crystalHelper = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_crystalHelper = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Crystal Helper"))
 			.description(OptionDescription.of(Component.nullToEmpty("highlights the block in the color below when you are looking at an obsidian block that crystals cannot be placed on.")))
-			.stateManager(StateManager.createInstant(true, () -> config().crystalHelper, newVal -> config().crystalHelper = newVal))
+			.stateManager(StateManager.createInstant(true, () -> crystalHelper, newVal -> crystalHelper = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Color> o_crystalHelperLineColor = Option.<Color>createBuilder()
+	public Option<Color> o_crystalHelperLineColor = Option.<Color>createBuilder()
 			.name(Component.nullToEmpty("  - Line Color"))
 			.controller(ColorControllerBuilder::create)
-			.stateManager(StateManager.createInstant(Color.RED, () -> config().crystalHelperLineColor, color -> config().crystalHelperLineColor = color))
+			.stateManager(StateManager.createInstant(Color.RED, () -> crystalHelperLineColor, color -> crystalHelperLineColor = color))
 			.build();
-	public static Option<Color> o_crystalHelperFillColor = Option.<Color>createBuilder()
+	public Option<Color> o_crystalHelperFillColor = Option.<Color>createBuilder()
 			.name(Component.nullToEmpty("  - Fill Color"))
 			.controller(ColorControllerBuilder::create)
-			.stateManager(StateManager.createInstant(Color.RED, () -> config().crystalHelperFillColor, color -> config().crystalHelperFillColor = color))
+			.stateManager(StateManager.createInstant(Color.RED, () -> crystalHelperFillColor, color -> crystalHelperFillColor = color))
 			.build();
-	public static Option<Boolean> o_allowEntities = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_allowEntities = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Select Entities"))
-			.stateManager(StateManager.createInstant(true, () -> config().allowEntities, newVal -> config().allowEntities = newVal))
+			.stateManager(StateManager.createInstant(true, () -> allowEntities, newVal -> allowEntities = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
-	public static Option<Boolean> o_allowLiquids = Option.<Boolean>createBuilder()
+	public Option<Boolean> o_allowLiquids = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("- Select Fluids"))
 			.description(OptionDescription.of(Component.literal("Makes fluid source blocks valid targets when holding a bucket.")))
-			.stateManager(StateManager.createInstant(true, () -> config().allowLiquids, newVal -> config().allowLiquids = newVal))
+			.stateManager(StateManager.createInstant(true, () -> allowLiquids, newVal -> allowLiquids = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
 
-	public static Screen getConfigScreen(Screen parent) {
+	public Screen getConfigScreen(Screen parent) {
 			Screen generatedScreen = YetAnotherConfigLib.createBuilder()
 					.title(Component.literal("Custom Block Highlight"))
 					.category(ConfigCategory.createBuilder()
@@ -517,7 +518,7 @@ public class BlockHighlightConfig {
 											.name(Component.nullToEmpty("- Copy To Clipboard"))
 											.action((_, _) -> {
 												BlockHighlightConfig.INSTANCE.save();
-												Minecraft.getInstance().keyboardHandler.setClipboard(BlockHighlightConfig.gson.toJson(config()));
+												Minecraft.getInstance().keyboardHandler.setClipboard(BlockHighlightConfig.gson.toJson(this));
 											})
 											.text(Component.nullToEmpty("Copy"))
 											.build())
@@ -531,18 +532,8 @@ public class BlockHighlightConfig {
 													if (yeah == null) {
 														return;
 													}
-												} catch (JsonSyntaxException e) {
-													return;
-												}
-												try {
-													Path path = FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json");
-													Files.delete(path);
-													Files.createFile(path);
-													Files.writeString(path, Minecraft.getInstance().keyboardHandler.getClipboard());
-													BlockHighlightConfig.INSTANCE.load();
-													Blockhighlight.unleashHell();
-												} catch (IOException e) {
-													throw new RuntimeException(e);
+													ConfigManager.setActiveInstance(yeah);
+												} catch (JsonSyntaxException ignored) {
 												}
 											})
 											.build())
@@ -571,7 +562,7 @@ public class BlockHighlightConfig {
 		}
 	}
 
-	public static void update(Option<Boolean> option, Boolean enabled) {
+	public void update(Option<Boolean> option, Boolean enabled) {
 		if (option == o_outlineEnabled) {
 			o_lineCol.setAvailable(enabled);
 			o_lineCol2.setAvailable(enabled);

@@ -1,6 +1,7 @@
 package tektonikal.customblockhighlight;
 
 import dev.isxander.yacl3.api.Option;
+import dev.isxander.yacl3.api.StateManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.FeatureRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
@@ -16,6 +17,7 @@ import tektonikal.customblockhighlight.config.screenrenderbullshit.GuiOutlineRen
 import tektonikal.customblockhighlight.util.DepthTestMode;
 
 import java.awt.*;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 
 //           this ↓ should be capitalized.
@@ -24,7 +26,6 @@ public class Blockhighlight implements ModInitializer {
 	public void onInitialize() {
 		BlockHighlightConfig.INSTANCE.load();
 		armSecuritySystem();
-		unleashHell();
 		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((_, _) -> false);
 		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
 		FeatureRendererRegistry.register(CBHFeatureRenderer.TYPE, CBHFeatureRenderer::new);
@@ -32,20 +33,28 @@ public class Blockhighlight implements ModInitializer {
 
 	}
 
+	// applies the primitive fields values to the Option<?>s
+	@SuppressWarnings({"rawtypes", "unchecked"})
 	public static void unleashHell() {
 		try {
-			Arrays.stream(BlockHighlightConfig.class.getDeclaredFields()).filter(field -> field.getName().startsWith("o_") && !field.getName().equals("INSTANCE")).forEach(field -> {
-				try {
-					//noinspection unchecked, rawtypes
-					((Option) field.get(null)).stateManager().set(BlockHighlightConfig.class.getField(field.getName().replace("o_", "")).get(BlockHighlightConfig.config()));
-					((Option<?>) field.get(null)).applyValue();
-				} catch (IllegalAccessException | NoSuchFieldException _) {
-				}
-			});
+			Arrays.stream(BlockHighlightConfig.class.getDeclaredFields())
+					.filter(field -> field.getName().startsWith("o_") && !field.getName().equals("INSTANCE"))
+					.forEach(field -> {
+						try {
+							Option<Boolean> option = ((Option<Boolean>) field.get(null));
+							StateManager<Boolean> stateManager = option.stateManager();
+							boolean correspondingValue = (boolean) BlockHighlightConfig.class.getField(field.getName().replace("o_", "")).get(null);
+
+							stateManager.set(correspondingValue);
+							option.applyValue();
+						} catch (IllegalAccessException | NoSuchFieldException _) {
+						}
+					});
 		} catch (SecurityException _) {
 		}
 	}
 
+	// adds listeners to @Updatable fields to call BlockHighlightConfig#update on value change
 	private static void armSecuritySystem() {
 		//can't add listeners while options are created for my use-case, since not everything is fully initialized
 		// actually you're just stupid

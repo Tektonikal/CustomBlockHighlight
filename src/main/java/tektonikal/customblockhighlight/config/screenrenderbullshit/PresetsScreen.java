@@ -47,7 +47,6 @@ public class PresetsScreen extends Screen {
 				Files.write(path, preset.readAllBytes());
 			}
 			BlockHighlightConfig.INSTANCE.load();
-			Blockhighlight.unleashHell();
 		} catch (IOException _) {
 		}
 	}
