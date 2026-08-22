@@ -620,24 +620,21 @@ public class BlockHighlightConfig {
 
 	@SuppressWarnings("unchecked")
 	public BlockHighlightConfig applyValuesToOptionInstances() {
-		try {
-			Arrays.stream(BlockHighlightConfig.class.getDeclaredFields())
-					.filter(field -> field.getName().startsWith("o_"))
-					.forEach(optionInstanceField -> {
-						try {
-							Option<Object> option = (Option<Object>) optionInstanceField.get(this);
-							if (option == null)
-								return;
-							StateManager<Object> stateManager = option.stateManager();
-							Object correspondingValue = BlockHighlightConfig.class.getField(optionInstanceField.getName().replace("o_", "")).get(this);
+		Arrays.stream(BlockHighlightConfig.class.getDeclaredFields())
+				.filter(field -> field.getName().startsWith("o_"))
+				.forEach(optionInstanceField -> {
+					try {
+						Option<Object> option = (Option<Object>) optionInstanceField.get(this);
+						if (option == null)
+							return;
+						StateManager<Object> stateManager = option.stateManager();
+						Object correspondingValue = BlockHighlightConfig.class.getField(optionInstanceField.getName().replace("o_", "")).get(this);
 
-							stateManager.set(correspondingValue);
-							stateManager.apply();
-						} catch (IllegalAccessException | NoSuchFieldException _) {
-						}
-					});
-		} catch (SecurityException _) {
-		}
+						stateManager.set(correspondingValue);
+						stateManager.apply();
+					} catch (IllegalAccessException | NoSuchFieldException _) {
+					}
+				});
 		return this;
 	}
 
