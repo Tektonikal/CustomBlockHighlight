@@ -2,15 +2,11 @@ package tektonikal.customblockhighlight;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.feature.FeatureFrameContext;
 import net.minecraft.client.renderer.feature.FeatureRendererType;
 import net.minecraft.client.renderer.feature.RenderTypeFeatureRenderer;
 import net.minecraft.client.renderer.feature.submit.SubmitNode;
 import net.minecraft.client.renderer.rendertype.*;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.CBHLineRenderInfo;
 
 import java.awt.*;
@@ -37,6 +33,10 @@ public class CBHFeatureRenderer extends RenderTypeFeatureRenderer<CBHFeatureRend
 	}
 
 	public record Submit(List<CBHLineRenderInfo> info, PoseStack.Pose pose) implements SubmitNode {
+		public Submit(CBHLineRenderInfo info, PoseStack.Pose pose) {
+			this(List.of(info), pose);
+		}
+
 		@Override
 		public FeatureRendererType<Submit> featureType() {
 			return CBHFeatureRenderer.TYPE;

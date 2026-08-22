@@ -515,8 +515,8 @@ public class Renderer {
 				}
 				Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), sfinalLineCol, sfinalLineCol2, newFades, getActiveInstance().slineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 1);
 			}
-//			submitNodeCollector.submitCustom(SubmitRenderPhases.ALWAYS_ON_TOP, new CBHFeatureRenderer.Submit(Collections.singletonList(new CBHLineRenderInfo(shape, finalLineCol, finalLineCol2, lineFades, getActiveInstance().lineWidth, getActiveInstance().lineDepthTest, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner)), stack.last().copy()));
-			Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), finalLineCol, finalLineCol2, lineFades, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 0);
+			doEvilMatrixPreparations(stack, easeBox.inflate(getActiveInstance().lineExpand), false);
+			submitNodeCollector.submitCustom(SubmitRenderPhases.ALWAYS_ON_TOP, new CBHFeatureRenderer.Submit(CBHLineRenderInfo.of(shape, finalLineCol, finalLineCol2, lineFades, getActiveInstance()), stack.last()));
 		}
 		profiler.pop();
 		// insert model data pulling render idk code here
