@@ -17,6 +17,9 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.StagedVertexBuffer;
+import net.minecraft.client.renderer.rendertype.LayeringTransform;
+import net.minecraft.client.renderer.rendertype.OutputTarget;
+import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -106,6 +109,16 @@ public class Renderer {
 					.withCull(false)
 					.build()
 	);
+	public static final RenderType linesNoDepth = RenderType.create("lines_no_depth",
+			RenderSetup.builder(Renderer.LINE_NO_DEPTH)
+					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
+					.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
+					.createRenderSetup());
+	public static final RenderType linesConcealed = RenderType.create("lines_concealed",
+			RenderSetup.builder(Renderer.LINES_CONCEALED_ONLY)
+					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
+					.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
+					.createRenderSetup());
 	public static final StagedVertexBuffer stagedFaceBuffer = new StagedVertexBuffer(() -> " CBH sides", RenderType.SMALL_BUFFER_SIZE);
 	public static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
 
@@ -216,11 +229,11 @@ public class Renderer {
 		stack.translate(vec.reverse());
 	}
 
-	public static void drawBoxOutline(PoseStack stack, AABB box, Color color, Color col2, float[] alpha, int layer) {
+	public static void drawBoxOutline(PoseStack stack, AABB box, Color color, Color col2, float[] alpha, float lineWidth, float cutFromCenter, float cutFromCorner, int layer) {
 		doEvilMatrixPreparations(stack, box, false);
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-		Vertexer.vertexBoxLines(stack.last(), buffer, moveToZero(box), color, col2, alpha, 5, 0, 0);
+		Vertexer.vertexBoxLines(stack.last(), buffer, moveToZero(box), color, col2, alpha, lineWidth, cutFromCenter, cutFromCorner);
 //		stack.pushPose();
 //		stack.translate(0.5F, 0.5F, 0.5F);
 //		float scale = 1 / (float) Math.sqrt(3);
@@ -485,7 +498,7 @@ public class Renderer {
 				for (int i = 0; i < 6; i++) {
 					newFades[i] = Mth.clamp(lineFades[i] * getActiveInstance().tlineAlphaMultiplier, 0, 255F);
 				}
-				Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), tfinalLineCol, tfinalLineCol2, newFades, 2);
+				Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), tfinalLineCol, tfinalLineCol2, newFades, getActiveInstance().tlineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 2);
 			}
 			if (getActiveInstance().secondary) {
 				Color sfinalLineCol = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().soutlineRainbow ? getRainbowCol(0) : getActiveInstance().slineCol;
@@ -494,10 +507,11 @@ public class Renderer {
 				for (int i = 0; i < 6; i++) {
 					newFades[i] = Mth.clamp(lineFades[i] * getActiveInstance().slineAlphaMultiplier, 0, 255F);
 				}
-				Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), sfinalLineCol, sfinalLineCol2, newFades, 1);
+				Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), sfinalLineCol, sfinalLineCol2, newFades, getActiveInstance().slineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 1);
 			}
-			Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), finalLineCol, finalLineCol2, lineFades, 0);
+			Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), finalLineCol, finalLineCol2, lineFades, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 0);
 		}
+		profiler.pop();
 		// insert model data pulling render idk code here
 	}
 

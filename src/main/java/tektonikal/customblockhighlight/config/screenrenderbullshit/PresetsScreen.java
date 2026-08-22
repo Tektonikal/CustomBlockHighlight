@@ -16,6 +16,9 @@ import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Tweener;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class PresetsScreen extends Screen {
 	private final boolean firstTime;
@@ -92,22 +95,35 @@ public class PresetsScreen extends Screen {
 	}
 
 	public enum Preset {
-		VANILLA("vanilla", Component.literal("Give it to me plain!"), Blocks.COBBLESTONE, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.BLACK, Color.BLACK, new float[]{102, 102, 102, 102, 102, 102}, 2.5F, DepthTestMode.NORMAL, 0, 0)),
-		SWEAT("sweat", Component.literal("PvP sweat"), Blocks.SMITHING_TABLE, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.RED, Color.RED, new float[]{255, 255, 255, 255, 255, 255}, 2.5F, DepthTestMode.ALWAYS_PASS, 0.75F, 0)),
-		TRANS("trans", Component.literal("Beautiful women!"), Blocks.AMETHYST_BLOCK, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.PINK, Color.PINK, new float[]{102, 102, 102, 102, 102, 102}, 5F, DepthTestMode.NORMAL, 0, 0)),
-		CLASSIC("classic", Component.literal("Classic CBH experience"), Blocks.OAK_PLANKS, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.BLACK, Color.BLACK, new float[]{102, 102, 102, 102, 102, 102}, 2.5F, DepthTestMode.NORMAL, 0, 0)),
-		FANCY("fancy", Component.literal("Gimme all the bells 'n whistles!"), Blocks.BREWING_STAND, new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), Color.BLACK, Color.BLACK, new float[]{102, 102, 102, 102, 102, 102}, 2.5F, DepthTestMode.NORMAL, 0, 0));
+		VANILLA("vanilla", Component.literal("Give it to me plain!"), Blocks.COBBLESTONE),
+		SWEAT("sweat", Component.literal("PvP sweat"), Blocks.SMITHING_TABLE),
+		TRANS("trans", Component.literal("Beautiful women!"), Blocks.AMETHYST_BLOCK),
+		CLASSIC("classic", Component.literal("Classic CBH experience"), Blocks.OAK_PLANKS),
+		FANCY("fancy", Component.literal("Gimme all the bells 'n whistles!"), Blocks.BREWING_STAND);
 
 		public final String name;
 		public final Component meow;
 		public final Block block;
-		public final CBHLineRenderInfo renderInfo;
+		public final List<CBHLineRenderInfo> renderInfo = new ArrayList<>();
 
-		Preset(String name, Component meow, Block block, CBHLineRenderInfo renderInfo) {
+		Preset(String name, Component meow, Block block) {
 			this.name = name;
 			this.meow = meow;
 			this.block = block;
-			this.renderInfo = renderInfo;
+			BlockHighlightConfig cfg = ConfigManager.getPreset(this);
+			float[] arr = new float[6];
+			Arrays.fill(arr, cfg.lineAlpha);
+			renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), cfg.lineCol, cfg.lineCol2, arr, cfg.lineWidth, cfg.lineDepthTest, cfg.cutFromCenter, cfg.cutFromCorner));
+			if(cfg.secondary){
+				float[] arr2 = new float[6];
+				Arrays.fill(arr2, cfg.lineAlpha * cfg.slineAlphaMultiplier);
+				renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), cfg.slineCol, cfg.slineCol2, arr2, cfg.slineWidth, cfg.slineDepthTest, cfg.cutFromCenter, cfg.cutFromCorner));
+			}
+			if(cfg.tertiary){
+				float[] arr3 = new float[6];
+				Arrays.fill(arr3, cfg.lineAlpha * cfg.tlineAlphaMultiplier);
+				renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), cfg.tlineCol, cfg.tlineCol2, arr3, cfg.tlineWidth, cfg.tlineDepthTest, cfg.cutFromCenter, cfg.cutFromCorner));
+			}
 		}
 	}
 }
