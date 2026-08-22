@@ -91,6 +91,10 @@ public class BlockHighlightConfig {
  	public boolean updateWhenUnfocused = true;
  	public boolean allowEntities = true;
  	public boolean allowLiquids = true;
+	// todo: consider this
+//	public static class SomeCategory {
+//		 public boolean someThing;
+//	}
 
 	//@formatter:on
 	@Updatable
