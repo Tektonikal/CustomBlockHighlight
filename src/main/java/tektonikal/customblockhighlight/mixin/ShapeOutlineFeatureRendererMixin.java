@@ -17,11 +17,11 @@ import java.util.List;
 
 @Mixin(ShapeOutlineFeatureRenderer.class)
 public class ShapeOutlineFeatureRendererMixin {
-	@WrapMethod(method = "buildGroup")
-	void yeah(FeatureFrameContext context, List<ShapeOutlineFeatureRenderer.Submit> submits, Operation<Void> original) {
-		submits.forEach(submit -> {
+//	@WrapMethod(method = "buildGroup")
+//	void yeah(FeatureFrameContext context, List<ShapeOutlineFeatureRenderer.Submit> submits, Operation<Void> original) {
+//		submits.forEach(submit -> {
 			//TODO
 //			Renderer.drawEdgeOutline(submit.pose(), submit.shape(), Color.WHITE, Color.BLACK, 1, 0);
-		});
-	}
+//		});
+//	}
 }

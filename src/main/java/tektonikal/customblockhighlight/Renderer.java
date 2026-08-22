@@ -12,11 +12,13 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.StagedVertexBuffer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.LayeringTransform;
 import net.minecraft.client.renderer.rendertype.OutputTarget;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
@@ -41,6 +43,7 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import org.joml.*;
+import tektonikal.customblockhighlight.config.screenrenderbullshit.CBHLineRenderInfo;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Line;
 import tektonikal.customblockhighlight.util.OutlineType;
@@ -71,9 +74,12 @@ import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getAct
 //even if the lines are drawn correctly spaced out, the thicker line might be rotated differently, causing it to fully appear in front or z-fight. whateverrrrrr man
 //maybe it would be best into looking into creating a pipeline to draw lines that aren't in screenspace. idk
 //TODO: hotkey toggle?
+//TODO: inverse box animation
+//TODO: change lines to be calculated properly
+//TODO: tertiary color
+//TODO: flat outline
+//TODO: split out modes
 
-//NOW
-//TODO: presets
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
 	public static final Camera camera = mc.gameRenderer.mainCamera();
@@ -407,11 +413,11 @@ public class Renderer {
 			easeBox = targetBox;
 		}
 		Profiler.get().popPush("Custom block outline render");
-		renderOutline(c.poseStack(), isCrystalObstructed(), evilHitResult.getType() == HitResult.Type.MISS);
+		renderOutline(c.poseStack(), isCrystalObstructed(), evilHitResult.getType() == HitResult.Type.MISS, c.submitNodeCollector());
 		Profiler.get().pop();
 	}
 
-	private static void renderOutline(PoseStack stack, boolean isCrystalObstructed, boolean shouldFade) {
+	private static void renderOutline(PoseStack stack, boolean isCrystalObstructed, boolean shouldFade, SubmitNodeCollector submitNodeCollector) {
 		//render the fill first, we don't want it drawn over the outline
 		Profiler.get().push("updateProgresses");
 		updateProgresses(shouldFade);
@@ -423,7 +429,7 @@ public class Renderer {
 			//now the outline itself
 			if (getActiveInstance().outlineEnabled) {
 				Profiler.get().popPush("drawOutline");
-				drawOutline(stack, isCrystalObstructed);
+				drawOutline(stack, isCrystalObstructed, submitNodeCollector);
 			}
 		}
 		Profiler.get().pop();
@@ -455,7 +461,7 @@ public class Renderer {
 		Renderer.drawBoxFill(stack, easeBox.inflate(getActiveInstance().fillExpand + (b ? 0.001 : 0)), finalFillCol, finalFillCol2, sideFades);
 	}
 
-	private static void drawOutline(PoseStack stack, boolean isCrystalObstructed) {
+	private static void drawOutline(PoseStack stack, boolean isCrystalObstructed, SubmitNodeCollector submitNodeCollector) {
 		var profiler = Profiler.get();
 		profiler.push("pre");
 		if (mc.level == null) throw new IllegalStateException("level == null");
@@ -509,6 +515,7 @@ public class Renderer {
 				}
 				Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), sfinalLineCol, sfinalLineCol2, newFades, getActiveInstance().slineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 1);
 			}
+//			submitNodeCollector.submitCustom(SubmitRenderPhases.ALWAYS_ON_TOP, new CBHFeatureRenderer.Submit(Collections.singletonList(new CBHLineRenderInfo(shape, finalLineCol, finalLineCol2, lineFades, getActiveInstance().lineWidth, getActiveInstance().lineDepthTest, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner)), stack.last().copy()));
 			Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), finalLineCol, finalLineCol2, lineFades, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 0);
 		}
 		profiler.pop();
