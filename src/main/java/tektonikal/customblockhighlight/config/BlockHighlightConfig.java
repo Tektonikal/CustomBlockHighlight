@@ -80,6 +80,8 @@ public class BlockHighlightConfig {
     public float fadeOutSpeed = 15F;
  	public boolean scale = true;
  	public float scaleSpeed = 15F;
+	public boolean animateLineThickness = true;
+	public float lineThicknessAnimationSpeed = 15F;
     public float rainbowSpeed = 5;
     public int delay = 250;
     public float saturation = 1;
@@ -344,6 +346,18 @@ public class BlockHighlightConfig {
 			.stateManager(StateManager.createInstant(15F, () -> ACTIVE_INSTANCE.scaleSpeed, newVal -> ACTIVE_INSTANCE.scaleSpeed = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1fx", value))))
 			.build();
+	@Updatable
+	public static Option<Boolean> o_animateLineThickness = Option.<Boolean>createBuilder()
+			.name(Component.nullToEmpty("- Enabled"))
+			.stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.animateLineThickness, newVal -> ACTIVE_INSTANCE.animateLineThickness = newVal))
+			.controller(TickBoxControllerBuilder::create)
+			.addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
+			.build();
+	public static Option<Float> o_lineThicknessSpeed = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("- Speed"))
+			.stateManager(StateManager.createInstant(15F, () -> ACTIVE_INSTANCE.lineThicknessAnimationSpeed, newVal -> ACTIVE_INSTANCE.lineThicknessAnimationSpeed = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1fx", value))))
+			.build();
 	public static Option<Integer> o_delay = Option.<Integer>createBuilder()
 			.name(Component.nullToEmpty("- Delay"))
 			.stateManager(StateManager.createInstant(250, () -> ACTIVE_INSTANCE.delay, newVal -> ACTIVE_INSTANCE.delay = newVal))
@@ -487,6 +501,11 @@ public class BlockHighlightConfig {
 								.option(o_scaleSpeed)
 								.build())
 						.group(OptionGroup.createBuilder()
+								.name(Component.nullToEmpty("Line Thickness"))
+								.option(o_animateLineThickness)
+								.option(o_lineThicknessSpeed)
+								.build())
+						.group(OptionGroup.createBuilder()
 								.name(Component.nullToEmpty("Rainbow"))
 								.option(o_delay)
 								.option(o_rainbowSpeed)
@@ -599,6 +618,9 @@ public class BlockHighlightConfig {
 		}
 		if (option == o_scale) {
 			o_scaleSpeed.setAvailable(enabled);
+		}
+		if (option == o_animateLineThickness) {
+			o_lineThicknessSpeed.setAvailable(enabled);
 		}
 		if (option == o_crystalHelper) {
 			o_crystalHelperFillColor.setAvailable(enabled);

@@ -79,6 +79,9 @@ import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getAct
 //TODO: tertiary color
 //TODO: flat outline
 //TODO: split out modes
+//TODO: line thickness animations
+//TODO: line cut animations
+//TODO: ignore non-full blocks when doing stuff like leaves
 
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
@@ -138,6 +141,8 @@ public class Renderer {
 	public static Direction connected = null;
 	public static float edgeAlpha = 0;
 	public static float scaleProg = 0;
+	public static float lineProg = 0;
+	public static Quaternionf rotation = new Quaternionf();
 	public static HitResult evilHitResult;
 
 	public static final Matrix4f lastWorldSpaceMatrix = new Matrix4f();
@@ -239,7 +244,11 @@ public class Renderer {
 		doEvilMatrixPreparations(stack, box, false);
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-		Vertexer.vertexBoxLines(stack.last(), buffer, moveToZero(box), color, col2, alpha, lineWidth, cutFromCenter, cutFromCorner);
+//		stack.pushPose();
+//		Vec3 vec = moveToZero(box).getCenter();
+//		stack.rotateAround(rotation, (float) vec.x, (float) vec.y, (float) vec.z);
+		Vertexer.vertexBoxLines(stack.last(), buffer, moveToZero(box), color, col2, alpha, lineWidth * lineProg, cutFromCenter, cutFromCorner);
+//		stack.popPose();
 //		stack.pushPose();
 //		stack.translate(0.5F, 0.5F, 0.5F);
 //		float scale = 1 / (float) Math.sqrt(3);
@@ -260,7 +269,7 @@ public class Renderer {
 		stack.popPose();
 	}
 
-	public static void drawEdgeOutline(PoseStack matrices, VoxelShape shape, Color c1, Color c2, float alpha, int layer) {
+	public static void drawEdgeOutline(PoseStack matrices, VoxelShape shape, Color c1, Color c2, float alpha, float width, float cutFromCenter, float cutFromCorner, int layer) {
 		doEvilMatrixPreparations(matrices, shape.bounds(), true);
 		List<Line> newLines = new ArrayList<>();
 		StagedVertexBuffer.Draw draw = startDrawing(true);
@@ -290,11 +299,11 @@ public class Renderer {
 		shape = moveToZero(shape);
 		double normalised = shape.bounds().getMinPosition().distanceTo(shape.bounds().getMaxPosition());
 		for (Line finalLine : sortedLines) {
-			finalLine.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.minPos.x, finalLine.minPos.y, finalLine.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.maxPos.x, finalLine.maxPos.y, finalLine.maxPos.z)) / normalised)), Math.round(alpha), true, layer);
+			finalLine.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.minPos.x, finalLine.minPos.y, finalLine.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.maxPos.x, finalLine.maxPos.y, finalLine.maxPos.z)) / normalised)), Math.round(alpha), true, width, cutFromCenter, cutFromCorner);
 		}
 		toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
 		for (Line line : toRemove) {
-			line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / normalised)), Math.round(alpha), false, layer);
+			line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / normalised)), Math.round(alpha), false, width, cutFromCenter, cutFromCorner);
 		}
 		finishDraw(true, draw, layer);
 		matrices.popPose();
@@ -487,14 +496,14 @@ public class Renderer {
 				if (getActiveInstance().tertiary) {
 					Color tfinalLineCol = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().toutlineRainbow ? getRainbowCol(0) : getActiveInstance().tlineCol;
 					Color tfinalLineCol2 = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().toutlineRainbow ? getRainbowCol(getActiveInstance().delay) : getActiveInstance().tlineCol2;
-					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha * getActiveInstance().tlineAlphaMultiplier, 2);
+					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha * getActiveInstance().tlineAlphaMultiplier, getActiveInstance().tlineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 2);
 				}
 				if (getActiveInstance().secondary) {
 					Color sfinalLineCol = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().soutlineRainbow ? getRainbowCol(0) : getActiveInstance().slineCol;
 					Color sfinalLineCol2 = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().soutlineRainbow ? getRainbowCol(getActiveInstance().delay) : getActiveInstance().slineCol2;
-					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha * getActiveInstance().slineAlphaMultiplier, 1);
+					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha * getActiveInstance().slineAlphaMultiplier, getActiveInstance().slineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 1);
 				}
-				Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, 0);
+				Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 0);
 			}
 		} else {
 			if (getActiveInstance().tertiary) {
@@ -515,14 +524,15 @@ public class Renderer {
 				}
 				Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), sfinalLineCol, sfinalLineCol2, newFades, getActiveInstance().slineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 1);
 			}
-			doEvilMatrixPreparations(stack, easeBox.inflate(getActiveInstance().lineExpand), false);
-			submitNodeCollector.submitCustom(SubmitRenderPhases.ALWAYS_ON_TOP, new CBHFeatureRenderer.Submit(CBHLineRenderInfo.of(shape, finalLineCol, finalLineCol2, lineFades, getActiveInstance()), stack.last()));
+//			doEvilMatrixPreparations(stack, easeBox.inflate(getActiveInstance().lineExpand), false);
+//			submitNodeCollector.submitCustom(SubmitRenderPhases.ALWAYS_ON_TOP, new CBHFeatureRenderer.Submit(CBHLineRenderInfo.of(shape, finalLineCol, finalLineCol2, lineFades, getActiveInstance()), stack.last()));
+			Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), finalLineCol, finalLineCol2, lineFades, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 0);
 		}
 		profiler.pop();
 		// insert model data pulling render idk code here
 	}
 
-	private static void updateProgresses(boolean shouldFadeOut) {
+	private static void updateProgresses(boolean shouldExit) {
 		if (evilHitResult == null || mc.level == null) return;
 		//TODO: clean this up later
 		if (evilHitResult.getType() == HitResult.Type.ENTITY) {
@@ -533,7 +543,7 @@ public class Renderer {
 				}
 				edgeAlpha = getActiveInstance().fadeIn ? (float) ease(edgeAlpha, getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
 			} else {
-				shouldFadeOut = true;
+				shouldExit = true;
 				for (Direction dir : Direction.values()) {
 					sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 					lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
@@ -541,7 +551,7 @@ public class Renderer {
 				edgeAlpha = getActiveInstance().fadeOut ? (float) ease(edgeAlpha, 0, getActiveInstance().fadeOutSpeed) : 0;
 			}
 		} else if (evilHitResult instanceof BlockHitResult block) {
-			if ((mc.level.isEmptyBlock(block.getBlockPos()) || shouldFadeOut)) {
+			if ((mc.level.isEmptyBlock(block.getBlockPos()) || shouldExit)) {
 				for (Direction dir : Direction.values()) {
 					sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 					lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
@@ -572,7 +582,11 @@ public class Renderer {
 			}
 		}
 		//I didn't add in/out because it would BREAKKK. TODO THIS
-		scaleProg = getActiveInstance().scale ? (float) ease(scaleProg, shouldFadeOut ? 0 : 1, getActiveInstance().scaleSpeed) : 1;
+		scaleProg = getActiveInstance().scale ? (float) ease(scaleProg, shouldExit ? 0 : 1, getActiveInstance().scaleSpeed) : 1;
+		lineProg = getActiveInstance().animateLineThickness ? (float) ease(lineProg, shouldExit ? 0 : 1, getActiveInstance().lineThicknessAnimationSpeed) : 1;
+		if (evilHitResult instanceof BlockHitResult block) {
+			rotation.nlerp(block.getDirection().getOpposite().getRotation(), 0.05F);
+		}
 	}
 
 	public static HitResult pick(Entity e, final double range, final float a, final boolean withLiquids) {
