@@ -75,11 +75,8 @@ import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getAct
 //maybe it would be best into looking into creating a pipeline to draw lines that aren't in screenspace. idk
 //TODO: hotkey toggle?
 //TODO: inverse box animation
-//TODO: change lines to be calculated properly
-//TODO: tertiary color
 //TODO: flat outline
 //TODO: split out modes
-//TODO: line thickness animations
 //TODO: line cut animations
 //TODO: ignore non-full blocks when doing stuff like leaves
 
@@ -467,6 +464,7 @@ public class Renderer {
 		Color finalFillCol = isCrystalObstructed ? getActiveInstance().crystalHelperFillColor : getActiveInstance().fillRainbow ? getRainbowCol(0) : getActiveInstance().fillCol;
 		Color finalFillCol2 = isCrystalObstructed ? getActiveInstance().crystalHelperFillColor : getActiveInstance().fillRainbow ? getRainbowCol(getActiveInstance().delay) : getActiveInstance().fillCol2;
 		boolean b = getActiveInstance().fillDepthTest != DepthTestMode.ALWAYS_PASS && getActiveInstance().fillExpand == 0;
+		//TODO: instead of expanding by fixed amount, do it based on a percentage of the box size
 		Renderer.drawBoxFill(stack, easeBox.inflate(getActiveInstance().fillExpand + (b ? 0.001 : 0)), finalFillCol, finalFillCol2, sideFades);
 	}
 
@@ -529,7 +527,7 @@ public class Renderer {
 			Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), finalLineCol, finalLineCol2, lineFades, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, 0);
 		}
 		profiler.pop();
-		// insert model data pulling render idk code here
+		//TODO: insert model data pulling render idk code here
 	}
 
 	private static void updateProgresses(boolean shouldExit) {

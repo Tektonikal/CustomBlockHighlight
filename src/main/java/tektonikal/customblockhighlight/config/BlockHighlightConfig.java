@@ -43,8 +43,11 @@ public class BlockHighlightConfig {
         public float lineWidth = 2.5F;
         public float lineExpand = 0;
         public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
+
 	 	public float cutFromCenter = 0.25F;
 	 	public float cutFromCorner = 0;
+		public float innerThicknessMult = 1;
+		public float outerThicknessMult = 1;
 
  	public boolean secondary = true;
 	 	public Color slineCol = Color.BLACK;
@@ -165,6 +168,16 @@ public class BlockHighlightConfig {
 			.name(Component.nullToEmpty("- Cut From Center"))
 			.stateManager(StateManager.createInstant(0.25F, () -> ACTIVE_INSTANCE.cutFromCenter, newVal -> ACTIVE_INSTANCE.cutFromCenter = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_outerThicknessMult = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("  - Outer Thickness Multiplier"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.outerThicknessMult, newVal -> ACTIVE_INSTANCE.outerThicknessMult = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_innerThicknessMult = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("  - Inner Thickness Multiplier"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.innerThicknessMult, newVal -> ACTIVE_INSTANCE.innerThicknessMult = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	@Updatable
 	public static Option<Boolean> o_secondary = Option.<Boolean>createBuilder()
@@ -440,8 +453,13 @@ public class BlockHighlightConfig {
 								.option(o_lineDepthTest)
 								.option(o_lineExpand)
 								.option(o_lineWidth)
+								.build())
+						.group(OptionGroup.createBuilder()
+								.name(Component.nullToEmpty("NAME ME LATER"))
 								.option(o_cutFromCorner)
+								.option(o_outerThicknessMult)
 								.option(o_cutFromCenter)
+								.option(o_innerThicknessMult)
 								.build())
 						.group(OptionGroup.createBuilder()
 								.name(Component.nullToEmpty("Secondary Layer"))
@@ -586,6 +604,8 @@ public class BlockHighlightConfig {
 			o_lineWidth.setAvailable(enabled);
 			o_cutFromCenter.setAvailable(enabled);
 			o_cutFromCorner.setAvailable(enabled);
+			o_innerThicknessMult.setAvailable(enabled);
+			o_outerThicknessMult.setAvailable(enabled);
 
 			o_secondary.setAvailable(enabled);
 			o_tertiary.setAvailable(enabled);

@@ -9,6 +9,8 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import tektonikal.customblockhighlight.config.BlockHighlightConfig;
+import tektonikal.customblockhighlight.config.ConfigManager;
 
 import java.awt.*;
 
@@ -27,10 +29,10 @@ public class Vertexer {
 		for(int i = 0; i < vecs.length; i++){
 			cols[i] = getLerpedColor(c1, c2, (float) (minPos.distanceTo(vecs[i]) / normaliser));
 		}
-		builder.addVertex(pose, vecs[0].toVector3f()).setColor(cols[3].getRed(), cols[3].getGreen(), cols[3].getBlue(), alpha);
-		builder.addVertex(pose, vecs[1].toVector3f()).setColor(cols[2].getRed(), cols[2].getGreen(), cols[2].getBlue(), alpha);
-		builder.addVertex(pose, vecs[2].toVector3f()).setColor(cols[1].getRed(), cols[1].getGreen(), cols[1].getBlue(), alpha);
-		builder.addVertex(pose, vecs[3].toVector3f()).setColor(cols[0].getRed(), cols[0].getGreen(), cols[0].getBlue(), alpha);
+		builder.addVertex(pose, vecs[3].toVector3f()).setColor(cols[3].getRed(), cols[3].getGreen(), cols[3].getBlue(), alpha);
+		builder.addVertex(pose, vecs[2].toVector3f()).setColor(cols[2].getRed(), cols[2].getGreen(), cols[2].getBlue(), alpha);
+		builder.addVertex(pose, vecs[1].toVector3f()).setColor(cols[1].getRed(), cols[1].getGreen(), cols[1].getBlue(), alpha);
+		builder.addVertex(pose, vecs[0].toVector3f()).setColor(cols[0].getRed(), cols[0].getGreen(), cols[0].getBlue(), alpha);
 	}
 
 	public static Color getLerpedColor(Color c1, Color c2, float percent) {
@@ -68,23 +70,23 @@ public class Vertexer {
          */
 		//i don't wanna bother checking for <0.5 alpha here, surely it makes no difference?
 		//down
-		vertexLine(pose, builder, x1, y1, z1, x2, y1, z1, x1y1z1, x2y1z1, Math.round(Math.max(alpha[0], alpha[2])), 1, 0, 0, width, cutFromCenter, cutFromCorner);
-		vertexLine(pose, builder, x1, y1, z1, x1, y1, z2, x1y1z1, x1y1z2, Math.round(Math.max(alpha[4], alpha[0])), 0, 0, 1, width, cutFromCenter, cutFromCorner);
-		vertexLine(pose, builder, x2, y1, z1, x2, y1, z2, x2y1z1, x2y1z2, Math.round(Math.max(alpha[5], alpha[0])), 0, 0, 1, width, cutFromCenter, cutFromCorner);
-		vertexLine(pose, builder, x1, y1, z2, x2, y1, z2, x1y1z2, x2y1z2, Math.round(Math.max(alpha[3], alpha[0])), 1, 0, 0, width, cutFromCenter, cutFromCorner);
+		vertexLine(pose, builder, x1, y1, z1, x2, y1, z1, x1y1z1, x2y1z1, Math.round(Math.max(alpha[0], alpha[2])), 1, 0, 0, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
+		vertexLine(pose, builder, x1, y1, z1, x1, y1, z2, x1y1z1, x1y1z2, Math.round(Math.max(alpha[4], alpha[0])), 0, 0, 1, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
+		vertexLine(pose, builder, x2, y1, z1, x2, y1, z2, x2y1z1, x2y1z2, Math.round(Math.max(alpha[5], alpha[0])), 0, 0, 1, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
+		vertexLine(pose, builder, x1, y1, z2, x2, y1, z2, x1y1z2, x2y1z2, Math.round(Math.max(alpha[3], alpha[0])), 1, 0, 0, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
 		//west
-		vertexLine(pose, builder, x1, y1, z2, x1, y2, z2, x1y1z2, x1y2z2, Math.round(Math.max(alpha[3], alpha[4])), 0, 1, 0, width, cutFromCenter, cutFromCorner);
-		vertexLine(pose, builder, x1, y1, z1, x1, y2, z1, x1y1z1, x1y2z1, Math.round(Math.max(alpha[2], alpha[4])), 0, 1, 0, width, cutFromCenter, cutFromCorner);
+		vertexLine(pose, builder, x1, y1, z2, x1, y2, z2, x1y1z2, x1y2z2, Math.round(Math.max(alpha[3], alpha[4])), 0, 1, 0, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
+		vertexLine(pose, builder, x1, y1, z1, x1, y2, z1, x1y1z1, x1y2z1, Math.round(Math.max(alpha[2], alpha[4])), 0, 1, 0, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
 		//east
-		vertexLine(pose, builder, x2, y1, z2, x2, y2, z2, x2y1z2, x2y2z2, Math.round(Math.max(alpha[3], alpha[5])), 0, -1, 0, width, cutFromCenter, cutFromCorner);
-		vertexLine(pose, builder, x2, y1, z1, x2, y2, z1, x2y1z1, x2y2z1, Math.round(Math.max(alpha[2], alpha[5])), 0, 1, 0, width, cutFromCenter, cutFromCorner);
+		vertexLine(pose, builder, x2, y1, z2, x2, y2, z2, x2y1z2, x2y2z2, Math.round(Math.max(alpha[3], alpha[5])), 0, -1, 0, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
+		vertexLine(pose, builder, x2, y1, z1, x2, y2, z1, x2y1z1, x2y2z1, Math.round(Math.max(alpha[2], alpha[5])), 0, 1, 0, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
 		//north and south are skipped, as they are not needed
 
 		//up
-		vertexLine(pose, builder, x1, y2, z1, x2, y2, z1, x1y2z1, x2y2z1, Math.round(Math.max(alpha[2], alpha[1])), 1, 0, 0, width, cutFromCenter, cutFromCorner);
-		vertexLine(pose, builder, x1, y2, z1, x1, y2, z2, x1y2z1, x1y2z2, Math.round(Math.max(alpha[4], alpha[1])), 0, 0, 1, width, cutFromCenter, cutFromCorner);
-		vertexLine(pose, builder, x2, y2, z1, x2, y2, z2, x2y2z1, x2y2z2, Math.round(Math.max(alpha[5], alpha[1])), 0, 0, 1, width, cutFromCenter, cutFromCorner);
-		vertexLine(pose, builder, x1, y2, z2, x2, y2, z2, x1y2z2, x2y2z2, Math.round(Math.max(alpha[3], alpha[1])), 1, 0, 0, width, cutFromCenter, cutFromCorner);
+		vertexLine(pose, builder, x1, y2, z1, x2, y2, z1, x1y2z1, x2y2z1, Math.round(Math.max(alpha[2], alpha[1])), 1, 0, 0, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
+		vertexLine(pose, builder, x1, y2, z1, x1, y2, z2, x1y2z1, x1y2z2, Math.round(Math.max(alpha[4], alpha[1])), 0, 0, 1, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
+		vertexLine(pose, builder, x2, y2, z1, x2, y2, z2, x2y2z1, x2y2z2, Math.round(Math.max(alpha[5], alpha[1])), 0, 0, 1, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
+		vertexLine(pose, builder, x1, y2, z2, x2, y2, z2, x1y2z2, x2y2z2, Math.round(Math.max(alpha[3], alpha[1])), 1, 0, 0, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
 	}
 
 	public static Vec3 screenSpaceToWorldSpace(double x, double y, double d) {
@@ -137,15 +139,7 @@ public class Vertexer {
 				(displayHeight - target.y) / Renderer.mc.getWindow().getGuiScale(), target.z);
 	}
 
-	private static int interp(int in1, int in2, int mul) {
-		if (in1 != in2) {
-			int diff = ((Math.max(in1, in2) - Math.min(in1, in2)) / 3);
-			return in1 > in2 ? in2 + (diff * (mul == 2 ? 1 : 2)) : in1 + diff * mul;
-		}
-		return in1;
-	}
-
-	public static void vertexLine(PoseStack.Pose pose, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, float nx, float ny, float nz, float width, float cutFromCenter, float cutFromCorner) {
+	public static void vertexLine(PoseStack.Pose pose, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, float nx, float ny, float nz, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult) {
 		if (cutFromCenter == 0 && cutFromCorner == 0) {
 			builder.addVertex(pose, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width);
 			builder.addVertex(pose, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width);
@@ -166,8 +160,8 @@ public class Vertexer {
 		v2.lerp(v1, cutFromCorner / 2, maxOuter);
 		if (cutFromCenter == 0) {
 			//draw only one line
-			builder.addVertex(pose, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width);
-			builder.addVertex(pose, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width);
+			builder.addVertex(pose, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width * outerMult);
+			builder.addVertex(pose, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width * outerMult);
 		} else {
 			Vector3f center = new Vector3f();
 			v1.lerp(v2, 0.5F, center);
@@ -180,11 +174,11 @@ public class Vertexer {
 			Color minInnerCol = new Color((int) Mth.lerp(yeah, cols.getRed(), col2.getRed()), (int) Mth.lerp(yeah, cols.getGreen(), col2.getGreen()), (int) Mth.lerp(yeah, cols.getBlue(), col2.getBlue()));
 			Color maxInnerCol = new Color((int) Mth.lerp(1 - yeah, cols.getRed(), col2.getRed()), (int) Mth.lerp(1 - yeah, cols.getGreen(), col2.getGreen()), (int) Mth.lerp(1 - yeah, cols.getBlue(), col2.getBlue()));
 
-			builder.addVertex(pose, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width);
-			builder.addVertex(pose, minInner.x, minInner.y, minInner.z).setColor(minInnerCol.getRed(), minInnerCol.getGreen(), minInnerCol.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width);
+			builder.addVertex(pose, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width * outerMult);
+			builder.addVertex(pose, minInner.x, minInner.y, minInner.z).setColor(minInnerCol.getRed(), minInnerCol.getGreen(), minInnerCol.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width * innerMult);
 
-			builder.addVertex(pose, maxInner.x, maxInner.y, maxInner.z).setColor(maxInnerCol.getRed(), maxInnerCol.getGreen(), maxInnerCol.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width);
-			builder.addVertex(pose, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width);
+			builder.addVertex(pose, maxInner.x, maxInner.y, maxInner.z).setColor(maxInnerCol.getRed(), maxInnerCol.getGreen(), maxInnerCol.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width * innerMult);
+			builder.addVertex(pose, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width * outerMult);
 		}
 	}
 
