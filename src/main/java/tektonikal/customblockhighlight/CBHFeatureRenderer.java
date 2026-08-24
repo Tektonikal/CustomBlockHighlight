@@ -18,8 +18,8 @@ public class CBHFeatureRenderer extends RenderTypeFeatureRenderer<CBHFeatureRend
 	@Override
 	protected void buildGroup(FeatureFrameContext context, List<Submit> submits) {
 		for (Submit submit : submits) {
-			VertexConsumer blegh = this.getVertexBuilder(RenderTypes.debugQuads());
-			Vertexer.vertexBoxQuads(submit.pose, blegh, submit.info.getFirst().shape().bounds().inflate(0.0001), Color.BLUE, Color.RED, new float[]{64, 64, 64, 64, 64, 64});
+//			VertexConsumer blegh = this.getVertexBuilder(RenderTypes.debugQuads());
+//			Vertexer.vertexBoxQuads(submit.pose, blegh, submit.info.getFirst().shape().bounds().inflate(0.0001), Color.BLUE, Color.RED, new float[]{64, 64, 64, 64, 64, 64});
 			submit.pose.pose().scaleLocal(256.0F / 255.0F);
 			for (CBHLineRenderInfo info : submit.info.reversed()) {
 				VertexConsumer builder = switch (info.mode()) {

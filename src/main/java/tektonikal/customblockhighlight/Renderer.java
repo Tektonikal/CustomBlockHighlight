@@ -12,7 +12,6 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -43,7 +42,6 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import org.joml.*;
-import tektonikal.customblockhighlight.config.screenrenderbullshit.CBHLineRenderInfo;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Line;
 import tektonikal.customblockhighlight.util.OutlineType;
@@ -356,14 +354,14 @@ public class Renderer {
         As of now, this method means that even when rendering the box for a block with multiple parts,
         it will still cull faces relative to the selected block, and not the entire rendered selection
          */
-		Direction[] dirs = new Direction[6];
-		if (isBlockOccupied(pos.above())) dirs[0] = Direction.UP;
-		if (isBlockOccupied(pos.below())) dirs[1] = Direction.DOWN;
-		if (isBlockOccupied(pos.north())) dirs[2] = Direction.NORTH;
-		if (isBlockOccupied(pos.east())) dirs[3] = Direction.EAST;
-		if (isBlockOccupied(pos.south())) dirs[4] = Direction.SOUTH;
-		if (isBlockOccupied(pos.west())) dirs[5] = Direction.WEST;
-		return dirs;
+		EnumSet<Direction> set = EnumSet.allOf(Direction.class);
+		if (!isBlockOccupied(pos.above())) set.remove(Direction.UP);
+		if (!isBlockOccupied(pos.below())) set.remove(Direction.DOWN);
+		if (!isBlockOccupied(pos.north())) set.remove(Direction.NORTH);
+		if (!isBlockOccupied(pos.east())) set.remove(Direction.EAST);
+		if (!isBlockOccupied(pos.south())) set.remove(Direction.SOUTH);
+		if (!isBlockOccupied(pos.west())) set.remove(Direction.WEST);
+		return set.toArray(Direction[]::new);
 	}
 
 	public static Color getLerpedColor(Color c1, Color c2, float percent) {
@@ -533,8 +531,8 @@ public class Renderer {
 
 	private static void updateProgresses(boolean shouldExit) {
 		if (evilHitResult == null || mc.level == null) return;
-		//TODO: clean this up later
-		if (evilHitResult.getType() == HitResult.Type.ENTITY) {
+
+		if (evilHitResult instanceof EntityHitResult) {
 			if (getActiveInstance().allowEntities) {
 				for (Direction dir : Direction.values()) {
 					sideFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(sideFades[dir.ordinal()], getActiveInstance().fillOpacity, getActiveInstance().fadeInSpeed) : getActiveInstance().fillOpacity;
@@ -550,7 +548,7 @@ public class Renderer {
 				edgeAlpha = getActiveInstance().fadeOut ? (float) ease(edgeAlpha, 0, getActiveInstance().fadeOutSpeed) : 0;
 			}
 		} else if (evilHitResult instanceof BlockHitResult block) {
-			if ((mc.level.isEmptyBlock(block.getBlockPos()) || shouldExit)) {
+			if (mc.level.isEmptyBlock(block.getBlockPos()) || shouldExit) {
 				for (Direction dir : Direction.values()) {
 					sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 					lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
@@ -559,24 +557,16 @@ public class Renderer {
 			} else {
 				edgeAlpha = getActiveInstance().fadeIn ? (float) ease(edgeAlpha, getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
 				for (Direction dir : getSides(getActiveInstance().fillType, block.getBlockPos())) {
-					if (dir != null) {
-						sideFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(sideFades[dir.ordinal()], getActiveInstance().fillOpacity, getActiveInstance().fadeInSpeed) : getActiveInstance().fillOpacity;
-					}
+					sideFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(sideFades[dir.ordinal()], getActiveInstance().fillOpacity, getActiveInstance().fadeInSpeed) : getActiveInstance().fillOpacity;
 				}
 				for (Direction dir : invert(getSides(getActiveInstance().fillType, block.getBlockPos()))) {
-					if (dir != null) {
-						sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
-					}
+					sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 				}
 				for (Direction dir : getSides(getActiveInstance().outlineType, block.getBlockPos())) {
-					if (dir != null) {
-						lineFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(lineFades[dir.ordinal()], getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
-					}
+					lineFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(lineFades[dir.ordinal()], getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
 				}
 				for (Direction dir : invert(getSides(getActiveInstance().outlineType, block.getBlockPos()))) {
-					if (dir != null) {
-						lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
-					}
+					lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 				}
 			}
 		}
