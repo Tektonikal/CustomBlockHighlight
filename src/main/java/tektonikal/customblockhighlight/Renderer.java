@@ -315,21 +315,15 @@ public class Renderer {
 		return shape.move(minVec.reverse());
 	}
 
-	private static Direction[] invert(Direction[] invertDirs) {
-		EnumSet<Direction> dirs = EnumSet.allOf(Direction.class);
-		for (Direction d : invertDirs) {
-			dirs.remove(d);
-		}
-		return dirs.toArray(Direction[]::new);
-	}
-
-	private static Direction[] getSides(OutlineType type, BlockPos pos) {
+    //TODO: allow combining / excluding side sets?
+    //TODO: make this adjust based on rotation
+	private static EnumSet<Direction> getSides(OutlineType type, BlockPos pos) {
 		return switch (type) {
 			case LOOKAT ->
-					(evilHitResult instanceof BlockHitResult block) ? new Direction[]{block.getDirection()} : Direction.values();
-			case AIR_EXPOSED -> invert(getConcealedFaces(pos));
+					(evilHitResult instanceof BlockHitResult block) ? EnumSet.of(block.getDirection()) : EnumSet.allOf(Direction.class);
+			case AIR_EXPOSED -> EnumSet.complementOf(getConcealedFaces(pos));
 			case CONCEALED -> getConcealedFaces(pos);
-			default -> Direction.values();
+			default -> EnumSet.allOf(Direction.class);
 		};
 	}
 
@@ -348,7 +342,7 @@ public class Renderer {
 		return !mc.level.isEmptyBlock(pos);
 	}
 
-	public static Direction[] getConcealedFaces(BlockPos pos) {
+	public static EnumSet<Direction> getConcealedFaces(BlockPos pos) {
         /*
         I don't know if I should keep the original behavior for this
         As of now, this method means that even when rendering the box for a block with multiple parts,
@@ -361,7 +355,7 @@ public class Renderer {
 		if (!isBlockOccupied(pos.east())) set.remove(Direction.EAST);
 		if (!isBlockOccupied(pos.south())) set.remove(Direction.SOUTH);
 		if (!isBlockOccupied(pos.west())) set.remove(Direction.WEST);
-		return set.toArray(Direction[]::new);
+		return set;
 	}
 
 	public static Color getLerpedColor(Color c1, Color c2, float percent) {
@@ -541,31 +535,23 @@ public class Renderer {
 				edgeAlpha = getActiveInstance().fadeIn ? (float) ease(edgeAlpha, getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
 			} else {
 				shouldExit = true;
-				for (Direction dir : Direction.values()) {
-					sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
-					lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
-				}
-				edgeAlpha = getActiveInstance().fadeOut ? (float) ease(edgeAlpha, 0, getActiveInstance().fadeOutSpeed) : 0;
-			}
+                exitFades();
+            }
 		} else if (evilHitResult instanceof BlockHitResult block) {
 			if (mc.level.isEmptyBlock(block.getBlockPos()) || shouldExit) {
-				for (Direction dir : Direction.values()) {
-					sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
-					lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
-				}
-				edgeAlpha = getActiveInstance().fadeOut ? (float) ease(edgeAlpha, 0, getActiveInstance().fadeOutSpeed) : 0;
-			} else {
+                exitFades();
+            } else {
 				edgeAlpha = getActiveInstance().fadeIn ? (float) ease(edgeAlpha, getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
 				for (Direction dir : getSides(getActiveInstance().fillType, block.getBlockPos())) {
 					sideFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(sideFades[dir.ordinal()], getActiveInstance().fillOpacity, getActiveInstance().fadeInSpeed) : getActiveInstance().fillOpacity;
 				}
-				for (Direction dir : invert(getSides(getActiveInstance().fillType, block.getBlockPos()))) {
+				for (Direction dir : EnumSet.complementOf(getSides(getActiveInstance().fillType, block.getBlockPos()))) {
 					sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 				}
 				for (Direction dir : getSides(getActiveInstance().outlineType, block.getBlockPos())) {
 					lineFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(lineFades[dir.ordinal()], getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
 				}
-				for (Direction dir : invert(getSides(getActiveInstance().outlineType, block.getBlockPos()))) {
+				for (Direction dir : EnumSet.complementOf(getSides(getActiveInstance().outlineType, block.getBlockPos()))) {
 					lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 				}
 			}
@@ -599,7 +585,15 @@ public class Renderer {
 		}
 	}
 
-	private static Direction lastHorizontalDirection = Direction.NORTH;
+    public static void exitFades() {
+        for (Direction dir : Direction.values()) {
+            sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
+            lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
+        }
+        edgeAlpha = getActiveInstance().fadeOut ? (float) ease(edgeAlpha, 0, getActiveInstance().fadeOutSpeed) : 0;
+    }
+
+    private static Direction lastHorizontalDirection = Direction.NORTH;
 	private static Direction previousDirection = Direction.UP;
 
 
@@ -610,7 +604,7 @@ public class Renderer {
 		assert mc.level != null;
 		return mc.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, withLiquids ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.NONE, e));
 	}
-
+//TODO: make this better
 	private static Direction joinConnected(BlockState state, BlockPos pos) {
 		if (mc.level == null) return null;
 
