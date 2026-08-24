@@ -24,6 +24,7 @@ public class BlockHighlightConfig {
 	public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val -> Component.nullToEmpty(String.format("%.2f", val).replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
 	@SuppressWarnings("UnusedAssignment") // required for clinit stuff
 	public static BlockHighlightConfig ACTIVE_INSTANCE = new BlockHighlightConfig();
+
 	public static BlockHighlightConfig getActiveInstance() {
 		return ACTIVE_INSTANCE;
 	}
@@ -56,6 +57,10 @@ public class BlockHighlightConfig {
 	 	public boolean soutlineRainbow = false;
 	 	public float slineWidth = 5F;
 	 	public DepthTestMode slineDepthTest = DepthTestMode.ALWAYS_PASS;
+		public float scutFromCenter = 0.25F;
+		public float scutFromCorner = 0;
+		public float sinnerThicknessMult = 1;
+		public float souterThicknessMult = 1;
 
  	public boolean tertiary = false;
 	 	public Color tlineCol = Color.BLACK;
@@ -64,6 +69,10 @@ public class BlockHighlightConfig {
 	 	public boolean toutlineRainbow = false;
 	 	public float tlineWidth = 3;
 	 	public DepthTestMode tlineDepthTest = DepthTestMode.ALWAYS_PASS;
+		public float tcutFromCenter = 0.25F;
+		public float tcutFromCorner = 0;
+		public float tinnerThicknessMult = 1;
+		public float touterThicknessMult = 1;
 
     //fill stuffs
     public boolean fillEnabled = true;
@@ -219,6 +228,26 @@ public class BlockHighlightConfig {
 			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1f", value) + " px")))
 			.stateManager(StateManager.createInstant(5F, () -> ACTIVE_INSTANCE.slineWidth, newVal -> ACTIVE_INSTANCE.slineWidth = newVal))
 			.build();
+	public static Option<Float> o_scutFromCorner = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("- Cut From Corner"))
+			.stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.scutFromCorner, newVal -> ACTIVE_INSTANCE.scutFromCorner = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_scutFromCenter = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("- Cut From Center"))
+			.stateManager(StateManager.createInstant(0.25F, () -> ACTIVE_INSTANCE.scutFromCenter, newVal -> ACTIVE_INSTANCE.scutFromCenter = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_souterThicknessMult = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("  - Outer Thickness Multiplier"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.souterThicknessMult, newVal -> ACTIVE_INSTANCE.souterThicknessMult = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_sinnerThicknessMult = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("  - Inner Thickness Multiplier"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.sinnerThicknessMult, newVal -> ACTIVE_INSTANCE.sinnerThicknessMult = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
 	@Updatable
 	public static Option<Boolean> o_tertiary = Option.<Boolean>createBuilder()
 			.name(Component.nullToEmpty("Enabled"))
@@ -258,6 +287,26 @@ public class BlockHighlightConfig {
 			.name(Component.nullToEmpty("- Line Width"))
 			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.literal(String.format("%.1f", value) + " px")))
 			.stateManager(StateManager.createInstant(3F, () -> ACTIVE_INSTANCE.tlineWidth, newVal -> ACTIVE_INSTANCE.tlineWidth = newVal))
+			.build();
+	public static Option<Float> o_tcutFromCorner = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("- Cut From Corner"))
+			.stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.tcutFromCorner, newVal -> ACTIVE_INSTANCE.tcutFromCorner = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_tcutFromCenter = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("- Cut From Center"))
+			.stateManager(StateManager.createInstant(0.25F, () -> ACTIVE_INSTANCE.tcutFromCenter, newVal -> ACTIVE_INSTANCE.tcutFromCenter = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_touterThicknessMult = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("  - Outer Thickness Multiplier"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.touterThicknessMult, newVal -> ACTIVE_INSTANCE.touterThicknessMult = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_tinnerThicknessMult = Option.<Float>createBuilder()
+			.name(Component.nullToEmpty("  - Inner Thickness Multiplier"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.tinnerThicknessMult, newVal -> ACTIVE_INSTANCE.tinnerThicknessMult = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.literal(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	@Updatable
 	public static Option<Boolean> o_fillEnabled = Option.<Boolean>createBuilder()
@@ -470,6 +519,10 @@ public class BlockHighlightConfig {
 								.option(o_soutlineRainbow)
 								.option(o_slineDepthTest)
 								.option(o_slineWidth)
+								.option(o_scutFromCorner)
+								.option(o_souterThicknessMult)
+								.option(o_scutFromCenter)
+								.option(o_sinnerThicknessMult)
 								.build())
 						.group(OptionGroup.createBuilder()
 								.name(Component.nullToEmpty("Tertiary Layer"))
@@ -480,6 +533,10 @@ public class BlockHighlightConfig {
 								.option(o_toutlineRainbow)
 								.option(o_tlineDepthTest)
 								.option(o_tlineWidth)
+								.option(o_tcutFromCorner)
+								.option(o_touterThicknessMult)
+								.option(o_tcutFromCenter)
+								.option(o_tinnerThicknessMult)
 								.build())
 						.build())
 				.category(ConfigCategory.createBuilder()
@@ -619,10 +676,10 @@ public class BlockHighlightConfig {
 			o_fillDepthTest.setAvailable(enabled);
 			o_fillExpand.setAvailable(enabled);
 		}
-		if(option == o_fadeIn){
+		if (option == o_fadeIn) {
 			o_fadeInSpeed.setAvailable(enabled);
 		}
-		if(option == o_fadeOut){
+		if (option == o_fadeOut) {
 			o_fadeOutSpeed.setAvailable(enabled);
 		}
 		if (option == o_outlineRainbow) {
@@ -653,6 +710,8 @@ public class BlockHighlightConfig {
 			o_soutlineRainbow.setAvailable(enabled);
 			o_slineDepthTest.setAvailable(enabled);
 			o_slineWidth.setAvailable(enabled);
+			o_scutFromCenter.setAvailable(enabled);
+			o_scutFromCorner.setAvailable(enabled);
 		}
 		if (option == o_tertiary) {
 			o_tlineCol.setAvailable(enabled);
@@ -661,6 +720,8 @@ public class BlockHighlightConfig {
 			o_toutlineRainbow.setAvailable(enabled);
 			o_tlineDepthTest.setAvailable(enabled);
 			o_tlineWidth.setAvailable(enabled);
+			o_tcutFromCenter.setAvailable(enabled);
+			o_tcutFromCorner.setAvailable(enabled);
 		}
 	}
 

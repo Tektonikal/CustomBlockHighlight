@@ -43,17 +43,17 @@ public class Line {
 		this.maxPos = new Vec3(ease(this.maxPos.x, maxPosTo.x, getActiveInstance().easeSpeed), ease(this.maxPos.y, maxPosTo.y, getActiveInstance().easeSpeed), ease(this.maxPos.z, maxPosTo.z, getActiveInstance().easeSpeed));
 	}
 
-	public void updateAndRender(PoseStack ms, VertexConsumer buf, Color c1, Color c2, int alpha, boolean b, float width, float cutFromCenter, float cutFromCorner) {
+	public void updateAndRender(PoseStack ms, VertexConsumer buf, Color c1, Color c2, int alpha, boolean b, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult) {
 		update(b);
-		render(ms, buf, c1, c2, alpha, width, cutFromCenter, cutFromCorner);
+		render(ms, buf, c1, c2, alpha, width, cutFromCenter, cutFromCorner, outerMult, innerMult);
 	}
 
 	public void update(boolean b) {
 		this.alphaMultiplier = (float) ease(this.alphaMultiplier, b ? 1 : 0, 10);
 	}
 
-	public void render(PoseStack ms, VertexConsumer buf, Color c1, Color c2, int alpha, float width, float cutFromCenter, float cutFromCorner) {
+	public void render(PoseStack ms, VertexConsumer buf, Color c1, Color c2, int alpha, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult) {
 		Vec3 normal = getNormal();
-		Vertexer.vertexLine(ms.last(), buf, (float) minPos.x, (float) minPos.y, (float) minPos.z, (float) maxPos.x, (float) maxPos.y, (float) maxPos.z, c1, c2, Math.round(alpha * alphaMultiplier), (float) normal.x, (float) normal.y, (float) normal.z, width, cutFromCenter, cutFromCorner, BlockHighlightConfig.getActiveInstance().outerThicknessMult, BlockHighlightConfig.getActiveInstance().innerThicknessMult);
+		Vertexer.vertexLine(ms.last(), buf, (float) minPos.x, (float) minPos.y, (float) minPos.z, (float) maxPos.x, (float) maxPos.y, (float) maxPos.z, c1, c2, Math.round(alpha * alphaMultiplier), (float) normal.x, (float) normal.y, (float) normal.z, width, cutFromCenter, cutFromCorner, outerMult, innerMult);
 	}
 }

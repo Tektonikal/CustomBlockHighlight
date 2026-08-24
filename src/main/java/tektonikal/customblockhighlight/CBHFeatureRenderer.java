@@ -27,7 +27,7 @@ public class CBHFeatureRenderer extends RenderTypeFeatureRenderer<CBHFeatureRend
 					case ALWAYS_PASS -> this.getVertexBuilder(Renderer.linesNoDepth);
 					case HIDDEN_ONLY -> this.getVertexBuilder(Renderer.linesConcealed);
 				};
-				Vertexer.vertexBoxLines(submit.pose, builder, info.shape().bounds(), info.primaryCol(), info.secondaryCol(), info.alphas(), info.width(), info.cutFromCenter(), info.cutFromCorner());
+				Vertexer.vertexBoxLines(submit.pose, builder, info.shape().bounds(), info.primaryCol(), info.secondaryCol(), info.alphas(), info.width(), info.cutFromCenter(), info.cutFromCorner(), 1, 1);
 			}
 		}
 	}
