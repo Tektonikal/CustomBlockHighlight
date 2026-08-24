@@ -576,6 +576,14 @@ public class Renderer {
 		if (evilHitResult instanceof BlockHitResult block) {
 			Direction d = block.getDirection().getOpposite();
 			Quaternionf target = d.getRotation();
+			Vec3 size = targetBox.getMaxPosition().subtract(targetBox.getMinPosition());
+
+			if (!(Mth.equal(size.x,size.y) && Mth.equal(size.y,size.z))) {
+				d = Direction.UP;
+				lastHorizontalDirection = Direction.SOUTH;
+				target = new Quaternionf().rotationY((float) Math.PI);
+			}
+
 			if (d != Direction.UP && d != Direction.DOWN) {
 				if (previousDirection == Direction.UP || previousDirection == Direction.DOWN) {
 					float pitch = (previousDirection == Direction.UP) ? (float) (-Math.PI / 2.0) : (float) (Math.PI / 2.0);

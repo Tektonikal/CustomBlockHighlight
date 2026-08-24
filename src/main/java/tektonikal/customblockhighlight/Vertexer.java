@@ -14,6 +14,8 @@ import tektonikal.customblockhighlight.config.ConfigManager;
 
 import java.awt.*;
 
+import static tektonikal.customblockhighlight.Renderer.getLerpedColor;
+
 public class Vertexer {
 	public static void vertexBoxQuads(PoseStack.Pose pose, VertexConsumer builder, AABB box, Color cols, Color col2, float[] alpha) {
 		float normaliser = (float) box.getMinPosition().distanceTo(box.getMaxPosition());
@@ -33,10 +35,6 @@ public class Vertexer {
 		builder.addVertex(pose, vecs[2].toVector3f()).setColor(cols[2].getRed(), cols[2].getGreen(), cols[2].getBlue(), alpha);
 		builder.addVertex(pose, vecs[1].toVector3f()).setColor(cols[1].getRed(), cols[1].getGreen(), cols[1].getBlue(), alpha);
 		builder.addVertex(pose, vecs[0].toVector3f()).setColor(cols[0].getRed(), cols[0].getGreen(), cols[0].getBlue(), alpha);
-	}
-
-	public static Color getLerpedColor(Color c1, Color c2, float percent) {
-		return new Color(Math.clamp(Mth.lerpInt(percent, c1.getRed(), c2.getRed()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getGreen(), c2.getGreen()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getBlue(), c2.getBlue()), 0, 255));
 	}
 
 	public static void vertexBoxLines(PoseStack.Pose pose, VertexConsumer builder, AABB box, Color col, Color col2, float[] alpha, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult) {
