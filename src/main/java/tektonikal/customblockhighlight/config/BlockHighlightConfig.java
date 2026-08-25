@@ -32,6 +32,19 @@ public class BlockHighlightConfig {
 	public BlockHighlightConfig() {
 
 	}
+	//TODO
+	public static class RainbowSettings{
+		public boolean enabled;
+		public int delay;
+		public float saturation;
+		public float brightness;
+		public RainbowSettings(boolean enabled, int delay, float saturation, float brightness) {
+			this.enabled = enabled;
+			this.delay = delay;
+			this.saturation = saturation;
+			this.brightness = brightness;
+		}
+	}
 
 	//@formatter:off
     //outline stuff
@@ -94,6 +107,9 @@ public class BlockHighlightConfig {
  	public float scaleSpeed = 15F;
 	public boolean animateLineThickness = true;
 	public float lineThicknessAnimationSpeed = 15F;
+	//TODO:
+	public boolean animateLineCuts = true;
+	public float lineCutAnimationSpeed = 15F;
     public float rainbowSpeed = 5;
     public int delay = 250;
     public float saturation = 1;
