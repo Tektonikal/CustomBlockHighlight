@@ -44,7 +44,6 @@ import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import org.joml.*;
 import org.jspecify.annotations.NonNull;
-import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Line;
 import tektonikal.customblockhighlight.util.OutlineType;
@@ -137,7 +136,6 @@ public class Renderer {
 	public static List<Line> toRemove = new ArrayList<>();
 
 	public static VoxelShape shape = Shapes.block();
-	public static Direction connected = null;
 	public static float edgeAlpha = 0;
 	public static float scaleProg = 0;
 	public static float lineProg = 0;
@@ -383,48 +381,48 @@ public class Renderer {
 				}
 			}
 		}
-		if (evilHitResult.getType() != HitResult.Type.MISS) {
 			if (evilHitResult instanceof BlockHitResult block) {
 				BlockState state = mc.level.getBlockState(block.getBlockPos());
-				VoxelShape shape = state.getShape(mc.level, block.getBlockPos());
-				if (shape.isEmpty()) {
+				VoxelShape shapeLocal = state.getShape(mc.level, block.getBlockPos());
+				if (shapeLocal.isEmpty()) {
 					targetBox = new AABB(block.getBlockPos());
 				} else {
-					targetBox = shape.bounds().move(block.getBlockPos());
+					targetBox = shapeLocal.bounds().move(block.getBlockPos());
+				}
+				if (isBlockOccupied(block.getBlockPos())) {
+					shape = mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos(), CollisionContext.of(mc.getCameraEntity()));
 				}
 			} else if (evilHitResult instanceof EntityHitResult entityHitResult && getActiveInstance().allowEntities) {
 				Entity entity = entityHitResult.getEntity();
 				//so, so sloppy. might also have the worst workaround of the century for hanging stuff
 				float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
 				targetBox = moveToZero(entity.getBoundingBox()).move(entity.getPosition(delta).subtract(moveToZero(entity.getBoundingBox()).getCenter()).add(0, entity instanceof HangingEntity ? 0 : moveToZero(entity.getBoundingBox()).maxY / 2F, 0));
-
+				shape = Shapes.create(entity.getBoundingBox());
 			}
-		}
-
 
 		//get connected blocks
 		if (getActiveInstance().connectedBlocks && evilHitResult instanceof BlockHitResult block) {
-			if (evilHitResult.getType() == HitResult.Type.MISS) {
-				connected = null;
-			} else {
-				BlockState state = mc.level.getBlockState(block.getBlockPos());
-				connected = joinConnected(state, block.getBlockPos());
+			BlockState state = mc.level.getBlockState(block.getBlockPos());
+			Direction connected = joinConnected(state, block.getBlockPos());
+			if (connected != null) {
+				shape = Shapes.join(shape, mc.level.getBlockState(block.getBlockPos().relative(connected)).getShape(mc.level, block.getBlockPos().relative(connected), CollisionContext.of(mc.getCameraEntity())).move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR);
 			}
-		}
-		else {
-			connected = null;
 		}
 		//calculate where to render the block
 		if (getActiveInstance().doEasing) {
-			if (getActiveInstance().updateWhenUnfocused || evilHitResult.getType() != HitResult.Type.MISS) {
+			if (getActiveInstance().updateWhenUnfocused || !isMiss()) {
 				easeBox = new AABB(ease(easeBox.minX, targetBox.minX, getActiveInstance().easeSpeed), ease(easeBox.minY, targetBox.minY, getActiveInstance().easeSpeed), ease(easeBox.minZ, targetBox.minZ, getActiveInstance().easeSpeed), ease(easeBox.maxX, targetBox.maxX, getActiveInstance().easeSpeed), ease(easeBox.maxY, targetBox.maxY, getActiveInstance().easeSpeed), ease(easeBox.maxZ, targetBox.maxZ, getActiveInstance().easeSpeed));
 			}
 		} else {
 			easeBox = targetBox;
 		}
 		Profiler.get().popPush("Custom block outline render");
-		renderOutline(c.poseStack(), isCrystalObstructed(), evilHitResult.getType() == HitResult.Type.MISS, c.submitNodeCollector());
+		renderOutline(c.poseStack(), isCrystalObstructed(), isMiss(), c.submitNodeCollector());
 		Profiler.get().pop();
+	}
+
+	public static boolean isMiss() {
+		return evilHitResult.getType() == HitResult.Type.MISS;
 	}
 
 	private static void renderOutline(PoseStack stack, boolean isCrystalObstructed, boolean shouldFade, SubmitNodeCollector submitNodeCollector) {
@@ -476,60 +474,49 @@ public class Renderer {
 		var profiler = Profiler.get();
 		profiler.push("pre");
 		if (mc.level == null) throw new IllegalStateException("level == null");
-		var cameraEntity = camera.entity();
-		if (cameraEntity == null) return;
 		//TODO: make check so that cut from corner and cut from center do not add up to higher than 0.95
 
 		Pair<Color, Color> mainCols = getColors(isCrystalObstructed, getActiveInstance().outlineRainbow, getActiveInstance().delay, getActiveInstance().lineCol, getActiveInstance().lineCol2, getActiveInstance().crystalHelperLineColor);
 		if (getActiveInstance().outlineType == OutlineType.EDGES) {
-			if (evilHitResult != null && evilHitResult.getType() != HitResult.Type.MISS) {
-				if (evilHitResult instanceof BlockHitResult block) {
-					if (isBlockOccupied(block.getBlockPos())) {
-						shape = mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos(), CollisionContext.of(cameraEntity));
-						if (connected != null) {
-							shape = Shapes.join(shape, mc.level.getBlockState(block.getBlockPos().relative(connected)).getShape(mc.level, block.getBlockPos().relative(connected), CollisionContext.of(cameraEntity)).move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR);
-						}
-					}
-				} else if (evilHitResult instanceof EntityHitResult entity && getActiveInstance().allowEntities) {
-					shape = Shapes.create(entity.getEntity().getBoundingBox());
-				}
-			}
 			if (!shape.isEmpty()) {
 				List<Line> lines = getSortedLines();
 				updateLines(shape, new ArrayList<>(), lines);
+				VoxelShape moved = shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z);
 				if (getActiveInstance().tertiary) {
 					Pair<Color, Color> colors = getColors(isCrystalObstructed, getActiveInstance().toutlineRainbow, getActiveInstance().delay, getActiveInstance().tlineCol, getActiveInstance().tlineCol2, getActiveInstance().crystalHelperLineColor);
-					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), lines, colors.first, colors.second, edgeAlpha * getActiveInstance().tlineAlphaMultiplier, getActiveInstance().tlineWidth, getActiveInstance().tcutFromCenter, getActiveInstance().tcutFromCorner, getActiveInstance().touterThicknessMult, getActiveInstance().tinnerThicknessMult, 2);
+					Renderer.drawEdgeOutline(stack, moved, lines, colors.first, colors.second, edgeAlpha * getActiveInstance().tlineAlphaMultiplier, getActiveInstance().tlineWidth, getActiveInstance().tcutFromCenter, getActiveInstance().tcutFromCorner, getActiveInstance().touterThicknessMult, getActiveInstance().tinnerThicknessMult, 2);
 				}
 				if (getActiveInstance().secondary) {
 					Pair<Color, Color> colors = getColors(isCrystalObstructed, getActiveInstance().soutlineRainbow, getActiveInstance().delay, getActiveInstance().slineCol, getActiveInstance().slineCol2, getActiveInstance().crystalHelperLineColor);
-					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), lines, colors.first, colors.second, edgeAlpha * getActiveInstance().slineAlphaMultiplier, getActiveInstance().slineWidth, getActiveInstance().scutFromCenter, getActiveInstance().scutFromCorner, getActiveInstance().souterThicknessMult, getActiveInstance().sinnerThicknessMult, 1);
+					Renderer.drawEdgeOutline(stack, moved, lines, colors.first, colors.second, edgeAlpha * getActiveInstance().slineAlphaMultiplier, getActiveInstance().slineWidth, getActiveInstance().scutFromCenter, getActiveInstance().scutFromCorner, getActiveInstance().souterThicknessMult, getActiveInstance().sinnerThicknessMult, 1);
 				}
-				Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), lines, mainCols.first, mainCols.second, edgeAlpha, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, getActiveInstance().outerThicknessMult, getActiveInstance().innerThicknessMult, 0);
+				Renderer.drawEdgeOutline(stack, moved, lines, mainCols.first, mainCols.second, edgeAlpha, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, getActiveInstance().outerThicknessMult, getActiveInstance().innerThicknessMult, 0);
 			}
 		} else {
+			AABB inflated = easeBox.inflate(getActiveInstance().lineExpand);
 			if (getActiveInstance().tertiary) {
 				Pair<Color, Color> colors = getColors(isCrystalObstructed, getActiveInstance().toutlineRainbow, getActiveInstance().delay, getActiveInstance().tlineCol, getActiveInstance().tlineCol2, getActiveInstance().crystalHelperLineColor);
-				float[] newFades = new float[6];
-				for (int i = 0; i < 6; i++) {
-					newFades[i] = Mth.clamp(lineFades[i] * getActiveInstance().tlineAlphaMultiplier, 0, 255F);
-				}
-				Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), colors.first, colors.second, newFades, getActiveInstance().tlineWidth, getActiveInstance().tcutFromCenter, getActiveInstance().tcutFromCorner, getActiveInstance().touterThicknessMult, getActiveInstance().tinnerThicknessMult, 2);
+				float[] newFades = getNewFades(getActiveInstance().tlineAlphaMultiplier);
+				Renderer.drawBoxOutline(stack, inflated, colors.first, colors.second, newFades, getActiveInstance().tlineWidth, getActiveInstance().tcutFromCenter, getActiveInstance().tcutFromCorner, getActiveInstance().touterThicknessMult, getActiveInstance().tinnerThicknessMult, 2);
 			}
 			if (getActiveInstance().secondary) {
 				Pair<Color, Color> colors = getColors(isCrystalObstructed, getActiveInstance().soutlineRainbow, getActiveInstance().delay, getActiveInstance().slineCol, getActiveInstance().slineCol2, getActiveInstance().crystalHelperLineColor);
-				float[] newFades = new float[6];
-				for (int i = 0; i < 6; i++) {
-					newFades[i] = Mth.clamp(lineFades[i] * getActiveInstance().slineAlphaMultiplier, 0, 255F);
-				}
-				Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), colors.first, colors.second, newFades, getActiveInstance().slineWidth, getActiveInstance().scutFromCenter, getActiveInstance().scutFromCorner, getActiveInstance().souterThicknessMult, getActiveInstance().sinnerThicknessMult, 1);
+				float[] newFades = getNewFades(getActiveInstance().slineAlphaMultiplier);
+				Renderer.drawBoxOutline(stack, inflated, colors.first, colors.second, newFades, getActiveInstance().slineWidth, getActiveInstance().scutFromCenter, getActiveInstance().scutFromCorner, getActiveInstance().souterThicknessMult, getActiveInstance().sinnerThicknessMult, 1);
 			}
 //			doEvilMatrixPreparations(stack, easeBox.inflate(getActiveInstance().lineExpand), false);
 //			submitNodeCollector.submitCustom(SubmitRenderPhases.ALWAYS_ON_TOP, new CBHFeatureRenderer.Submit(CBHLineRenderInfo.of(shape, finalLineCol, finalLineCol2, lineFades, getActiveInstance()), stack.last()));
-			Renderer.drawBoxOutline(stack, easeBox.inflate(getActiveInstance().lineExpand), mainCols.first, mainCols.second, lineFades, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, getActiveInstance().outerThicknessMult, getActiveInstance().innerThicknessMult, 0);
+			Renderer.drawBoxOutline(stack, inflated, mainCols.first, mainCols.second, lineFades, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, getActiveInstance().outerThicknessMult, getActiveInstance().innerThicknessMult, 0);
 		}
 		profiler.pop();
-		//TODO: insert model data pulling render idk code here
+	}
+
+	public static float @NonNull [] getNewFades(float alphaMultiplier) {
+		float[] newFades = new float[6];
+		for (int i = 0; i < 6; i++) {
+			newFades[i] = Mth.clamp(lineFades[i] * alphaMultiplier, 0, 255F);
+		}
+		return newFades;
 	}
 
 	public static Pair<Color, Color> getColors(boolean isCrystalObstructed, boolean rainbow, int delay, Color col, Color col2, Color crystalHelperCol) {
@@ -590,7 +577,7 @@ public class Renderer {
 
 			List<AABB> aabbs = mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos()).toAabbs();
 			if (aabbs.size() == 1) {
-				Vec3 vec = aabbs.get(0).getMinPosition().subtract(aabbs.get(0).getMaxPosition());
+				Vec3 vec = aabbs.getFirst().getMinPosition().subtract(aabbs.getFirst().getMaxPosition());
 				if (!(vec.x == vec.y && vec.y == vec.z)) {
 					target = new Quaternionf();
 				}
@@ -623,7 +610,6 @@ public class Renderer {
 		return mc.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, withLiquids ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.NONE, e));
 	}
 
-	//TODO: make this better
 	private static Direction joinConnected(BlockState state, BlockPos pos) {
 		if (mc.level == null) return null;
 
@@ -644,11 +630,7 @@ public class Renderer {
 		}
 		if (state.getBlock() instanceof ChestBlock && !state.getValue(ChestBlock.TYPE).equals(ChestType.SINGLE)) {
 			dir = ChestBlock.getConnectedDirection(state);
-			if (evilHitResult instanceof BlockHitResult block) {
-				connectedPos = block.getBlockPos().relative(dir);
-			} else {
-				return null;
-			}
+			connectedPos = ((BlockHitResult) evilHitResult).getBlockPos().relative(dir);
 			connectedState = mc.level.getBlockState(connectedPos);
 			if (connectedState.getBlock() instanceof ChestBlock) {
 				targetBox = targetBox.minmax(connectedState.getShape(mc.level, connectedPos).bounds().move(connectedPos));

@@ -32,7 +32,6 @@ public class BlockHighlightConfig {
 	public BlockHighlightConfig() {
 
 	}
-	//TODO
 	public static class RainbowSettings{
 		public boolean enabled;
 		public int delay;
@@ -107,7 +106,6 @@ public class BlockHighlightConfig {
  	public float scaleSpeed = 15F;
 	public boolean animateLineThickness = true;
 	public float lineThicknessAnimationSpeed = 15F;
-	//TODO:
 	public boolean animateLineCuts = true;
 	public float lineCutAnimationSpeed = 15F;
     public float rainbowSpeed = 5;
@@ -122,10 +120,6 @@ public class BlockHighlightConfig {
  	public boolean allowEntities = true;
  	public boolean allowLiquids = true;
 	public boolean rotations = false;
-	// todo: consider this
-//	public static class SomeCategory {
-//		 public boolean someThing;
-//	}
 
 	//@formatter:on
 	@Updatable
@@ -527,7 +521,7 @@ public class BlockHighlightConfig {
 								.option(o_lineWidth)
 								.build())
 						.group(OptionGroup.createBuilder()
-								.name(Component.nullToEmpty("NAME ME LATER"))
+								.name(Component.nullToEmpty("Subdivision"))
 								.option(o_cutFromCorner)
 								.option(o_outerThicknessMult)
 								.option(o_cutFromCenter)

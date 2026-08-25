@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component;
 public enum DepthTestMode implements NameableEnum {
 	//GREATER_THAN_OR_EQUAL
 	NORMAL,
+	//ALWAYS_PASS
 	ALWAYS_PASS,
 	//LESS_THAN
 	HIDDEN_ONLY;

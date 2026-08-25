@@ -33,7 +33,6 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
 		poseStack.translate(0, renderState.y() / renderState.scale(), 0.0D);
 		poseStack.translate(renderState.x() / renderState.scale(), 0, 0.0D);
 		poseStack.translate(renderState.x1() / 3F / renderState.scale(), 0, 0.0D);
-		//sometimes it just decides to flip around ? and i don't know why?
 		Quaternionf rotation = new Quaternionf().rotateZ((float) Math.PI);
 		Quaternionf xRotation = new Quaternionf().rotateX(renderState.yAngle() * 30.0F * (float) (Math.PI / 180.0));
 		xRotation.rotateLocalY(-renderState.xAngle() * 30.0F * (float) (Math.PI / 180.0));

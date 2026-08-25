@@ -16,7 +16,7 @@ public abstract class InactivityFpsLimiterMixin {
 	private int framerateLimit;
 
 	@ModifyReturnValue(method = "getFramerateLimit", at = @At("RETURN"))
-	//this is how we make everyone think that it's smoother than it actually is. shh, don't tell anyone!
+	//TODO: make this only apply to our screens
 	int yeah(int original) {
 		if (getThrottleReason() == FramerateLimitTracker.FramerateThrottleReason.OUT_OF_LEVEL_MENU) {
 			return framerateLimit;

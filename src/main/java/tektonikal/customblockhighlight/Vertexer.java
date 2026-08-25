@@ -2,6 +2,7 @@ package tektonikal.customblockhighlight;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.client.Camera;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
@@ -178,23 +179,5 @@ public class Vertexer {
 			builder.addVertex(pose, maxInner.x, maxInner.y, maxInner.z).setColor(maxInnerCol.getRed(), maxInnerCol.getGreen(), maxInnerCol.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width * innerMult);
 			builder.addVertex(pose, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width * outerMult);
 		}
-	}
-
-//	private static float getWidth(int layer) {
-//		return switch (layer) {
-//			case 0 -> config().lineWidth;
-//			case 1 -> config().slineWidth;
-//			case 2 -> config().tlineWidth;
-//			default -> 1;
-//		};
-//	}
-
-	public static Vector3f getNormal(float x1, float y1, float z1, float x2, float y2, float z2) {
-		float xNormal = x2 - x1;
-		float yNormal = y2 - y1;
-		float zNormal = z2 - z1;
-		float normalSqrt = Mth.sqrt(xNormal * xNormal + yNormal * yNormal + zNormal * zNormal);
-
-		return new Vector3f(xNormal / normalSqrt, yNormal / normalSqrt, zNormal / normalSqrt);
 	}
 }

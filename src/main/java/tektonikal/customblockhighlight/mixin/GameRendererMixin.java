@@ -15,7 +15,7 @@ import tektonikal.customblockhighlight.Renderer;
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
 	@Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;renderItemInHand(Lnet/minecraft/client/renderer/state/level/CameraRenderState;FLorg/joml/Matrix4fc;)V"))
-	private void midnigtcontrols$captureMatrices(DeltaTracker deltaTracker, CallbackInfo ci, @Local(ordinal = 0) Matrix4f projectionMatrix, @Local CameraRenderState camState) {
+	private void oughhh(DeltaTracker deltaTracker, CallbackInfo ci, @Local(name = "projectionMatrix") Matrix4f projectionMatrix, @Local(name = "cameraState") CameraRenderState camState) {
 		Renderer.lastProjMat.set(projectionMatrix);
 		Renderer.lastModMat.set(RenderSystem.getModelViewMatrixCopy());
 		Renderer.lastWorldSpaceMatrix.set(camState.viewRotationMatrix);

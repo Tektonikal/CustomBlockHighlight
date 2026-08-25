@@ -1,8 +1,7 @@
 package tektonikal.customblockhighlight.util;
 
 public enum OutlineStyle {
-	CLASSIC,
+	CLASSIC_LINE,
 	FLAT,
-	SHAPE,
 	SCREEN
 }
