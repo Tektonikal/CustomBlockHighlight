@@ -105,6 +105,7 @@ public class BlockHighlightConfig {
  	public boolean updateWhenUnfocused = true;
  	public boolean allowEntities = true;
  	public boolean allowLiquids = true;
+	public boolean rotations = false;
 	// todo: consider this
 //	public static class SomeCategory {
 //		 public boolean someThing;
@@ -482,6 +483,12 @@ public class BlockHighlightConfig {
 			.stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.allowLiquids, newVal -> ACTIVE_INSTANCE.allowLiquids = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
+	public static Option<Boolean> o_rotations = Option.<Boolean>createBuilder()
+			.name(Component.nullToEmpty("- Rotations"))
+			.description(OptionDescription.of(Component.literal("Rotates the outline based on what side of the block you're looking at. Not a finalized or stable feature, here be dragons!")))
+			.stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.rotations, newVal -> ACTIVE_INSTANCE.rotations = newVal))
+			.controller(TickBoxControllerBuilder::create)
+			.build();
 
 	public Screen getConfigScreen(Screen parent) {
 		var layout = YetAnotherConfigLib.createBuilder()
@@ -593,6 +600,7 @@ public class BlockHighlightConfig {
 								.option(o_updateWhenUnfocused)
 								.option(o_allowEntities)
 								.option(o_allowLiquids)
+								.option(o_rotations)
 								.option(o_crystalHelper)
 								.option(o_crystalHelperLineColor)
 								.option(o_crystalHelperFillColor)

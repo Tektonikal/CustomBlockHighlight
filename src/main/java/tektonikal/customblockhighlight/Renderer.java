@@ -42,6 +42,8 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import org.joml.*;
+import org.jspecify.annotations.NonNull;
+import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Line;
 import tektonikal.customblockhighlight.util.OutlineType;
@@ -228,6 +230,9 @@ public class Renderer {
 		stack.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
 		Vec3 vec = moveToZero(box).getCenter();
 		stack.translate(vec);
+		if (getActiveInstance().rotations) {
+			stack.rotateAround(rotation, 0, 0, 0);
+		}
 		stack.scale(scaleProg, scaleProg, scaleProg);
 		if (horribleWorkaroundForEdges) {
 			float yeah = getActiveInstance().lineExpand * 2 + 1;
@@ -240,11 +245,7 @@ public class Renderer {
 		doEvilMatrixPreparations(stack, box, false);
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-		stack.pushPose();
-		Vec3 vec = moveToZero(box).getCenter();
-		stack.rotateAround(rotation, (float) vec.x, (float) vec.y, (float) vec.z);
 		Vertexer.vertexBoxLines(stack.last(), buffer, moveToZero(box), color, col2, alpha, lineWidth * lineProg, cutFromCenter, cutFromCorner, outerMult, innerMult);
-		stack.popPose();
 //		stack.pushPose();
 //		stack.translate(0.5F, 0.5F, 0.5F);
 //		float scale = 1 / (float) Math.sqrt(3);
@@ -265,13 +266,25 @@ public class Renderer {
 		stack.popPose();
 	}
 
-	public static void drawEdgeOutline(PoseStack matrices, VoxelShape shape, Color c1, Color c2, float alpha, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult, int layer) {
+	public static void drawEdgeOutline(PoseStack matrices, VoxelShape shape, List<Line> sortedLines, Color c1, Color c2, float alpha, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult, int layer) {
 		doEvilMatrixPreparations(matrices, shape.bounds(), true);
-		List<Line> newLines = new ArrayList<>();
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
+
+		shape = moveToZero(shape);
+		double normalised = shape.bounds().getMinPosition().distanceTo(shape.bounds().getMaxPosition());
+		for (Line finalLine : sortedLines) {
+			finalLine.render(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.minPos.x, finalLine.minPos.y, finalLine.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.maxPos.x, finalLine.maxPos.y, finalLine.maxPos.z)) / normalised)), Math.round(alpha), width, cutFromCenter, cutFromCorner, outerMult, innerMult);
+		}
+		for (Line line : toRemove) {
+			line.render(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / normalised)), Math.round(alpha), width, cutFromCenter, cutFromCorner, outerMult, innerMult);
+		}
+		finishDraw(true, draw, layer);
+		matrices.popPose();
+	}
+
+	public static void updateLines(VoxelShape shape, List<Line> newLines, List<Line> sortedLines) {
 		moveToZero(shape).forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
-		Vec3 minVec = shape.bounds().getMinPosition();
 		if (lines.isEmpty() || !getActiveInstance().doEasing) {
 			lines = newLines;
 		}
@@ -290,19 +303,13 @@ public class Renderer {
 		for (int i = 0; i < lines.size(); i++) {
 			lines.get(i).moveTo(newLines.get(i).minPos, newLines.get(i).maxPos);
 		}
-		List<Line> sortedLines = Renderer.lines.stream().sorted(Comparator.comparing(o -> ((Line) o).getDistanceToCamera(minVec)).reversed()).toList();
-
-		shape = moveToZero(shape);
-		double normalised = shape.bounds().getMinPosition().distanceTo(shape.bounds().getMaxPosition());
 		for (Line finalLine : sortedLines) {
-			finalLine.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.minPos.x, finalLine.minPos.y, finalLine.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(finalLine.maxPos.x, finalLine.maxPos.y, finalLine.maxPos.z)) / normalised)), Math.round(alpha), true, width, cutFromCenter, cutFromCorner, outerMult, innerMult);
+			finalLine.update(true);
 		}
 		toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
 		for (Line line : toRemove) {
-			line.updateAndRender(matrices, buffer, getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.minPos.x, line.minPos.y, line.minPos.z)) / normalised)), getLerpedColor(c1, c2, (float) (shape.bounds().getMinPosition().distanceTo(new Vec3(line.maxPos.x, line.maxPos.y, line.maxPos.z)) / normalised)), Math.round(alpha), false, width, cutFromCenter, cutFromCorner, outerMult, innerMult);
+			line.update(false);
 		}
-		finishDraw(true, draw, layer);
-		matrices.popPose();
 	}
 
 
@@ -315,8 +322,8 @@ public class Renderer {
 		return shape.move(minVec.reverse());
 	}
 
-    //TODO: allow combining / excluding side sets?
-    //TODO: make this adjust based on rotation
+	//TODO: allow combining / excluding side sets?
+	//TODO: make this adjust based on rotation
 	private static EnumSet<Direction> getSides(OutlineType type, BlockPos pos) {
 		return switch (type) {
 			case LOOKAT ->
@@ -403,6 +410,9 @@ public class Renderer {
 				connected = joinConnected(state, block.getBlockPos());
 			}
 		}
+		else {
+			connected = null;
+		}
 		//calculate where to render the block
 		if (getActiveInstance().doEasing) {
 			if (getActiveInstance().updateWhenUnfocused || evilHitResult.getType() != HitResult.Type.MISS) {
@@ -476,7 +486,7 @@ public class Renderer {
 					if (isBlockOccupied(block.getBlockPos())) {
 						shape = mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos(), CollisionContext.of(cameraEntity));
 						if (connected != null) {
-							shape = Shapes.joinUnoptimized(shape, mc.level.getBlockState(block.getBlockPos().relative(connected)).getShape(mc.level, block.getBlockPos().relative(connected), CollisionContext.of(cameraEntity)).move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR).optimize();
+							shape = Shapes.join(shape, mc.level.getBlockState(block.getBlockPos().relative(connected)).getShape(mc.level, block.getBlockPos().relative(connected), CollisionContext.of(cameraEntity)).move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR);
 						}
 					}
 				} else if (evilHitResult instanceof EntityHitResult entity && getActiveInstance().allowEntities) {
@@ -484,17 +494,19 @@ public class Renderer {
 				}
 			}
 			if (!shape.isEmpty()) {
+				List<Line> lines = getSortedLines();
+				updateLines(shape, new ArrayList<>(), lines);
 				if (getActiveInstance().tertiary) {
 					Color tfinalLineCol = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().toutlineRainbow ? getRainbowCol(0) : getActiveInstance().tlineCol;
 					Color tfinalLineCol2 = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().toutlineRainbow ? getRainbowCol(getActiveInstance().delay) : getActiveInstance().tlineCol2;
-					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), tfinalLineCol, tfinalLineCol2, edgeAlpha * getActiveInstance().tlineAlphaMultiplier, getActiveInstance().tlineWidth, getActiveInstance().tcutFromCenter, getActiveInstance().tcutFromCorner, getActiveInstance().touterThicknessMult, getActiveInstance().tinnerThicknessMult, 2);
+					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), lines, tfinalLineCol, tfinalLineCol2, edgeAlpha * getActiveInstance().tlineAlphaMultiplier, getActiveInstance().tlineWidth, getActiveInstance().tcutFromCenter, getActiveInstance().tcutFromCorner, getActiveInstance().touterThicknessMult, getActiveInstance().tinnerThicknessMult, 2);
 				}
 				if (getActiveInstance().secondary) {
 					Color sfinalLineCol = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().soutlineRainbow ? getRainbowCol(0) : getActiveInstance().slineCol;
 					Color sfinalLineCol2 = isCrystalObstructed ? getActiveInstance().crystalHelperLineColor : getActiveInstance().soutlineRainbow ? getRainbowCol(getActiveInstance().delay) : getActiveInstance().slineCol2;
-					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), sfinalLineCol, sfinalLineCol2, edgeAlpha * getActiveInstance().slineAlphaMultiplier, getActiveInstance().slineWidth, getActiveInstance().scutFromCenter, getActiveInstance().scutFromCorner, getActiveInstance().souterThicknessMult, getActiveInstance().sinnerThicknessMult, 1);
+					Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), lines, sfinalLineCol, sfinalLineCol2, edgeAlpha * getActiveInstance().slineAlphaMultiplier, getActiveInstance().slineWidth, getActiveInstance().scutFromCenter, getActiveInstance().scutFromCorner, getActiveInstance().souterThicknessMult, getActiveInstance().sinnerThicknessMult, 1);
 				}
-				Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), finalLineCol, finalLineCol2, edgeAlpha, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, getActiveInstance().outerThicknessMult, getActiveInstance().innerThicknessMult, 0);
+				Renderer.drawEdgeOutline(stack, shape.move(easeBox.minX - shape.bounds().getMinPosition().x, easeBox.minY - shape.bounds().getMinPosition().y, easeBox.minZ - shape.bounds().getMinPosition().z), lines, finalLineCol, finalLineCol2, edgeAlpha, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, getActiveInstance().outerThicknessMult, getActiveInstance().innerThicknessMult, 0);
 			}
 		} else {
 			if (getActiveInstance().tertiary) {
@@ -523,6 +535,11 @@ public class Renderer {
 		//TODO: insert model data pulling render idk code here
 	}
 
+	private static List<Line> getSortedLines() {
+		Vec3 minVec = shape.bounds().getMinPosition();
+		return Renderer.lines.stream().sorted(Comparator.comparing(o -> ((Line) o).getDistanceToCamera(minVec)).reversed()).toList();
+	}
+
 	private static void updateProgresses(boolean shouldExit) {
 		if (evilHitResult == null || mc.level == null) return;
 
@@ -535,12 +552,12 @@ public class Renderer {
 				edgeAlpha = getActiveInstance().fadeIn ? (float) ease(edgeAlpha, getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
 			} else {
 				shouldExit = true;
-                exitFades();
-            }
+				exitFades();
+			}
 		} else if (evilHitResult instanceof BlockHitResult block) {
 			if (mc.level.isEmptyBlock(block.getBlockPos()) || shouldExit) {
-                exitFades();
-            } else {
+				exitFades();
+			} else {
 				edgeAlpha = getActiveInstance().fadeIn ? (float) ease(edgeAlpha, getActiveInstance().lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().lineAlpha;
 				for (Direction dir : getSides(getActiveInstance().fillType, block.getBlockPos())) {
 					sideFades[dir.ordinal()] = getActiveInstance().fadeIn ? (float) ease(sideFades[dir.ordinal()], getActiveInstance().fillOpacity, getActiveInstance().fadeInSpeed) : getActiveInstance().fillOpacity;
@@ -560,41 +577,41 @@ public class Renderer {
 		scaleProg = getActiveInstance().scale ? (float) ease(scaleProg, shouldExit ? 0 : 1, getActiveInstance().scaleSpeed) : 1;
 		lineProg = getActiveInstance().animateLineThickness ? (float) ease(lineProg, shouldExit ? 0 : 1, getActiveInstance().lineThicknessAnimationSpeed) : 1;
 		if (evilHitResult instanceof BlockHitResult block) {
-			Direction d = block.getDirection().getOpposite();
+			Direction d = block.getDirection();
 			Quaternionf target = d.getRotation();
-			Vec3 size = targetBox.getMaxPosition().subtract(targetBox.getMinPosition());
-
-			if (!(Mth.equal(size.x,size.y) && Mth.equal(size.y,size.z))) {
-				d = Direction.UP;
-				lastHorizontalDirection = Direction.SOUTH;
-				target = new Quaternionf().rotationY((float) Math.PI);
-			}
 
 			if (d != Direction.UP && d != Direction.DOWN) {
-				if (previousDirection == Direction.UP || previousDirection == Direction.DOWN) {
-					float pitch = (previousDirection == Direction.UP) ? (float) (-Math.PI / 2.0) : (float) (Math.PI / 2.0);
-					rotation.set(new Quaternionf(target).rotateX(pitch));
-				}
 				lastHorizontalDirection = d;
 			} else {
 				float pitch = (d == Direction.UP) ? (float) (-Math.PI / 2.0) : (float) (Math.PI / 2.0);
 				target = new Quaternionf(lastHorizontalDirection.getRotation()).rotateX(pitch);
 			}
-			previousDirection = d;
+
+			List<AABB> aabbs = mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos()).toAabbs();
+			if (aabbs.size() == 1) {
+				Vec3 vec = aabbs.get(0).getMinPosition().subtract(aabbs.get(0).getMaxPosition());
+				if (!(vec.x == vec.y && vec.y == vec.z)) {
+					target = new Quaternionf();
+				}
+			} else {
+				target = new Quaternionf();
+			}
+
 			rotation.nlerp(target, 0.05F);
+		} else {
+			rotation.nlerp(new Quaternionf(), 0.05F);
 		}
 	}
 
-    public static void exitFades() {
-        for (Direction dir : Direction.values()) {
-            sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
-            lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
-        }
-        edgeAlpha = getActiveInstance().fadeOut ? (float) ease(edgeAlpha, 0, getActiveInstance().fadeOutSpeed) : 0;
-    }
+	public static void exitFades() {
+		for (Direction dir : Direction.values()) {
+			sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
+			lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? (float) ease(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
+		}
+		edgeAlpha = getActiveInstance().fadeOut ? (float) ease(edgeAlpha, 0, getActiveInstance().fadeOutSpeed) : 0;
+	}
 
-    private static Direction lastHorizontalDirection = Direction.NORTH;
-	private static Direction previousDirection = Direction.UP;
+	private static Direction lastHorizontalDirection = Direction.NORTH;
 
 
 	public static HitResult pick(Entity e, final double range, final float a, final boolean withLiquids) {
@@ -604,14 +621,26 @@ public class Renderer {
 		assert mc.level != null;
 		return mc.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, withLiquids ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.NONE, e));
 	}
-//TODO: make this better
+
+	//TODO: make this better
 	private static Direction joinConnected(BlockState state, BlockPos pos) {
 		if (mc.level == null) return null;
 
 		BlockState connectedState;
 		Direction dir;
 		BlockPos connectedPos;
-		DoubleBlockHalf half;
+		if (state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF)) {
+			DoubleBlockHalf halfState = state.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF);
+			Direction d = halfState == DoubleBlockHalf.LOWER ? Direction.UP : Direction.DOWN;
+			connectedPos = pos.relative(d);
+			connectedState = mc.level.getBlockState(connectedPos);
+			if (connectedState.getBlock().getClass().equals(state.getBlock().getClass())) {
+				if (connectedState.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF) && connectedState.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF) == halfState.getOtherHalf()) {
+					targetBox = targetBox.minmax(connectedState.getShape(mc.level, connectedPos).bounds().move(connectedPos));
+				}
+			}
+			return d;
+		}
 		if (state.getBlock() instanceof ChestBlock && !state.getValue(ChestBlock.TYPE).equals(ChestType.SINGLE)) {
 			dir = ChestBlock.getConnectedDirection(state);
 			if (evilHitResult instanceof BlockHitResult block) {
@@ -625,20 +654,6 @@ public class Renderer {
 			}
 			return dir;
 		}
-		if (state.getBlock() instanceof DoorBlock) {
-			half = state.getValue(DoorBlock.HALF);
-			if (half == DoubleBlockHalf.LOWER) {
-				dir = Direction.UP;
-			} else {
-				dir = Direction.DOWN;
-			}
-			connectedPos = pos.relative(dir);
-			connectedState = mc.level.getBlockState(connectedPos);
-			if (connectedState.getBlock() instanceof DoorBlock && connectedState.getValue(DoorBlock.HALF) != half) {
-				targetBox = targetBox.minmax(connectedState.getShape(mc.level, connectedPos).bounds().move(connectedPos));
-			}
-			return dir;
-		}
 		if (state.getBlock() instanceof BedBlock) {
 			BedPart part = state.getValue(BedBlock.PART);
 			dir = state.getValue(HorizontalDirectionalBlock.FACING);
@@ -648,20 +663,6 @@ public class Renderer {
 			connectedPos = pos.relative(dir);
 			connectedState = mc.level.getBlockState(connectedPos);
 			if (connectedState.getBlock() instanceof BedBlock && connectedState.getValue(BedBlock.PART) != part) {
-				targetBox = targetBox.minmax(connectedState.getShape(mc.level, connectedPos).bounds().move(connectedPos));
-			}
-			return dir;
-		}
-		if (state.getBlock() instanceof DoublePlantBlock) {
-			half = state.getValue(DoublePlantBlock.HALF);
-			if (half == DoubleBlockHalf.LOWER) {
-				dir = Direction.UP;
-			} else {
-				dir = Direction.DOWN;
-			}
-			connectedPos = pos.relative(dir);
-			connectedState = mc.level.getBlockState(connectedPos);
-			if (connectedState.getBlock() instanceof DoublePlantBlock) {
 				targetBox = targetBox.minmax(connectedState.getShape(mc.level, connectedPos).bounds().move(connectedPos));
 			}
 			return dir;
