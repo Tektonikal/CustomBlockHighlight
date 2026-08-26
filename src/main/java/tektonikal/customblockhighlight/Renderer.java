@@ -268,20 +268,16 @@ public class Renderer {
 		doEvilMatrixPreparations(matrices, bounds, true);
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-
 		AABB zeroed = moveToZero(bounds);
 		double normalised = zeroed.getMinPosition().distanceTo(zeroed.getMaxPosition());
-		for (Line finalLine : lines) {
-			finalLine.render(matrices, buffer, getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(finalLine.minPos) / normalised)), getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(finalLine.maxPos) / normalised)), Math.round(alpha), width, cutFromCenter, cutFromCorner, outerMult, innerMult);
-		}
-		for (Line line : toRemove) {
-			line.render(matrices, buffer, getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.minPos) / normalised)), getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.maxPos) / normalised)), Math.round(alpha), width, cutFromCenter, cutFromCorner, outerMult, innerMult);
-		}
+        lines.forEach(line -> line.render(matrices, buffer, getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.minPos) / normalised)), getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.maxPos) / normalised)), Math.round(alpha), width, cutFromCenter, cutFromCorner, outerMult, innerMult));
+        toRemove.forEach(line -> line.render(matrices, buffer, getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.minPos) / normalised)), getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.maxPos) / normalised)), Math.round(alpha), width, cutFromCenter, cutFromCorner, outerMult, innerMult));
 		finishDraw(true, draw, layer);
 		matrices.popPose();
 	}
 
 	public static void updateLines(VoxelShape shape) {
+        //TODO: these don't sort by depth anymore
 		List<Line> newLines = new ArrayList<>();
 		moveToZero(shape).forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
 		if (lines.isEmpty() || !getActiveInstance().doEasing) {
@@ -299,16 +295,13 @@ public class Renderer {
 			toRemove.add(lines.getLast());
 			lines.removeLast();
 		}
-		for (int i = 0; i < lines.size(); i++) {
-			lines.get(i).moveTo(newLines.get(i).minPos, newLines.get(i).maxPos);
-		}
-		for (Line finalLine : lines) {
-			finalLine.update(true);
-		}
+        lines.forEach(line -> {
+            Line target = newLines.get(newLines.indexOf(line));
+            line.moveTo(target.minPos, target.maxPos);
+            line.update(true);
+        });
+        toRemove.forEach(line -> line.update(false));
 		toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
-		for (Line line : toRemove) {
-			line.update(false);
-		}
 	}
 
 
@@ -490,7 +483,6 @@ public class Renderer {
 
 		Pair<Color, Color> mainCols = getColors(isCrystalObstructed, getActiveInstance().outlineRainbow, getActiveInstance().delay, getActiveInstance().lineCol, getActiveInstance().lineCol2, getActiveInstance().crystalHelperLineColor);
 		if (getActiveInstance().outlineType == OutlineType.EDGES) {
-			//TODO: these aren't sorted anymore :(
 			if (getActiveInstance().tertiary) {
 				Pair<Color, Color> colors = getColors(isCrystalObstructed, getActiveInstance().toutlineRainbow, getActiveInstance().delay, getActiveInstance().tlineCol, getActiveInstance().tlineCol2, getActiveInstance().crystalHelperLineColor);
 				Renderer.drawEdgeOutline(stack, easeBox, lines, colors.first, colors.second, edgeAlpha * getActiveInstance().tlineAlphaMultiplier, getActiveInstance().tlineWidth, getActiveInstance().tcutFromCenter, getActiveInstance().tcutFromCorner, getActiveInstance().touterThicknessMult, getActiveInstance().tinnerThicknessMult, 2);
