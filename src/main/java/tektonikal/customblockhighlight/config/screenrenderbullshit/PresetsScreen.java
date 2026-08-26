@@ -12,7 +12,6 @@ import org.jspecify.annotations.NonNull;
 import tektonikal.customblockhighlight.Blockhighlight;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.config.ConfigManager;
-import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Tweener;
 
 import java.awt.*;
@@ -111,15 +110,16 @@ public class PresetsScreen extends Screen {
 			this.meow = meow;
 			this.block = block;
 			BlockHighlightConfig cfg = ConfigManager.getPreset(this);
+
 			float[] arr = new float[6];
 			Arrays.fill(arr, cfg.lineAlpha);
 			renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), cfg.lineCol, cfg.lineCol2, arr, cfg.lineWidth, cfg.lineDepthTest, cfg.cutFromCenter, cfg.cutFromCorner));
-			if(cfg.secondary){
+			if (cfg.secondary) {
 				float[] arr2 = new float[6];
 				Arrays.fill(arr2, cfg.lineAlpha * cfg.slineAlphaMultiplier);
 				renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), cfg.slineCol, cfg.slineCol2, arr2, cfg.slineWidth, cfg.slineDepthTest, cfg.cutFromCenter, cfg.cutFromCorner));
 			}
-			if(cfg.tertiary){
+			if (cfg.tertiary) {
 				float[] arr3 = new float[6];
 				Arrays.fill(arr3, cfg.lineAlpha * cfg.tlineAlphaMultiplier);
 				renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), cfg.tlineCol, cfg.tlineCol2, arr3, cfg.tlineWidth, cfg.tlineDepthTest, cfg.cutFromCenter, cfg.cutFromCorner));

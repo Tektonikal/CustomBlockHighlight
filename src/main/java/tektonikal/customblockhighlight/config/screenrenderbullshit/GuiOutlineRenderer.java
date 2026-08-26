@@ -16,7 +16,6 @@ import tektonikal.customblockhighlight.CBHFeatureRenderer;
 import java.awt.*;
 
 public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState> {
-
 	@Override
 	public Class<EvilRenderState> getRenderStateClass() {
 		return EvilRenderState.class;
@@ -24,24 +23,27 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
 
 	@Override
 	protected void renderToTexture(EvilRenderState renderState, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
-		if (renderState.preset() == null) {
-			return;
-		}
+		if (renderState.preset() == null) return;
+
 		var blockModelResolver = new BlockModelResolver(Minecraft.getInstance().getModelManager());
 		var blockModelRenderState = new BlockModelRenderState();
-			blockModelResolver.update(blockModelRenderState, renderState.preset().block.defaultBlockState(), BlockDisplayContext.create());
+		blockModelResolver.update(blockModelRenderState, renderState.preset().block.defaultBlockState(), BlockDisplayContext.create());
+
 		poseStack.translate(0, renderState.y() / renderState.scale(), 0.0D);
 		poseStack.translate(renderState.x() / renderState.scale(), 0, 0.0D);
 		poseStack.translate(renderState.x1() / 3F / renderState.scale(), 0, 0.0D);
+
 		Quaternionf rotation = new Quaternionf().rotateZ((float) Math.PI);
 		Quaternionf xRotation = new Quaternionf().rotateX(renderState.yAngle() * 30.0F * (float) (Math.PI / 180.0));
 		xRotation.rotateLocalY(-renderState.xAngle() * 30.0F * (float) (Math.PI / 180.0));
 		rotation.mul(xRotation);
+
 		PoseStack.Pose linePose = poseStack.last().copy();
 		//world's worst workaround
 		linePose.rotate(rotation);
 		poseStack.rotateAround(rotation, 0, 0, 0);
 		poseStack.translate(-0.5F, -0.5F, -0.5F);
+
 		blockModelRenderState.submit(poseStack, submitNodeCollector, LightCoordsUtil.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0);
 		CBHFeatureRenderer.Submit t = new CBHFeatureRenderer.Submit(renderState.preset().renderInfo, linePose);
 		submitNodeCollector.submitCustom(SubmitRenderPhases.ALWAYS_ON_TOP, t);
@@ -51,7 +53,6 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
 	protected float getTranslateY(final int height, final int guiScale) {
 		return height / 2F;
 	}
-
 
 	@Override
 	protected String getTextureLabel() {

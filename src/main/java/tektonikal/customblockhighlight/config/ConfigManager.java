@@ -70,10 +70,10 @@ public class ConfigManager {
 
 	public static BlockHighlightConfig getPreset(PresetsScreen.Preset preset) {
 		try (var stream = PresetsScreen.class.getResourceAsStream("/assets/presets/" + preset.name + ".json")) {
-			if (stream == null) return null;
+			if (stream == null) throw new NullPointerException();
 			return GSON.fromJson(new String(stream.readAllBytes(), StandardCharsets.UTF_8), BlockHighlightConfig.class);
-		} catch (IOException ignored) {
-			return null;
+		} catch (IOException e) {
+			throw rethrow(e);
 		}
 	}
 }

@@ -26,6 +26,6 @@ public class Blockhighlight implements ModInitializer {
 		return (start + (end - start) * (1 - Math.exp(-(1.0F / Minecraft.getInstance().getFps()) * speed)));
 	}
 	public static float easeF(double start, double end, float speed) {
-		return (float) (start + (end - start) * (1 - Math.exp(-(1.0F / Minecraft.getInstance().getFps()) * speed)));
+		return (float) ease(start, end, speed);
 	}
 }

@@ -2,7 +2,6 @@ package tektonikal.customblockhighlight;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.client.Camera;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
@@ -10,8 +9,6 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import tektonikal.customblockhighlight.config.BlockHighlightConfig;
-import tektonikal.customblockhighlight.config.ConfigManager;
 
 import java.awt.*;
 

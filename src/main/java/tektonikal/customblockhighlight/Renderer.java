@@ -26,7 +26,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.util.profiling.Profiler;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.item.Items;
@@ -46,6 +45,7 @@ import org.jspecify.annotations.NonNull;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Line;
 import tektonikal.customblockhighlight.util.OutlineType;
+import tektonikal.customblockhighlight.util.Util;
 
 import java.awt.*;
 import java.lang.Math;
@@ -54,6 +54,8 @@ import java.util.List;
 
 import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
 import static net.minecraft.client.renderer.RenderPipelines.LINES;
+import static net.minecraft.util.Util.getMillis;
+import static net.minecraft.util.profiling.Profiler.get;
 import static tektonikal.customblockhighlight.Blockhighlight.ease;
 import static tektonikal.customblockhighlight.Blockhighlight.easeF;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
@@ -93,12 +95,12 @@ public class Renderer {
 					.withCull(false)
 					.build()
 	);
+
 	public static final RenderType linesNoDepth = RenderType.create("lines_no_depth",
 			RenderSetup.builder(Renderer.LINE_NO_DEPTH)
 					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
 					.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
 					.createRenderSetup());
-
 	public static final RenderType linesConcealed = RenderType.create("lines_concealed",
 			RenderSetup.builder(Renderer.LINES_CONCEALED_ONLY)
 					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
@@ -123,6 +125,7 @@ public class Renderer {
 	public static final Matrix4f lastProjMat = new Matrix4f();
 	public static final Matrix4f lastModMat = new Matrix4f();
 
+	// todo: consider `activeBuffer` which holds the  active buffer? see finishDraw too, duplicated logic where only difference is fields
 	public static StagedVertexBuffer.Draw startDrawing(boolean lines) {
 		if (lines) {
 			return stagedOutlineBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH, PrimitiveTopology.LINES);
@@ -208,6 +211,7 @@ public class Renderer {
 		doEvilMatrixPreparations(stack, box, false);
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
+
 		Vertexer.vertexBoxLines(stack.last(), buffer, moveToZero(box), color, col2, alpha, lineWidth * lineProg, cutFromCenter, cutFromCorner, outerMult, innerMult);
 		finishDraw(true, draw, layer);
 		stack.popPose();
@@ -217,10 +221,15 @@ public class Renderer {
 		doEvilMatrixPreparations(matrices, bounds, true);
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
+
 		AABB zeroed = moveToZero(bounds);
 		double normalised = zeroed.getMinPosition().distanceTo(zeroed.getMaxPosition());
-        lines.forEach(line -> line.render(matrices, buffer, getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.minPos) / normalised)), getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.maxPos) / normalised)), Math.round(alpha), width, cutFromCenter, cutFromCorner, outerMult, innerMult));
-        toRemove.forEach(line -> line.render(matrices, buffer, getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.minPos) / normalised)), getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.maxPos) / normalised)), Math.round(alpha), width, cutFromCenter, cutFromCorner, outerMult, innerMult));
+		for (Line line : Util.concat(lines, toRemove)) {
+			line.render(matrices, buffer,
+					getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.minPos) / normalised)),
+					getLerpedColor(c1, c2, (float) (zeroed.getMinPosition().distanceTo(line.maxPos) / normalised)),
+					Math.round(alpha), width, cutFromCenter, cutFromCorner, outerMult, innerMult);
+		}
 		finishDraw(true, draw, layer);
 		matrices.popPose();
 	}
@@ -258,8 +267,7 @@ public class Renderer {
 	}
 
 	public static VoxelShape moveToZero(VoxelShape shape) {
-		Vec3 minVec = shape.bounds().getMinPosition();
-		return shape.move(minVec.reverse());
+		return shape.move(shape.bounds().getMinPosition().reverse());
 	}
 
 	//TODO: allow combining / excluding side sets?
@@ -275,9 +283,9 @@ public class Renderer {
 	}
 
 	public static Color getRainbowCol(float delay) {
-		double rainbowState = Math.ceil((System.currentTimeMillis() + (int) (delay))) * getActiveInstance().rainbowSpeed / 50;
+		float rainbowState = Mth.ceil((getMillis() + delay)) * getActiveInstance().rainbowSpeed / 50;
 		rainbowState %= 360;
-		return Color.getHSBColor((float) (rainbowState / 360.0f), getActiveInstance().saturation, getActiveInstance().brightness);
+		return Color.getHSBColor(rainbowState / 360, getActiveInstance().saturation, getActiveInstance().brightness);
 	}
 
 	public static boolean isBlockEmpty(BlockPos pos) {
@@ -311,13 +319,13 @@ public class Renderer {
 	}
 
 	public static void mainLoop(LevelRenderContext c) {
-		Profiler.get().push("Custom block outline pre");
+		get().push("Custom block outline pre");
 		HitResult evilHitResult = getHitResult();
 
 		easeBoxAndEdges(evilHitResult, getVoxelShape(evilHitResult));
-		Profiler.get().popPush("Custom block outline render");
+		get().popPush("Custom block outline render");
 		renderEverything(c, evilHitResult);
-		Profiler.get().pop();
+		get().pop();
 	}
 
 	public static HitResult getHitResult() {
@@ -359,10 +367,9 @@ public class Renderer {
 	}
 
 	public static void easeBoxAndEdges(HitResult evilHitResult, VoxelShape shape) {
-		boolean miss = isMiss(evilHitResult);
 		AABB targetBox = shape.bounds();
 		if (getActiveInstance().doEasing) {
-			if (getActiveInstance().updateWhenUnfocused || !miss) {
+			if (getActiveInstance().updateWhenUnfocused || evilHitResult.getType() != HitResult.Type.MISS) {
 				easeBox = new AABB(ease(easeBox.minX, targetBox.minX, getActiveInstance().easeSpeed), ease(easeBox.minY, targetBox.minY, getActiveInstance().easeSpeed), ease(easeBox.minZ, targetBox.minZ, getActiveInstance().easeSpeed), ease(easeBox.maxX, targetBox.maxX, getActiveInstance().easeSpeed), ease(easeBox.maxY, targetBox.maxY, getActiveInstance().easeSpeed), ease(easeBox.maxZ, targetBox.maxZ, getActiveInstance().easeSpeed));
 			}
 		} else {
@@ -373,27 +380,24 @@ public class Renderer {
 		}
 	}
 
-	public static boolean isMiss(HitResult hitResult) {
-		return hitResult.getType() == HitResult.Type.MISS;
-	}
-
 	private static void renderEverything(LevelRenderContext c, HitResult hitResult) {
 		//render the fill first, we don't want it drawn over the outline
-		Profiler.get().push("updateProgresses");
-		boolean isCrystalObstructed = isCrystalObstructed(hitResult);
+		get().push("updateProgresses");
 		updateProgresses(hitResult);
+		get().popPush("isCrystalObstructed");
+		boolean isCrystalObstructed = isCrystalObstructed(hitResult);
 		if (edgeAlpha > 1) {
 			if (getActiveInstance().fillEnabled) {
-				Profiler.get().popPush("drawFill");
+				get().popPush("drawFill");
 				drawFill(c.poseStack(), isCrystalObstructed);
 			}
 			//now the outline itself
 			if (getActiveInstance().outlineEnabled) {
-				Profiler.get().popPush("drawOutline");
+				get().popPush("drawOutline");
 				drawOutline(c.poseStack(), isCrystalObstructed);
 			}
 		}
-		Profiler.get().pop();
+		get().pop();
 	}
 
 	private static boolean isCrystalObstructed(HitResult evilHitResult) {
@@ -424,8 +428,8 @@ public class Renderer {
 	}
 
 	private static void drawOutline(PoseStack stack, boolean isCrystalObstructed) {
-		var profiler = Profiler.get();
-		profiler.push("pre");
+		// todo fix up profiling
+		get().push("pre");
 		if (mc.level == null) throw new IllegalStateException("level == null");
 		//TODO: make check so that cut from corner and cut from center do not add up to higher than 0.95
 
@@ -454,7 +458,7 @@ public class Renderer {
 			}
 			Renderer.drawBoxOutline(stack, inflated, mainCols.first, mainCols.second, lineFades, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, getActiveInstance().outerThicknessMult, getActiveInstance().innerThicknessMult, 0);
 		}
-		profiler.pop();
+		get().pop();
 	}
 
 	public static float @NonNull [] getNewFades(float alphaMultiplier) {
@@ -466,12 +470,15 @@ public class Renderer {
 	}
 
 	public static Pair<Color, Color> getColors(boolean isCrystalObstructed, boolean rainbow, int delay, Color col, Color col2, Color crystalHelperCol) {
-		return Pair.of(isCrystalObstructed ? crystalHelperCol : rainbow ? getRainbowCol(0) : col, isCrystalObstructed ? crystalHelperCol : rainbow ? getRainbowCol(delay) : col2);
+		return Pair.of(
+				isCrystalObstructed ? crystalHelperCol : rainbow ? getRainbowCol(0) : col,
+				isCrystalObstructed ? crystalHelperCol : rainbow ? getRainbowCol(delay) : col2
+		);
 	}
 
 	private static void updateProgresses(HitResult evilHitResult) {
 		if (mc.level == null) return;
-		boolean miss = isMiss(evilHitResult);
+		boolean miss = evilHitResult.getType() == HitResult.Type.MISS;
 		if (evilHitResult instanceof EntityHitResult) {
 			if (getActiveInstance().allowEntities) {
 				for (Direction dir : Direction.values()) {
@@ -541,7 +548,7 @@ public class Renderer {
 	}
 
 	public static HitResult pick(Entity e, final double range, final float a, final boolean withLiquids) {
-        if(mc.level == null) return null;
+        if (mc.level == null) return null;
 		Vec3 from = e.getEyePosition(a);
 		Vec3 viewVector = e.getViewVector(a);
 		Vec3 to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
