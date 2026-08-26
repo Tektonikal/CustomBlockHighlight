@@ -43,7 +43,6 @@ import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import org.joml.*;
 import org.jspecify.annotations.NonNull;
-import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Line;
 import tektonikal.customblockhighlight.util.OutlineType;
@@ -58,29 +57,6 @@ import static net.minecraft.client.renderer.RenderPipelines.LINES;
 import static tektonikal.customblockhighlight.Blockhighlight.ease;
 import static tektonikal.customblockhighlight.Blockhighlight.easeF;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
-
-//POST V2.8
-//TODO: fix thick lines not fully joining at corners
-//TODO: animations / visuals for block breaking progress?
-//TODO: edge line animation modes
-//TODO: option for easebox to teleport to new position if it's fully faded out
-//TODO: fancier "looked at" mode
-//TODO: fancy rotations for the box. i'm vagueposting
-//TODO: in edges mode, switching between a normal block and a connected one causes the center of the outline to prioritize the position closest to 0,0?
-//not super important, but something i'd want to keep in check. can be reproduced with normal block under a bed facing north
-//TODO: separate options from the extras tab to be more specific
-//TODO: more options for the extra line layers
-//TODO: ensure iris compat
-//there is no real solution to the Z-fighting issue without disabling depth test.
-//even if the lines are drawn correctly spaced out, the thicker line might be rotated differently, causing it to fully appear in front or z-fight. whateverrrrrr man
-//maybe it would be best into looking into creating a pipeline to draw lines that aren't in screenspace. idk
-//TODO: hotkey toggle?
-//TODO: inverse box animation
-//TODO: flat outline
-//TODO: split out modes
-//TODO: line cut animations
-//TODO: ignore non-full blocks when doing stuff like leaves
-//TODO: change per-side alpha array from storing alpha to general animation state
 
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
@@ -122,16 +98,18 @@ public class Renderer {
 					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
 					.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
 					.createRenderSetup());
+
 	public static final RenderType linesConcealed = RenderType.create("lines_concealed",
 			RenderSetup.builder(Renderer.LINES_CONCEALED_ONLY)
 					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
 					.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
 					.createRenderSetup());
+
 	public static final StagedVertexBuffer stagedFaceBuffer = new StagedVertexBuffer(() -> " CBH sides", RenderType.SMALL_BUFFER_SIZE);
 	public static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
 
-	public static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
 
+	public static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
 	public static List<Line> lines = new ArrayList<>();
 	public static List<Line> toRemove = new ArrayList<>();
 
@@ -167,7 +145,7 @@ public class Renderer {
 		GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
 		RenderTarget mainTarget = mc.gameRenderer.mainRenderTarget();
 		GpuTextureView colorTexture = mainTarget.getColorTextureView();
-		assert colorTexture != null;
+		if(colorTexture == null) return;
 		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
 			if (lines) {
 				switch (layer) {
@@ -205,19 +183,6 @@ public class Renderer {
 		doEvilMatrixPreparations(stack, box, false);
 		StagedVertexBuffer.Draw draw = startDrawing(false);
 		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
-//		if (evilHitResult instanceof BlockHitResult bhr) {
-//			List<BlockStateModelPart> s = new ArrayList();
-//			mc.getModelManager().getBlockStateModelSet().get(mc.level.getBlockState(bhr.getBlockPos())).collectParts(RandomSource.create(), s);
-//			s.forEach(blockStateModelPart -> {
-//				((SimpleModelWrapper) blockStateModelPart).quads().getAll().forEach(quad -> {
-//					Vector3fc p0 = new Vector3f(quad.position0());
-//					Vector3fc p1 = new Vector3f(quad.position1());
-//					Vector3fc p2 = new Vector3f(quad.position2());
-//					Vector3fc p3 = new Vector3f(quad.position3());
-//					Vertexer.vertexQuad(stack, buffer, p0.x(), p0.y(), p0.z(), p1.x(), p1.y(), p1.z(), p2.x(), p2.y(), p2.z(), p3.x(), p3.y(), p3.z(), Color.BLACK, Color.WHITE, Color.RED, Color.BLUE, 255);
-//				});
-//			});
-//		}
 		Vertexer.vertexBoxQuads(stack.last(), buffer, moveToZero(box), cols, col2, alpha);
 		finishDraw(false, draw, 0);
 		stack.popPose();
@@ -244,22 +209,6 @@ public class Renderer {
 		StagedVertexBuffer.Draw draw = startDrawing(true);
 		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
 		Vertexer.vertexBoxLines(stack.last(), buffer, moveToZero(box), color, col2, alpha, lineWidth * lineProg, cutFromCenter, cutFromCorner, outerMult, innerMult);
-//		stack.pushPose();
-//		stack.translate(0.5F, 0.5F, 0.5F);
-//		float scale = 1 / (float) Math.sqrt(3);
-//		stack.scale(scale, scale, scale);
-//		stack.translate(-0.5F, -0.5F, -0.5F);
-//		stack.rotateAround(new Quaternionf().rotateXYZ(35.26F, 45, 0), 0.5F, 0.5F, 0.5F);
-//		Vertexer.vertexBoxLines(stack, buffer, moveToZero(box), color, col2, alpha, layer);
-//		stack.popPose();
-//		stack.pushPose();
-//		stack.translate(0.5F, 0.5F, 0.5F);
-//		scale = (float) (1 / (float) Math.sqrt(3) / Math.sqrt(3));
-//		stack.scale(scale, scale, scale);
-//		stack.translate(-0.5F, -0.5F, -0.5F);
-//		stack.rotateAround(new Quaternionf().rotateXYZ(35.26F * 2, 90, 0), 0.5F, 0.5F, 0.5F);
-//		Vertexer.vertexBoxLines(stack, buffer, moveToZero(box), color, col2, alpha, layer);
-//		stack.popPose();
 		finishDraw(true, draw, layer);
 		stack.popPose();
 	}
@@ -304,7 +253,6 @@ public class Renderer {
 		toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
 	}
 
-
 	public static AABB moveToZero(AABB box) {
 		return box.move(box.getMinPosition().reverse());
 	}
@@ -332,14 +280,14 @@ public class Renderer {
 		return Color.getHSBColor((float) (rainbowState / 360.0f), getActiveInstance().saturation, getActiveInstance().brightness);
 	}
 
-	public static boolean isBlockOccupied(BlockPos pos) {
+	public static boolean isBlockEmpty(BlockPos pos) {
 		if (mc.level == null) throw new IllegalStateException("level == null");
 		//TODO: fix this
 		if (mc.level.getBlockState(pos).hasProperty(BlockStateProperties.WATERLOGGED) && !mc.level.getBlockState(pos).getValue(BlockStateProperties.WATERLOGGED) && !mc.level.getFluidState(pos).isEmpty()) {
 			//ignore liquids
-			return false;
+			return true;
 		}
-		return !mc.level.isEmptyBlock(pos);
+		return mc.level.isEmptyBlock(pos);
 	}
 
 	public static EnumSet<Direction> getConcealedFaces(BlockPos pos) {
@@ -349,12 +297,12 @@ public class Renderer {
         it will still cull faces relative to the selected block, and not the entire rendered selection
          */
 		EnumSet<Direction> set = EnumSet.allOf(Direction.class);
-		if (!isBlockOccupied(pos.above())) set.remove(Direction.UP);
-		if (!isBlockOccupied(pos.below())) set.remove(Direction.DOWN);
-		if (!isBlockOccupied(pos.north())) set.remove(Direction.NORTH);
-		if (!isBlockOccupied(pos.east())) set.remove(Direction.EAST);
-		if (!isBlockOccupied(pos.south())) set.remove(Direction.SOUTH);
-		if (!isBlockOccupied(pos.west())) set.remove(Direction.WEST);
+		if (isBlockEmpty(pos.above())) set.remove(Direction.UP);
+		if (isBlockEmpty(pos.below())) set.remove(Direction.DOWN);
+		if (isBlockEmpty(pos.north())) set.remove(Direction.NORTH);
+		if (isBlockEmpty(pos.east())) set.remove(Direction.EAST);
+		if (isBlockEmpty(pos.south())) set.remove(Direction.SOUTH);
+		if (isBlockEmpty(pos.west())) set.remove(Direction.WEST);
 		return set;
 	}
 
@@ -387,7 +335,7 @@ public class Renderer {
 
 	public static @NonNull VoxelShape getVoxelShape(HitResult evilHitResult) {
 		VoxelShape shape = Shapes.block();
-		if (mc.level == null) return shape;
+		if (mc.level == null || mc.getCameraEntity() == null) return shape;
 		if (evilHitResult instanceof BlockHitResult block) {
 			BlockState state = mc.level.getBlockState(block.getBlockPos());
 			shape = state.getShape(mc.level, block.getBlockPos());
@@ -504,8 +452,6 @@ public class Renderer {
 				float[] newFades = getNewFades(getActiveInstance().slineAlphaMultiplier);
 				Renderer.drawBoxOutline(stack, inflated, colors.first, colors.second, newFades, getActiveInstance().slineWidth, getActiveInstance().scutFromCenter, getActiveInstance().scutFromCorner, getActiveInstance().souterThicknessMult, getActiveInstance().sinnerThicknessMult, 1);
 			}
-//			doEvilMatrixPreparations(stack, easeBox.inflate(getActiveInstance().lineExpand), false);
-//			submitNodeCollector.submitCustom(SubmitRenderPhases.ALWAYS_ON_TOP, new CBHFeatureRenderer.Submit(CBHLineRenderInfo.of(shape, finalLineCol, finalLineCol2, lineFades, getActiveInstance()), stack.last()));
 			Renderer.drawBoxOutline(stack, inflated, mainCols.first, mainCols.second, lineFades, getActiveInstance().lineWidth, getActiveInstance().cutFromCenter, getActiveInstance().cutFromCorner, getActiveInstance().outerThicknessMult, getActiveInstance().innerThicknessMult, 0);
 		}
 		profiler.pop();
@@ -522,7 +468,6 @@ public class Renderer {
 	public static Pair<Color, Color> getColors(boolean isCrystalObstructed, boolean rainbow, int delay, Color col, Color col2, Color crystalHelperCol) {
 		return Pair.of(isCrystalObstructed ? crystalHelperCol : rainbow ? getRainbowCol(0) : col, isCrystalObstructed ? crystalHelperCol : rainbow ? getRainbowCol(delay) : col2);
 	}
-
 
 	private static void updateProgresses(HitResult evilHitResult) {
 		if (mc.level == null) return;
@@ -595,18 +540,16 @@ public class Renderer {
 		edgeAlpha = getActiveInstance().fadeOut ? easeF(edgeAlpha, 0, getActiveInstance().fadeOutSpeed) : 0;
 	}
 
-
 	public static HitResult pick(Entity e, final double range, final float a, final boolean withLiquids) {
+        if(mc.level == null) return null;
 		Vec3 from = e.getEyePosition(a);
 		Vec3 viewVector = e.getViewVector(a);
 		Vec3 to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
-		assert mc.level != null;
 		return mc.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, withLiquids ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.NONE, e));
 	}
 
 	private static Direction joinConnected(BlockPos pos) {
 		if (mc.level == null) return null;
-
 		BlockState connectedState;
 		Direction dir;
 		BlockPos connectedPos;
