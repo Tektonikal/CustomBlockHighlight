@@ -67,7 +67,6 @@ public class Vertexer {
             |        |/
    final -> +--------+
          */
-		//i don't wanna bother checking for <0.5 alpha here, surely it makes no difference?
 		//down
 		vertexLine(pose, builder, x1, y1, z1, x2, y1, z1, x1y1z1, x2y1z1, Math.round(Math.max(alpha[0], alpha[2])), 1, 0, 0, width, cutFromCenter, cutFromCorner, outerMult, innerMult);
 		vertexLine(pose, builder, x1, y1, z1, x1, y1, z2, x1y1z1, x1y1z2, Math.round(Math.max(alpha[4], alpha[0])), 0, 0, 1, width, cutFromCenter, cutFromCorner, outerMult, innerMult);
@@ -139,6 +138,7 @@ public class Vertexer {
 	}
 
 	public static void vertexLine(PoseStack.Pose pose, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, float nx, float ny, float nz, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult) {
+		if(alpha < 1) return;
 		if (cutFromCenter == 0 && cutFromCorner == 0) {
 			builder.addVertex(pose, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width);
 			builder.addVertex(pose, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(pose, nx, ny, nz).setLineWidth(width);
