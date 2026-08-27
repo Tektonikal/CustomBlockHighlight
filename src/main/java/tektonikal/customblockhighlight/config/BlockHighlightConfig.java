@@ -154,19 +154,19 @@ public class BlockHighlightConfig {
             .build();
     public static Option<OutlineType> o_outlineType = Option.<OutlineType>createBuilder()
             .name(Component.translatable("cbh.config.mode"))
-            .description(OptionDescription.of(Component.translatable("Modes:"),
-                    Component.translatable("- Air Exposed"),
-                    Component.translatable("- All"),
-                    Component.translatable("- Concealed Faces"),
-                    Component.translatable("- Edges: Uses model shape."),
-                    Component.translatable("- Looked At")
+            .description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
+                    Component.translatable("cbh.config.mode.description.2"),
+                    Component.translatable("cbh.config.mode.description.3"),
+                    Component.translatable("cbh.config.mode.description.4"),
+                    Component.translatable("cbh.config.mode.description.5"),
+                    Component.translatable("cbh.config.mode.description.6")
             ))
             .stateManager(StateManager.createInstant(OutlineType.AIR_EXPOSED, () -> ACTIVE_INSTANCE.outlineType, newVal -> ACTIVE_INSTANCE.outlineType = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
             .build();
     public static Option<DepthTestMode> o_lineDepthTest = Option.<DepthTestMode>createBuilder()
             .name(Component.translatable("cbh.config.depthTest"))
-            .description(OptionDescription.of(Component.translatable("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
+            .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
             .stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.lineDepthTest, newVal -> ACTIVE_INSTANCE.lineDepthTest = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
             .build();
@@ -191,12 +191,12 @@ public class BlockHighlightConfig {
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.99F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_outerThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("  - Outer Thickness Multiplier"))
+            .name(Component.translatable("cbh.config.outer_thickness_multiplier"))
             .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.outerThicknessMult, newVal -> ACTIVE_INSTANCE.outerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_innerThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("  - Inner Thickness Multiplier"))
+            .name(Component.translatable("cbh.config.inner_thickness_multiplier"))
             .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.innerThicknessMult, newVal -> ACTIVE_INSTANCE.innerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();

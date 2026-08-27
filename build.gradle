@@ -1,6 +1,7 @@
 plugins {
 	id 'net.fabricmc.fabric-loom' version '1.16-SNAPSHOT'
 	id 'maven-publish'
+	alias(ft.plugins.lang)
 }
 
 version = project.mod_version
@@ -74,6 +75,11 @@ java {
 
 	sourceCompatibility = JavaVersion.VERSION_25
 	targetCompatibility = JavaVersion.VERSION_25
+}
+
+fletchingTable {
+	lang.configure(sourceSets.main) {
+	}
 }
 
 jar {

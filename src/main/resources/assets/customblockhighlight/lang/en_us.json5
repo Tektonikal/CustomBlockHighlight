@@ -1,0 +1,38 @@
+{
+  "cbh": {
+    "config": {
+      "enabled": "Enabled",
+      "primary": "- Primary",
+      "secondary": "- Secondary",
+      "opacity": "- Opacity",
+      "rainbow": "- Rainbow",
+      "mode": {
+        ".": "- Mode",
+        "description.1": "Modes:",
+        "description.2": "- Air Exposed",
+        "description.3": "- All",
+        "description.4": "- Concealed Faces",
+        "description.5": "- Edges: Uses model shape.",
+        "description.6": "- Looked At",
+      },
+      "depthTest": {
+        ".": "- Depth Test",
+        "description": "Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!"
+      },
+      "expand": "- Adjust Size By",
+      "lineWidth": "- Line Width",
+      "cutFromCorner": "- Cut From Corner",
+      "cutFromCenter": "- Cut From Center",
+      "alphaMultiplier": "- Opacity Multiplier",
+      "outer_thickness_multiplier": "  - Outer Thickness Multiplier",
+      "inner_thickness_multiplier": "  - Outer Thickness Multiplier",
+    },
+    "presets": {
+      "vanilla": "Give it to me plain!",
+      "sweat": "PvP sweat",
+      "trans": "Beautiful women!",
+      "classic": "Classic CBH experience",
+      "fancy": "Gimme all the bells 'n whistles!"
+    }
+  }
+}
