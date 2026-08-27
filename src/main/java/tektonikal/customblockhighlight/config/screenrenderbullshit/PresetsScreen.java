@@ -112,18 +112,12 @@ public class PresetsScreen extends Screen {
 
 			BlockHighlightConfig cfg = ConfigManager.getPreset(this);
 
-			float[] arr = new float[6];
-			Arrays.fill(arr, cfg.lineAlpha);
-			renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), cfg.lineCol, cfg.lineCol2, arr, cfg.lineWidth, cfg.lineDepthTest, cfg.cutFromCenter, cfg.cutFromCorner));
-			if (cfg.secondary) {
-				float[] arr2 = new float[6];
-				Arrays.fill(arr2, cfg.lineAlpha * cfg.slineAlphaMultiplier);
-				renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), cfg.slineCol, cfg.slineCol2, arr2, cfg.slineWidth, cfg.slineDepthTest, cfg.cutFromCenter, cfg.cutFromCorner));
-			}
-			if (cfg.tertiary) {
-				float[] arr3 = new float[6];
-				Arrays.fill(arr3, cfg.lineAlpha * cfg.tlineAlphaMultiplier);
-				renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), cfg.tlineCol, cfg.tlineCol2, arr3, cfg.tlineWidth, cfg.tlineDepthTest, cfg.cutFromCenter, cfg.cutFromCorner));
+			for (var lineConfig : cfg.lineConfigs()) {
+				if (lineConfig.enabled) {
+					float[] arr = new float[6];
+					Arrays.fill(arr, lineConfig.lineAlpha);
+					renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), lineConfig.lineCol, lineConfig.lineCol2, arr, lineConfig.lineWidth, lineConfig.lineDepthTest, lineConfig.cutFromCenter, lineConfig.cutFromCorner));
+				}
 			}
 		}
 	}

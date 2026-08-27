@@ -3,6 +3,7 @@ package tektonikal.customblockhighlight.config;
 import com.google.gson.JsonSyntaxException;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
+import dev.isxander.yacl3.impl.ProvidesBindingForDeprecation;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -17,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 
 import static com.sun.jna.Platform.isWindows;
 
@@ -33,7 +35,16 @@ public class BlockHighlightConfig {
     public BlockHighlightConfig() {
     }
 
-    public static class RainbowSettings {
+	public LineConfig getLineConfig(int layer) {
+		return switch (layer) {
+			case 0 -> primary;
+			case 1 -> secondary;
+			case 2 -> tertiary;
+			default -> throw new IllegalStateException();
+		};
+	}
+
+	public static class RainbowSettings {
         public boolean enabled;
         public int delay;
         public float saturation;
@@ -47,53 +58,48 @@ public class BlockHighlightConfig {
         }
     }
 
-    //@formatter:off
-    //outline stuff
-    public boolean outlineEnabled = true;
-        public Color lineCol = Color.BLACK;
-        public Color lineCol2 = Color.WHITE;
-        public int lineAlpha = 255;
-        public boolean outlineRainbow = true;
-        public FaceMode outlineType = FaceMode.AIR_EXPOSED;
-        public float lineWidth = 2.5F;
-        public float lineExpand = 0;
-        public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
-
-	 	public float cutFromCenter = 0.25F;
-	 	public float cutFromCorner = 0;
+	public static class LineConfig {
+		public boolean enabled;
+		public Color lineCol = Color.BLACK;
+		public Color lineCol2 = Color.BLACK;
+		public int lineAlpha = 255;
+		public boolean outlineRainbow = false;
+		public float lineWidth = 5F;
+		public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
+		public float cutFromCenter = 0.25F;
+		public float cutFromCorner = 0;
 		public float innerThicknessMult = 1;
 		public float outerThicknessMult = 1;
 
- 	public boolean secondary = true;
-	 	public Color slineCol = Color.BLACK;
-	 	public Color slineCol2 = Color.BLACK;
-	 	public float slineAlphaMultiplier = 1F;
-	 	public boolean soutlineRainbow = false;
-	 	public float slineWidth = 5F;
-	 	public DepthTestMode slineDepthTest = DepthTestMode.ALWAYS_PASS;
-		public float scutFromCenter = 0.25F;
-		public float scutFromCorner = 0;
-		public float sinnerThicknessMult = 1;
-		public float souterThicknessMult = 1;
+		public LineConfig(boolean enabled) {
+			this.enabled = enabled;
+		}
+	}
 
- 	public boolean tertiary = false;
-	 	public Color tlineCol = Color.BLACK;
-	 	public Color tlineCol2 = Color.WHITE;
-	 	public float tlineAlphaMultiplier = 1F;
-	 	public boolean toutlineRainbow = false;
-	 	public float tlineWidth = 3;
-	 	public DepthTestMode tlineDepthTest = DepthTestMode.ALWAYS_PASS;
-		public float tcutFromCenter = 0.25F;
-		public float tcutFromCorner = 0;
-		public float tinnerThicknessMult = 1;
-		public float touterThicknessMult = 1;
+	public LineConfig primary = new LineConfig(true);
+	public LineConfig secondary = new LineConfig(true);
+	public LineConfig tertiary = new LineConfig(false);
+
+	public List<LineConfig> lineConfigs() {
+		return List.of(primary, secondary, tertiary);
+	}
+	public List<LineConfig> reversedLineConfigs() {
+		return List.of(tertiary, secondary, primary);
+	}
+
+    //@formatter:off
+    //outline stuff
+    public float lineExpand = 0;
+	public FaceMode outlineType = FaceMode.AIR_EXPOSED;
 
     //fill stuffs
     public boolean fillEnabled = true;
+		// todo: consider turning this {
         public Color fillCol = Color.BLACK;
         public Color fillCol2 = Color.WHITE;
         public int fillOpacity = 128;
         public boolean fillRainbow = false;
+		// todo part 2: } all into its own thing, since its used in lines too
         public FaceMode fillType = FaceMode.ALL;
         public float fillExpand = 0.001F;
         public DepthTestMode fillDepthTest = DepthTestMode.HIDDEN_ONLY;
@@ -127,29 +133,29 @@ public class BlockHighlightConfig {
     @Updatable
     public static Option<Boolean> o_outlineEnabled = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.enabled"))
-            .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.outlineEnabled, newVal -> ACTIVE_INSTANCE.outlineEnabled = newVal))
+            .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.primary.enabled, newVal -> ACTIVE_INSTANCE.primary.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
     public static Option<Color> o_lineCol = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.primary"))
-            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.lineCol, newVal -> ACTIVE_INSTANCE.lineCol = newVal))
+            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.primary.lineCol, newVal -> ACTIVE_INSTANCE.primary.lineCol = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
-    public static Option<Color> o_lineCol2 = Option.<Color>createBuilder()
-            .name(Component.translatable("cbh.config.secondary"))
-            .stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.lineCol2, newVal -> ACTIVE_INSTANCE.lineCol2 = newVal))
-            .controller(ColorControllerBuilder::create)
-            .build();
+	public static final Option<Color> o_lineCol2 = Option.<Color>createBuilder()
+			.name(Component.translatable("cbh.config.secondary"))
+			.stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.primary.lineCol2, newVal -> ACTIVE_INSTANCE.primary.lineCol2 = newVal))
+			.controller(ColorControllerBuilder::create)
+			.build();
     public static Option<Integer> o_lineAlpha = Option.<Integer>createBuilder()
             .name(Component.translatable("cbh.config.opacity"))
             .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
-            .stateManager(StateManager.createInstant(255, () -> ACTIVE_INSTANCE.lineAlpha, newVal -> ACTIVE_INSTANCE.lineAlpha = newVal))
+            .stateManager(StateManager.createInstant(255, () -> ACTIVE_INSTANCE.primary.lineAlpha, newVal -> ACTIVE_INSTANCE.primary.lineAlpha = newVal))
             .build();
     @Updatable
     public static Option<Boolean> o_outlineRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.outlineRainbow, newVal -> ACTIVE_INSTANCE.outlineRainbow = newVal))
+            .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.primary.outlineRainbow, newVal -> ACTIVE_INSTANCE.primary.outlineRainbow = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
@@ -168,7 +174,7 @@ public class BlockHighlightConfig {
     public static Option<DepthTestMode> o_lineDepthTest = Option.<DepthTestMode>createBuilder()
             .name(Component.translatable("cbh.config.depthTest"))
             .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
-            .stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.lineDepthTest, newVal -> ACTIVE_INSTANCE.lineDepthTest = newVal))
+            .stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.primary.lineDepthTest, newVal -> ACTIVE_INSTANCE.primary.lineDepthTest = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
             .build();
     public static Option<Float> o_lineExpand = Option.<Float>createBuilder()
@@ -179,146 +185,146 @@ public class BlockHighlightConfig {
     public static Option<Float> o_lineWidth = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.lineWidth"))
             .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(0.5F, 15F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1f", value) + " px")))
-            .stateManager(StateManager.createInstant(2.5F, () -> ACTIVE_INSTANCE.lineWidth, newVal -> ACTIVE_INSTANCE.lineWidth = newVal))
+            .stateManager(StateManager.createInstant(2.5F, () -> ACTIVE_INSTANCE.primary.lineWidth, newVal -> ACTIVE_INSTANCE.primary.lineWidth = newVal))
             .build();
     public static Option<Float> o_cutFromCorner = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCorner"))
-            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.cutFromCorner, newVal -> ACTIVE_INSTANCE.cutFromCorner = newVal))
+            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.primary.cutFromCorner, newVal -> ACTIVE_INSTANCE.primary.cutFromCorner = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.99F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_cutFromCenter = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCenter"))
-            .stateManager(StateManager.createInstant(0.25F, () -> ACTIVE_INSTANCE.cutFromCenter, newVal -> ACTIVE_INSTANCE.cutFromCenter = newVal))
+            .stateManager(StateManager.createInstant(0.25F, () -> ACTIVE_INSTANCE.primary.cutFromCenter, newVal -> ACTIVE_INSTANCE.primary.cutFromCenter = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.99F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_outerThicknessMult = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.outer_thickness_multiplier"))
-            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.outerThicknessMult, newVal -> ACTIVE_INSTANCE.outerThicknessMult = newVal))
+            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.primary.outerThicknessMult, newVal -> ACTIVE_INSTANCE.primary.outerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_innerThicknessMult = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.inner_thickness_multiplier"))
-            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.innerThicknessMult, newVal -> ACTIVE_INSTANCE.innerThicknessMult = newVal))
+            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.primary.innerThicknessMult, newVal -> ACTIVE_INSTANCE.primary.innerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     @Updatable
     public static Option<Boolean> o_secondary = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.enabled"))
-            .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.secondary, newVal -> ACTIVE_INSTANCE.secondary = newVal))
+            .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.secondary.enabled, newVal -> ACTIVE_INSTANCE.secondary.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
     public static Option<Color> o_slineCol = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.primary"))
-            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.slineCol, newVal -> ACTIVE_INSTANCE.slineCol = newVal))
+            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.secondary.lineCol, newVal -> ACTIVE_INSTANCE.secondary.lineCol = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
     public static Option<Color> o_slineCol2 = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.secondary"))
-            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.slineCol2, newVal -> ACTIVE_INSTANCE.slineCol2 = newVal))
+            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.secondary.lineCol2, newVal -> ACTIVE_INSTANCE.secondary.lineCol2 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
-    public static Option<Float> o_slineAlphaMultiplier = Option.<Float>createBuilder()
+    public static Option<Integer> o_slineAlphaMultiplier = Option.<Integer>createBuilder()
             .name(Component.translatable("cbh.config.alphaMultiplier"))
-            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.slineAlphaMultiplier, newVal -> ACTIVE_INSTANCE.slineAlphaMultiplier = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+            .stateManager(StateManager.createInstant(1, () -> ACTIVE_INSTANCE.secondary.lineAlpha, newVal -> ACTIVE_INSTANCE.secondary.lineAlpha = newVal))
+            .controller(intOption -> IntegerSliderControllerBuilder.create(intOption).range(0, 255).step(1))
             .build();
     @Updatable
     public static Option<Boolean> o_soutlineRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.soutlineRainbow, newVal -> ACTIVE_INSTANCE.soutlineRainbow = newVal))
+            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.secondary.outlineRainbow, newVal -> ACTIVE_INSTANCE.secondary.outlineRainbow = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
     public static Option<DepthTestMode> o_slineDepthTest = Option.<DepthTestMode>createBuilder()
             .name(Component.translatable("cbh.config.depthTest"))
             .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
-            .stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.slineDepthTest, newVal -> ACTIVE_INSTANCE.slineDepthTest = newVal))
+            .stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.secondary.lineDepthTest, newVal -> ACTIVE_INSTANCE.secondary.lineDepthTest = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
             .build();
     public static Option<Float> o_slineWidth = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.lineWidth"))
             .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1f", value) + " px")))
-            .stateManager(StateManager.createInstant(5F, () -> ACTIVE_INSTANCE.slineWidth, newVal -> ACTIVE_INSTANCE.slineWidth = newVal))
+            .stateManager(StateManager.createInstant(5F, () -> ACTIVE_INSTANCE.secondary.lineWidth, newVal -> ACTIVE_INSTANCE.secondary.lineWidth = newVal))
             .build();
     public static Option<Float> o_scutFromCorner = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCorner"))
-            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.scutFromCorner, newVal -> ACTIVE_INSTANCE.scutFromCorner = newVal))
+            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.secondary.cutFromCorner, newVal -> ACTIVE_INSTANCE.secondary.cutFromCorner = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_scutFromCenter = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCenter"))
-            .stateManager(StateManager.createInstant(0.25F, () -> ACTIVE_INSTANCE.scutFromCenter, newVal -> ACTIVE_INSTANCE.scutFromCenter = newVal))
+            .stateManager(StateManager.createInstant(0.25F, () -> ACTIVE_INSTANCE.secondary.cutFromCenter, newVal -> ACTIVE_INSTANCE.secondary.cutFromCenter = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_souterThicknessMult = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.outer_thickness_multiplier"))
-            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.souterThicknessMult, newVal -> ACTIVE_INSTANCE.souterThicknessMult = newVal))
+            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.secondary.outerThicknessMult, newVal -> ACTIVE_INSTANCE.secondary.outerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_sinnerThicknessMult = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.inner_thickness_multiplier"))
-            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.sinnerThicknessMult, newVal -> ACTIVE_INSTANCE.sinnerThicknessMult = newVal))
+            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.secondary.innerThicknessMult, newVal -> ACTIVE_INSTANCE.secondary.innerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     @Updatable
     public static Option<Boolean> o_tertiary = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.enabled"))
-            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.tertiary, newVal -> ACTIVE_INSTANCE.tertiary = newVal))
+            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.tertiary.enabled, newVal -> ACTIVE_INSTANCE.tertiary.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
     public static Option<Color> o_tlineCol = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.primary"))
-            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.tlineCol, newVal -> ACTIVE_INSTANCE.tlineCol = newVal))
+            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.tertiary.lineCol, newVal -> ACTIVE_INSTANCE.tertiary.lineCol = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
     public static Option<Color> o_tlineCol2 = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.secondary"))
-            .stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.tlineCol2, newVal -> ACTIVE_INSTANCE.tlineCol2 = newVal))
+            .stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.tertiary.lineCol2, newVal -> ACTIVE_INSTANCE.tertiary.lineCol2 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
-    public static Option<Float> o_tlineAlphaMultiplier = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.alphaMultiplier"))
-            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.tlineAlphaMultiplier, newVal -> ACTIVE_INSTANCE.tlineAlphaMultiplier = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
+	public static Option<Integer> o_tlineAlphaMultiplier = Option.<Integer>createBuilder()
+			.name(Component.translatable("cbh.config.alphaMultiplier"))
+			.stateManager(StateManager.createInstant(1, () -> ACTIVE_INSTANCE.tertiary.lineAlpha, newVal -> ACTIVE_INSTANCE.tertiary.lineAlpha = newVal))
+			.controller(intOption -> IntegerSliderControllerBuilder.create(intOption).range(0, 255).step(1))
+			.build();
     @Updatable
     public static Option<Boolean> o_toutlineRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.toutlineRainbow, newVal -> ACTIVE_INSTANCE.toutlineRainbow = newVal))
+            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.tertiary.outlineRainbow, newVal -> ACTIVE_INSTANCE.tertiary.outlineRainbow = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
     public static Option<DepthTestMode> o_tlineDepthTest = Option.<DepthTestMode>createBuilder()
             .name(Component.translatable("cbh.config.depthTest"))
             .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
-            .stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.tlineDepthTest, newVal -> ACTIVE_INSTANCE.tlineDepthTest = newVal))
+            .stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.tertiary.lineDepthTest, newVal -> ACTIVE_INSTANCE.tertiary.lineDepthTest = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
             .build();
     public static Option<Float> o_tlineWidth = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.lineWidth"))
             .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1f", value) + " px")))
-            .stateManager(StateManager.createInstant(3F, () -> ACTIVE_INSTANCE.tlineWidth, newVal -> ACTIVE_INSTANCE.tlineWidth = newVal))
+            .stateManager(StateManager.createInstant(3F, () -> ACTIVE_INSTANCE.tertiary.lineWidth, newVal -> ACTIVE_INSTANCE.tertiary.lineWidth = newVal))
             .build();
     public static Option<Float> o_tcutFromCorner = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCorner"))
-            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.tcutFromCorner, newVal -> ACTIVE_INSTANCE.tcutFromCorner = newVal))
+            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.tertiary.cutFromCorner, newVal -> ACTIVE_INSTANCE.tertiary.cutFromCorner = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_tcutFromCenter = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCenter"))
-            .stateManager(StateManager.createInstant(0.25F, () -> ACTIVE_INSTANCE.tcutFromCenter, newVal -> ACTIVE_INSTANCE.tcutFromCenter = newVal))
+            .stateManager(StateManager.createInstant(0.25F, () -> ACTIVE_INSTANCE.tertiary.cutFromCenter, newVal -> ACTIVE_INSTANCE.tertiary.cutFromCenter = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_touterThicknessMult = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.outer_thickness_multiplier"))
-            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.touterThicknessMult, newVal -> ACTIVE_INSTANCE.touterThicknessMult = newVal))
+            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.tertiary.outerThicknessMult, newVal -> ACTIVE_INSTANCE.tertiary.outerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_tinnerThicknessMult = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.inner_thickness_multiplier"))
-            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.tinnerThicknessMult, newVal -> ACTIVE_INSTANCE.tinnerThicknessMult = newVal))
+            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.tertiary.innerThicknessMult, newVal -> ACTIVE_INSTANCE.tertiary.innerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     @Updatable
@@ -756,11 +762,10 @@ public class BlockHighlightConfig {
                         if (option == null)
                             return;
                         StateManager<Object> stateManager = option.stateManager();
-                        Object correspondingValue = BlockHighlightConfig.class.getField(optionInstanceField.getName().replace("o_", "")).get(this);
-
+						Object correspondingValue = ((ProvidesBindingForDeprecation<Object>) stateManager).getBinding().getValue();
                         stateManager.set(correspondingValue);
                         stateManager.apply();
-                    } catch (IllegalAccessException | NoSuchFieldException _) {
+                    } catch (IllegalAccessException _) {
                     }
                 });
         return this;

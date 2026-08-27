@@ -1,9 +1,6 @@
 package tektonikal.customblockhighlight.config;
 
-import com.google.gson.FieldNamingPolicy;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.InstanceCreator;
+import com.google.gson.*;
 import dev.isxander.yacl3.config.GsonConfigInstance;
 import net.fabricmc.loader.api.FabricLoader;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen;
@@ -63,9 +60,14 @@ public class ConfigManager {
 	}
 
 	public static BlockHighlightConfig loadFromJsonString(String json) {
-		BlockHighlightConfig config = GSON.fromJson(json, BlockHighlightConfig.class);
-		if (config == null) return new BlockHighlightConfig().applyValuesToOptionInstances();
-		return config.applyValuesToOptionInstances();
+		try {
+			BlockHighlightConfig config = GSON.fromJson(json, BlockHighlightConfig.class);
+			if (config == null) return new BlockHighlightConfig().applyValuesToOptionInstances();
+			return config.applyValuesToOptionInstances();
+		} catch (JsonSyntaxException e) {
+			// todo log
+			return new BlockHighlightConfig().applyValuesToOptionInstances(); // todo figure out what we actually wanna do
+		}
 	}
 
 	public static BlockHighlightConfig getPreset(PresetsScreen.Preset preset) {
