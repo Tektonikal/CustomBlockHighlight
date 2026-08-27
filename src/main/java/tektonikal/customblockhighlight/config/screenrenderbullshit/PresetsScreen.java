@@ -32,7 +32,7 @@ public class PresetsScreen extends Screen {
 	private final Tweener yAngleTweener = new Tweener(() -> yAngle, 20);
 
 	public PresetsScreen(boolean firstTime, Screen parent) {
-		super(Component.literal("Custom Block Highlight Configuration"));
+		super(Component.translatable("cbh.presets.screenTitle"));
 		this.firstTime = firstTime;
 		this.parent = parent;
 	}

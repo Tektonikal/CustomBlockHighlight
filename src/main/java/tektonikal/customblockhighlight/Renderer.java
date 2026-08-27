@@ -44,7 +44,7 @@ import org.joml.*;
 import org.jspecify.annotations.NonNull;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.Line;
-import tektonikal.customblockhighlight.util.OutlineType;
+import tektonikal.customblockhighlight.util.FaceMode;
 import tektonikal.customblockhighlight.util.Util;
 
 import java.awt.*;
@@ -272,7 +272,7 @@ public class Renderer {
 
 	//TODO: allow combining / excluding side sets?
 	//TODO: make this adjust based on rotation
-	private static EnumSet<Direction> getSides(OutlineType type, BlockPos pos, HitResult evilHitResult) {
+	private static EnumSet<Direction> getSides(FaceMode type, BlockPos pos, HitResult evilHitResult) {
 		return switch (type) {
 			case LOOKAT ->
 					(evilHitResult instanceof BlockHitResult block) ? EnumSet.of(block.getDirection()) : EnumSet.allOf(Direction.class);
@@ -375,7 +375,7 @@ public class Renderer {
 		} else {
 			easeBox = targetBox;
 		}
-		if (getActiveInstance().outlineType == OutlineType.EDGES) {
+		if (getActiveInstance().outlineType == FaceMode.EDGES) {
 			updateLines(shape);
 		}
 	}
@@ -434,7 +434,7 @@ public class Renderer {
 		//TODO: make check so that cut from corner and cut from center do not add up to higher than 0.95
 
 		Pair<Color, Color> mainCols = getColors(isCrystalObstructed, getActiveInstance().outlineRainbow, getActiveInstance().delay, getActiveInstance().lineCol, getActiveInstance().lineCol2, getActiveInstance().crystalHelperLineColor);
-		if (getActiveInstance().outlineType == OutlineType.EDGES) {
+		if (getActiveInstance().outlineType == FaceMode.EDGES) {
 			if (getActiveInstance().tertiary) {
 				Pair<Color, Color> colors = getColors(isCrystalObstructed, getActiveInstance().toutlineRainbow, getActiveInstance().delay, getActiveInstance().tlineCol, getActiveInstance().tlineCol2, getActiveInstance().crystalHelperLineColor);
 				Renderer.drawEdgeOutline(stack, easeBox, lines, colors.first, colors.second, edgeAlpha * getActiveInstance().tlineAlphaMultiplier, getActiveInstance().tlineWidth, getActiveInstance().tcutFromCenter, getActiveInstance().tcutFromCorner, getActiveInstance().touterThicknessMult, getActiveInstance().tinnerThicknessMult, 2);

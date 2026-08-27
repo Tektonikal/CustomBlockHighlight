@@ -11,9 +11,7 @@
       "subdiv": "Subdivision",
       "secondary_layer": "Secondary Layer",
       "tertiary_layer": "Tertiary Layer",
-
       "fill": "Fill",
-
       "extras": "Extras",
       "easing": "Easing",
       "fade": "Fade",
@@ -26,7 +24,6 @@
       "load": "Load",
       "presets": "- Presets",
       "open": "Open",
-
       // other
       "enabled": "Enabled",
       "primary": "- Primary",
@@ -87,15 +84,38 @@
       "rotations": {
         ".": "- Rotations",
         "description": "Rotates the outline based on what side of the block you're looking at. Not a finalized or stable feature, here be dragons!"
-
       }
     },
     "presets": {
+      "screenTitle": "CBH Presets Screen",
       "vanilla": "Give it to me plain!",
       "sweat": "PvP sweat",
       "trans": "Beautiful women!",
       "classic": "Classic CBH experience",
       "fancy": "Gimme all the bells 'n whistles!"
+    },
+    "enum": {
+      "shapeStyle": {
+        "classic": "Classic (Bounds)",
+        "collision": "Collision Shape",
+        "model": "Model Shape"
+      },
+      "faceMode": {
+        "all": "All",
+        "airExposed": "Air Exposed Faces",
+        "concealed": "Concealed Faces",
+        "lookAt": "Looked At Face"
+      },
+      "depthTestMode": {
+        "normal":"Normal",
+        "alwaysPass":"Always Pass",
+        "hiddenOnly": "Only Concealed"
+      },
+      "outlineStyle": {
+        "classic": "Classic",
+        "flat": "Flat",
+        "screen": "Screen Space"
+      }
     }
   }
 }

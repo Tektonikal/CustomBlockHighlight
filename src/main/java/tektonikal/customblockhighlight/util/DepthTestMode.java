@@ -13,10 +13,10 @@ public enum DepthTestMode implements NameableEnum {
 
 	@Override
 	public Component getDisplayName() {
-		return Component.literal(switch (this) {
-			case NORMAL -> "Normal";
-			case ALWAYS_PASS -> "Always Pass";
-			case HIDDEN_ONLY -> "Only Concealed";
+		return Component.translatable(switch (this) {
+			case NORMAL -> "cbh.enum.depthTestMode.normal";
+			case ALWAYS_PASS -> "cbh.enum.depthTestMode.alwaysPass";
+			case HIDDEN_ONLY -> "cbh.enum.depthTestMode.hiddenOnly";
 		});
 	}
 }

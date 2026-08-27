@@ -9,7 +9,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen;
 import tektonikal.customblockhighlight.util.DepthTestMode;
-import tektonikal.customblockhighlight.util.OutlineType;
+import tektonikal.customblockhighlight.util.FaceMode;
 
 import java.awt.*;
 import java.io.IOException;
@@ -54,7 +54,7 @@ public class BlockHighlightConfig {
         public Color lineCol2 = Color.WHITE;
         public int lineAlpha = 255;
         public boolean outlineRainbow = true;
-        public OutlineType outlineType = OutlineType.AIR_EXPOSED;
+        public FaceMode outlineType = FaceMode.AIR_EXPOSED;
         public float lineWidth = 2.5F;
         public float lineExpand = 0;
         public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
@@ -94,7 +94,7 @@ public class BlockHighlightConfig {
         public Color fillCol2 = Color.WHITE;
         public int fillOpacity = 128;
         public boolean fillRainbow = false;
-        public OutlineType fillType = OutlineType.ALL;
+        public FaceMode fillType = FaceMode.ALL;
         public float fillExpand = 0.001F;
         public DepthTestMode fillDepthTest = DepthTestMode.HIDDEN_ONLY;
     //extras
@@ -153,7 +153,7 @@ public class BlockHighlightConfig {
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
-    public static Option<OutlineType> o_outlineType = Option.<OutlineType>createBuilder()
+    public static Option<FaceMode> o_outlineType = Option.<FaceMode>createBuilder()
             .name(Component.translatable("cbh.config.mode"))
             .description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
                     Component.translatable("cbh.config.mode.description.2"),
@@ -162,8 +162,8 @@ public class BlockHighlightConfig {
                     Component.translatable("cbh.config.mode.description.5"),
                     Component.translatable("cbh.config.mode.description.6")
             ))
-            .stateManager(StateManager.createInstant(OutlineType.AIR_EXPOSED, () -> ACTIVE_INSTANCE.outlineType, newVal -> ACTIVE_INSTANCE.outlineType = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
+            .stateManager(StateManager.createInstant(FaceMode.AIR_EXPOSED, () -> ACTIVE_INSTANCE.outlineType, newVal -> ACTIVE_INSTANCE.outlineType = newVal))
+            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
             .build();
     public static Option<DepthTestMode> o_lineDepthTest = Option.<DepthTestMode>createBuilder()
             .name(Component.translatable("cbh.config.depthTest"))
@@ -350,7 +350,7 @@ public class BlockHighlightConfig {
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
-    public static Option<OutlineType> o_fillType = Option.<OutlineType>createBuilder()
+    public static Option<FaceMode> o_fillType = Option.<FaceMode>createBuilder()
             .name(Component.translatable("cbh.config.mode"))
             .description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
                     Component.translatable("cbh.config.mode.description.2"),
@@ -359,13 +359,13 @@ public class BlockHighlightConfig {
                     Component.translatable("cbh.config.mode.description.5"),
                     Component.translatable("cbh.config.mode.description.6")
             ))
-            .stateManager(StateManager.createInstant(OutlineType.ALL, () -> ACTIVE_INSTANCE.fillType, newVal -> ACTIVE_INSTANCE.fillType = newVal))
+            .stateManager(StateManager.createInstant(FaceMode.ALL, () -> ACTIVE_INSTANCE.fillType, newVal -> ACTIVE_INSTANCE.fillType = newVal))
             .addListener((option, _) -> {
-                if (option.pendingValue() == OutlineType.EDGES) {
-                    option.requestSet(OutlineType.LOOKAT);
+                if (option.pendingValue() == FaceMode.EDGES) {
+                    option.requestSet(FaceMode.LOOKAT);
                 }
             })
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
+            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
             .build();
     public static Option<DepthTestMode> o_fillDepthTest = Option.<DepthTestMode>createBuilder()
             .name(Component.translatable("cbh.config.depthTest"))
