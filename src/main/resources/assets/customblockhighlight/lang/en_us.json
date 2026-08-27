@@ -1,0 +1,14 @@
+{
+  "cbh.config.enabled": "Enabled",
+  "cbh.config.primary": "- Primary",
+  "cbh.config.secondary": "- Secondary",
+  "cbh.config.opacity": "- Opacity",
+  "cbh.config.rainbow": "- Rainbow",
+  "cbh.config.mode": "- Mode",
+  "cbh.config.depthTest": "- Depth Test",
+  "cbh.config.expand": "- Adjust Size By",
+  "cbh.config.lineWidth": "- Line Width",
+  "cbh.config.cutFromCorner": "- Cut From Corner",
+  "cbh.config.cutFromCenter": "- Cut From Center",
+  "cbh.config.alphaMultiplier": "- Opacity Multiplier"
+}
