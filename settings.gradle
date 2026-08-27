@@ -4,7 +4,23 @@ pluginManagement {
 			name = 'Fabric'
 			url = 'https://maven.fabricmc.net/'
 		}
+		maven {
+			name = 'Kikugie snapshots'
+			url = 'https://maven.kikugie.dev/snapshots/'
+		}
 		mavenCentral()
 		gradlePluginPortal()
+	}
+}
+
+dependencyResolutionManagement {
+	repositories {
+		maven { url 'https://maven.kikugie.dev/snapshots' }
+	}
+
+	versionCatalogs {
+		ft {
+			from 'dev.kikugie.fletching-table:fletching-table.catalog:0.2-SNAPSHOT'
+		}
 	}
 }

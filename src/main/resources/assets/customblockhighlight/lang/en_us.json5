@@ -1,0 +1,101 @@
+{
+  "cbh": {
+    // TODO: divide further by category.. don't have everything just in config
+    "config": {
+      ".": "Config",
+      // layout
+      "title": "Custom Block Highlight",
+      "outline": "Outline",
+      "color": "Color",
+      "misc": "Miscellaneous",
+      "subdiv": "Subdivision",
+      "secondary_layer": "Secondary Layer",
+      "tertiary_layer": "Tertiary Layer",
+
+      "fill": "Fill",
+
+      "extras": "Extras",
+      "easing": "Easing",
+      "fade": "Fade",
+      "scale": "Scale",
+      "line_thickness": "Line Thickness",
+      "copy_to_clipboard": "- Copy To Clipboard",
+      "copy": "Copy",
+      "load_from_clipboard": "- Load From Clipboard",
+      "load_from_clipboard.description": "Loads settings from your clipboard if they're valid. The screen will close, reopen it to see your new values.",
+      "load": "Load",
+      "presets": "- Presets",
+      "open": "Open",
+
+      // other
+      "enabled": "Enabled",
+      "primary": "- Primary",
+      "secondary": "- Secondary",
+      "opacity": "- Opacity",
+      // TODO: there are 2 keys here, one for with - and one without... problem should be
+      //  gone once we switch config libraries, but for now 2 keys are necessary
+      "rainbow_": "Rainbow",
+      "rainbow": "- Rainbow",
+      "mode": {
+        ".": "- Mode",
+        "description.1": "Modes:",
+        "description.2": "- Air Exposed",
+        "description.3": "- All",
+        "description.4": "- Concealed Faces",
+        "description.5": "- Edges: Uses model shape.",
+        "description.6": "- Looked At",
+      },
+      "depthTest": {
+        ".": "- Depth Test",
+        "description": "Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!"
+      },
+      "expand": "- Adjust Size By",
+      "lineWidth": "- Line Width",
+      "cutFromCorner": "- Cut From Corner",
+      "cutFromCenter": "- Cut From Center",
+      "alphaMultiplier": "- Opacity Multiplier",
+      "outer_thickness_multiplier": "  - Outer Thickness Multiplier",
+      "inner_thickness_multiplier": "  - Outer Thickness Multiplier",
+      "speed": "- Speed",
+      "in": "- In",
+      "out": "- Out",
+      "delay": {
+        ".": "- Delay",
+        "description": "How much to delay the rainbow color used for the secondary part of the gradient."
+      },
+      "saturation": "- Saturation",
+      "brightness": "- Brightness",
+      "connected_outlines": {
+        ".": "- Connected Outlines",
+        "description": "This applies to both the fill and outline. Maybe I'll change it later, who knows?"
+      },
+      "update_when_unfocused": {
+        ".": "- Update When Unfocused",
+        "description": "Continues moving the outline box toward its target even when it's not being rendered."
+      },
+      "crystal_helper": {
+        ".": "- Crystal Helper",
+        "description": "Highlights the block in the color below when you are looking at an obsidian block that crystals cannot be placed on.",
+        "line_color": "  - Line Color",
+        "fill_color": "  - Fill Color"
+      },
+      "select_entities": "- Select Entities",
+      "select_fluids": {
+        ".": "- Select Fluids",
+        "description": "Makes fluid source blocks valid targets when holding a bucket."
+      },
+      "rotations": {
+        ".": "- Rotations",
+        "description": "Rotates the outline based on what side of the block you're looking at. Not a finalized or stable feature, here be dragons!"
+
+      }
+    },
+    "presets": {
+      "vanilla": "Give it to me plain!",
+      "sweat": "PvP sweat",
+      "trans": "Beautiful women!",
+      "classic": "Classic CBH experience",
+      "fancy": "Gimme all the bells 'n whistles!"
+    }
+  }
+}

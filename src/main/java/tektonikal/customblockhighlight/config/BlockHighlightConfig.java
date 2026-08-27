@@ -20,6 +20,7 @@ import java.util.Arrays;
 
 import static com.sun.jna.Platform.isWindows;
 
+@SuppressWarnings("NoTranslation") // temporary fix until fletching table finds a solution
 public class BlockHighlightConfig {
     public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val -> Component.translatable(String.format("%.2f", val).replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
     @SuppressWarnings("UnusedAssignment") // required for clinit stuff
@@ -154,19 +155,19 @@ public class BlockHighlightConfig {
             .build();
     public static Option<OutlineType> o_outlineType = Option.<OutlineType>createBuilder()
             .name(Component.translatable("cbh.config.mode"))
-            .description(OptionDescription.of(Component.translatable("Modes:"),
-                    Component.translatable("- Air Exposed"),
-                    Component.translatable("- All"),
-                    Component.translatable("- Concealed Faces"),
-                    Component.translatable("- Edges: Uses model shape."),
-                    Component.translatable("- Looked At")
+            .description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
+                    Component.translatable("cbh.config.mode.description.2"),
+                    Component.translatable("cbh.config.mode.description.3"),
+                    Component.translatable("cbh.config.mode.description.4"),
+                    Component.translatable("cbh.config.mode.description.5"),
+                    Component.translatable("cbh.config.mode.description.6")
             ))
             .stateManager(StateManager.createInstant(OutlineType.AIR_EXPOSED, () -> ACTIVE_INSTANCE.outlineType, newVal -> ACTIVE_INSTANCE.outlineType = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
             .build();
     public static Option<DepthTestMode> o_lineDepthTest = Option.<DepthTestMode>createBuilder()
             .name(Component.translatable("cbh.config.depthTest"))
-            .description(OptionDescription.of(Component.translatable("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
+            .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
             .stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.lineDepthTest, newVal -> ACTIVE_INSTANCE.lineDepthTest = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
             .build();
@@ -191,18 +192,18 @@ public class BlockHighlightConfig {
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.99F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_outerThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("  - Outer Thickness Multiplier"))
+            .name(Component.translatable("cbh.config.outer_thickness_multiplier"))
             .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.outerThicknessMult, newVal -> ACTIVE_INSTANCE.outerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_innerThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("  - Inner Thickness Multiplier"))
+            .name(Component.translatable("cbh.config.inner_thickness_multiplier"))
             .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.innerThicknessMult, newVal -> ACTIVE_INSTANCE.innerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     @Updatable
     public static Option<Boolean> o_secondary = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.enabledSecondary"))
+            .name(Component.translatable("cbh.config.enabled"))
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.secondary, newVal -> ACTIVE_INSTANCE.secondary = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
@@ -231,7 +232,7 @@ public class BlockHighlightConfig {
             .build();
     public static Option<DepthTestMode> o_slineDepthTest = Option.<DepthTestMode>createBuilder()
             .name(Component.translatable("cbh.config.depthTest"))
-            .description(OptionDescription.of(Component.translatable("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
+            .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
             .stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.slineDepthTest, newVal -> ACTIVE_INSTANCE.slineDepthTest = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
             .build();
@@ -251,12 +252,12 @@ public class BlockHighlightConfig {
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_souterThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("  - Outer Thickness Multiplier"))
+            .name(Component.translatable("cbh.config.outer_thickness_multiplier"))
             .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.souterThicknessMult, newVal -> ACTIVE_INSTANCE.souterThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_sinnerThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("  - Inner Thickness Multiplier"))
+            .name(Component.translatable("cbh.config.inner_thickness_multiplier"))
             .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.sinnerThicknessMult, newVal -> ACTIVE_INSTANCE.sinnerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
@@ -291,71 +292,72 @@ public class BlockHighlightConfig {
             .build();
     public static Option<DepthTestMode> o_tlineDepthTest = Option.<DepthTestMode>createBuilder()
             .name(Component.translatable("cbh.config.depthTest"))
-            .description(OptionDescription.of(Component.translatable("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
+            .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
             .stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.tlineDepthTest, newVal -> ACTIVE_INSTANCE.tlineDepthTest = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
             .build();
     public static Option<Float> o_tlineWidth = Option.<Float>createBuilder()
-            .name(Component.translatable("- Line Width"))
+            .name(Component.translatable("cbh.config.lineWidth"))
             .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1f", value) + " px")))
             .stateManager(StateManager.createInstant(3F, () -> ACTIVE_INSTANCE.tlineWidth, newVal -> ACTIVE_INSTANCE.tlineWidth = newVal))
             .build();
     public static Option<Float> o_tcutFromCorner = Option.<Float>createBuilder()
-            .name(Component.translatable("- Cut From Corner"))
+            .name(Component.translatable("cbh.config.cutFromCorner"))
             .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.tcutFromCorner, newVal -> ACTIVE_INSTANCE.tcutFromCorner = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_tcutFromCenter = Option.<Float>createBuilder()
-            .name(Component.translatable("- Cut From Center"))
+            .name(Component.translatable("cbh.config.cutFromCenter"))
             .stateManager(StateManager.createInstant(0.25F, () -> ACTIVE_INSTANCE.tcutFromCenter, newVal -> ACTIVE_INSTANCE.tcutFromCenter = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_touterThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("  - Outer Thickness Multiplier"))
+            .name(Component.translatable("cbh.config.outer_thickness_multiplier"))
             .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.touterThicknessMult, newVal -> ACTIVE_INSTANCE.touterThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_tinnerThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("  - Inner Thickness Multiplier"))
+            .name(Component.translatable("cbh.config.inner_thickness_multiplier"))
             .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.tinnerThicknessMult, newVal -> ACTIVE_INSTANCE.tinnerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     @Updatable
     public static Option<Boolean> o_fillEnabled = Option.<Boolean>createBuilder()
-            .name(Component.translatable("Enabled"))
+            .name(Component.translatable("cbh.config.enabled"))
             .controller(TickBoxControllerBuilder::create)
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.fillEnabled, newVal -> ACTIVE_INSTANCE.fillEnabled = newVal))
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
     public static Option<Color> o_fillCol = Option.<Color>createBuilder()
-            .name(Component.translatable("- Primary"))
+            .name(Component.translatable("cbh.config.primary"))
             .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.fillCol, newVal -> ACTIVE_INSTANCE.fillCol = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
     public static Option<Color> o_fillCol2 = Option.<Color>createBuilder()
-            .name(Component.translatable("- Secondary"))
+            .name(Component.translatable("cbh.config.secondary"))
             .stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.fillCol2, newVal -> ACTIVE_INSTANCE.fillCol2 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
     public static Option<Integer> o_fillOpacity = Option.<Integer>createBuilder()
-            .name(Component.translatable("- Opacity"))
+            .name(Component.translatable("cbh.config.opacity"))
             .stateManager(StateManager.createInstant(128, () -> ACTIVE_INSTANCE.fillOpacity, newVal -> ACTIVE_INSTANCE.fillOpacity = newVal))
             .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 255).step(1).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
             .build();
     @Updatable
     public static Option<Boolean> o_fillRainbow = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- Rainbow"))
+            .name(Component.translatable("cbh.config.rainbow"))
             .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.fillRainbow, newVal -> ACTIVE_INSTANCE.fillRainbow = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
     public static Option<OutlineType> o_fillType = Option.<OutlineType>createBuilder()
-            .name(Component.translatable("- Mode"))
-            .description(OptionDescription.of(Component.translatable("Modes:"),
-                    Component.translatable("- Air Exposed"),
-                    Component.translatable("- All"),
-                    Component.translatable("- Concealed Faces"),
-                    Component.translatable("- Looked At")
+            .name(Component.translatable("cbh.config.mode"))
+            .description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
+                    Component.translatable("cbh.config.mode.description.2"),
+                    Component.translatable("cbh.config.mode.description.3"),
+                    Component.translatable("cbh.config.mode.description.4"),
+                    Component.translatable("cbh.config.mode.description.5"),
+                    Component.translatable("cbh.config.mode.description.6")
             ))
             .stateManager(StateManager.createInstant(OutlineType.ALL, () -> ACTIVE_INSTANCE.fillType, newVal -> ACTIVE_INSTANCE.fillType = newVal))
             .addListener((option, _) -> {
@@ -366,170 +368,170 @@ public class BlockHighlightConfig {
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(OutlineType.class))
             .build();
     public static Option<DepthTestMode> o_fillDepthTest = Option.<DepthTestMode>createBuilder()
-            .name(Component.translatable("- Depth Test"))
-            .description(OptionDescription.of(Component.translatable("Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!")))
+            .name(Component.translatable("cbh.config.depthTest"))
+            .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
             .stateManager(StateManager.createInstant(DepthTestMode.HIDDEN_ONLY, () -> ACTIVE_INSTANCE.fillDepthTest, newVal -> ACTIVE_INSTANCE.fillDepthTest = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
             .build();
     public static Option<Float> o_fillExpand = Option.<Float>createBuilder()
-            .name(Component.translatable("- Adjust Size By"))
+            .name(Component.translatable("cbh.config.expand"))
             .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.fillExpand, newVal -> ACTIVE_INSTANCE.fillExpand = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
             .build();
     @Updatable
     public static Option<Boolean> o_doEasing = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- Enabled"))
+            .name(Component.translatable("cbh.config.enabled"))
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.doEasing, newVal -> ACTIVE_INSTANCE.doEasing = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_easeSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("- Speed"))
+            .name(Component.translatable("cbh.config.speed"))
             .stateManager(StateManager.createInstant(20F, () -> ACTIVE_INSTANCE.easeSpeed, newVal -> ACTIVE_INSTANCE.easeSpeed = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 50F).step(0.5F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
             .build();
     public static Option<Boolean> o_fadeIn = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- In"))
+            .name(Component.translatable("cbh.config.in"))
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.fadeIn, newVal -> ACTIVE_INSTANCE.fadeIn = newVal))
             .controller(TickBoxControllerBuilder::create)
             .build();
     public static Option<Float> o_fadeInSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("  - Speed"))
+            .name(Component.translatable("cbh.config.speed"))
             .stateManager(StateManager.createInstant(15F, () -> ACTIVE_INSTANCE.fadeInSpeed, newVal -> ACTIVE_INSTANCE.fadeInSpeed = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
             .build();
     public static Option<Boolean> o_fadeOut = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- Out"))
+            .name(Component.translatable("cbh.config.out"))
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.fadeOut, newVal -> ACTIVE_INSTANCE.fadeOut = newVal))
             .controller(TickBoxControllerBuilder::create)
             .build();
     public static Option<Float> o_fadeOutSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("  - Speed"))
+            .name(Component.translatable("cbh.config.speed"))
             .stateManager(StateManager.createInstant(15F, () -> ACTIVE_INSTANCE.fadeOutSpeed, newVal -> ACTIVE_INSTANCE.fadeOutSpeed = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
             .build();
     @Updatable
     public static Option<Boolean> o_scale = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- Enabled"))
+            .name(Component.translatable("cbh.config.enabled"))
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.scale, newVal -> ACTIVE_INSTANCE.scale = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_scaleSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("- Speed"))
+            .name(Component.translatable("cbh.config.speed"))
             .stateManager(StateManager.createInstant(15F, () -> ACTIVE_INSTANCE.scaleSpeed, newVal -> ACTIVE_INSTANCE.scaleSpeed = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
             .build();
     @Updatable
     public static Option<Boolean> o_animateLineThickness = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- Enabled"))
+            .name(Component.translatable("cbh.config.enabled"))
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.animateLineThickness, newVal -> ACTIVE_INSTANCE.animateLineThickness = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_lineThicknessSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("- Speed"))
+            .name(Component.translatable("cbh.config.speed"))
             .stateManager(StateManager.createInstant(15F, () -> ACTIVE_INSTANCE.lineThicknessAnimationSpeed, newVal -> ACTIVE_INSTANCE.lineThicknessAnimationSpeed = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
             .build();
     public static Option<Integer> o_delay = Option.<Integer>createBuilder()
-            .name(Component.translatable("- Delay"))
+            .name(Component.translatable("cbh.config.delay"))
             .stateManager(StateManager.createInstant(250, () -> ACTIVE_INSTANCE.delay, newVal -> ACTIVE_INSTANCE.delay = newVal))
-            .description(OptionDescription.of(Component.translatable("How much to delay the rainbow color used for the secondary part of the gradient.")))
+            .description(OptionDescription.of(Component.translatable("cbh.config.delay.description")))
             .controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.translatable(value + " ms")))
             .build();
     public static Option<Float> o_rainbowSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("- Speed"))
+            .name(Component.translatable("cbh.config.speed"))
             .stateManager(StateManager.createInstant(5F, () -> ACTIVE_INSTANCE.rainbowSpeed, newVal -> ACTIVE_INSTANCE.rainbowSpeed = newVal))
             .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 10F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
             .build();
     public static Option<Float> o_saturation = Option.<Float>createBuilder()
-            .name(Component.translatable("- Saturation"))
+            .name(Component.translatable("cbh.config.saturation"))
             .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.saturation, newVal -> ACTIVE_INSTANCE.saturation = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_brightness = Option.<Float>createBuilder()
-            .name(Component.translatable("- Brightness"))
+            .name(Component.translatable("cbh.config.brightness"))
             .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.brightness, newVal -> ACTIVE_INSTANCE.brightness = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Boolean> o_connectedBlocks = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- Connected Outlines"))
-            .description(OptionDescription.of(Component.translatable("This applies to both the fill and outline. Maybe I'll change it later, who knows?")))
+            .name(Component.translatable("cbh.config.connected_outlines"))
+            .description(OptionDescription.of(Component.translatable("cbh.config.connected_outlines.description")))
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.connectedBlocks, newVal -> ACTIVE_INSTANCE.connectedBlocks = newVal))
             .controller(TickBoxControllerBuilder::create)
             .build();
     public static Option<Boolean> o_updateWhenUnfocused = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- Update When Unfocused"))
-            .description(OptionDescription.of(Component.translatable("Continues moving the outline box toward its target even when it's not being rendered.")))
+            .name(Component.translatable("cbh.config.update_when_unfocused"))
+            .description(OptionDescription.of(Component.translatable("cbh.config.update_when_unfocused")))
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.updateWhenUnfocused, newVal -> ACTIVE_INSTANCE.updateWhenUnfocused = newVal))
             .controller(TickBoxControllerBuilder::create)
             .build();
     @Updatable
     public static Option<Boolean> o_crystalHelper = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- Crystal Helper"))
-            .description(OptionDescription.of(Component.translatable("highlights the block in the color below when you are looking at an obsidian block that crystals cannot be placed on.")))
+            .name(Component.translatable("cbh.config.crystal_helper"))
+            .description(OptionDescription.of(Component.translatable("cbh.config.crystal_helper.description")))
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.crystalHelper, newVal -> ACTIVE_INSTANCE.crystalHelper = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
     public static Option<Color> o_crystalHelperLineColor = Option.<Color>createBuilder()
-            .name(Component.translatable("  - Line Color"))
+            .name(Component.translatable("cbh.config.crystal_helper.fill_color"))
             .controller(ColorControllerBuilder::create)
             .stateManager(StateManager.createInstant(Color.RED, () -> ACTIVE_INSTANCE.crystalHelperLineColor, color -> ACTIVE_INSTANCE.crystalHelperLineColor = color))
             .build();
     public static Option<Color> o_crystalHelperFillColor = Option.<Color>createBuilder()
-            .name(Component.translatable("  - Fill Color"))
+            .name(Component.translatable("cbh.config.crystal_helper.fill_color"))
             .controller(ColorControllerBuilder::create)
             .stateManager(StateManager.createInstant(Color.RED, () -> ACTIVE_INSTANCE.crystalHelperFillColor, color -> ACTIVE_INSTANCE.crystalHelperFillColor = color))
             .build();
     public static Option<Boolean> o_allowEntities = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- Select Entities"))
+            .name(Component.translatable("cbh.config.select_entities"))
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.allowEntities, newVal -> ACTIVE_INSTANCE.allowEntities = newVal))
             .controller(TickBoxControllerBuilder::create)
             .build();
     public static Option<Boolean> o_allowLiquids = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- Select Fluids"))
-            .description(OptionDescription.of(Component.translatable("Makes fluid source blocks valid targets when holding a bucket.")))
+            .name(Component.translatable("cbh.config.select_fluids"))
+            .description(OptionDescription.of(Component.translatable("cbh.config.select_fluids.description")))
             .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.allowLiquids, newVal -> ACTIVE_INSTANCE.allowLiquids = newVal))
             .controller(TickBoxControllerBuilder::create)
             .build();
     public static Option<Boolean> o_rotations = Option.<Boolean>createBuilder()
-            .name(Component.translatable("- Rotations"))
-            .description(OptionDescription.of(Component.translatable("Rotates the outline based on what side of the block you're looking at. Not a finalized or stable feature, here be dragons!")))
+            .name(Component.translatable("cbh.config.rotations"))
+            .description(OptionDescription.of(Component.translatable("cbh.config.rotations.description")))
             .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.rotations, newVal -> ACTIVE_INSTANCE.rotations = newVal))
             .controller(TickBoxControllerBuilder::create)
             .build();
 
     public Screen getConfigScreen(Screen parent) {
         var layout = YetAnotherConfigLib.createBuilder()
-                .title(Component.translatable("Custom Block Highlight"))
+                .title(Component.translatable("cbh.config.title"))
                 .category(ConfigCategory.createBuilder()
-                        .name(Component.translatable("Outline"))
+                        .name(Component.translatable("cbh.config.outline"))
                         .option(o_outlineEnabled)
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Color"))
+                                .name(Component.translatable("cbh.config.color"))
                                 .option(o_lineCol)
                                 .option(o_lineCol2)
                                 .option(o_lineAlpha)
                                 .option(o_outlineRainbow)
                                 .build())
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Miscellaneous"))
+                                .name(Component.translatable("cbh.config.misc"))
                                 .option(o_outlineType)
                                 .option(o_lineDepthTest)
                                 .option(o_lineExpand)
                                 .option(o_lineWidth)
                                 .build())
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Subdivision"))
+                                .name(Component.translatable("cbh.config.subdiv"))
                                 .option(o_cutFromCorner)
                                 .option(o_outerThicknessMult)
                                 .option(o_cutFromCenter)
                                 .option(o_innerThicknessMult)
                                 .build())
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Secondary Layer"))
+                                .name(Component.translatable("cbh.config.secondary_layer"))
                                 .option(o_secondary)
                                 .option(o_slineCol)
                                 .option(o_slineCol2)
@@ -543,7 +545,7 @@ public class BlockHighlightConfig {
                                 .option(o_sinnerThicknessMult)
                                 .build())
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Tertiary Layer"))
+                                .name(Component.translatable("cbh.config.tertiary_layer"))
                                 .option(o_tertiary)
                                 .option(o_tlineCol)
                                 .option(o_tlineCol2)
@@ -558,55 +560,55 @@ public class BlockHighlightConfig {
                                 .build())
                         .build())
                 .category(ConfigCategory.createBuilder()
-                        .name(Component.translatable("Fill"))
+                        .name(Component.translatable("cbh.config.fill"))
                         .option(o_fillEnabled)
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Color"))
+                                .name(Component.translatable("cbh.config.color"))
                                 .option(o_fillCol)
                                 .option(o_fillCol2)
                                 .option(o_fillOpacity)
                                 .option(o_fillRainbow)
                                 .build())
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Miscellaneous"))
+                                .name(Component.translatable("cbh.config.misc"))
                                 .option(o_fillType)
                                 .option(o_fillDepthTest)
                                 .option(o_fillExpand)
                                 .build())
                         .build())
                 .category(ConfigCategory.createBuilder()
-                        .name(Component.translatable("Extras"))
+                        .name(Component.translatable("cbh.config.extras"))
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Easing"))
+                                .name(Component.translatable("cbh.config.easing"))
                                 .option(o_doEasing)
                                 .option(o_easeSpeed)
                                 .build())
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Fade"))
+                                .name(Component.translatable("cbh.config.fade"))
                                 .option(o_fadeIn)
                                 .option(o_fadeInSpeed)
                                 .option(o_fadeOut)
                                 .option(o_fadeOutSpeed)
                                 .build())
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Scale"))
+                                .name(Component.translatable("cbh.config.scale"))
                                 .option(o_scale)
                                 .option(o_scaleSpeed)
                                 .build())
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Line Thickness"))
+                                .name(Component.translatable("cbh.config.line_thickness"))
                                 .option(o_animateLineThickness)
                                 .option(o_lineThicknessSpeed)
                                 .build())
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Rainbow"))
+                                .name(Component.translatable("cbh.config.rainbow_"))
                                 .option(o_delay)
                                 .option(o_rainbowSpeed)
                                 .option(o_saturation)
                                 .option(o_brightness)
                                 .build())
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Miscellaneous"))
+                                .name(Component.translatable("cbh.config.misc"))
                                 .option(o_connectedBlocks)
                                 .option(o_updateWhenUnfocused)
                                 .option(o_allowEntities)
@@ -617,19 +619,19 @@ public class BlockHighlightConfig {
                                 .option(o_crystalHelperFillColor)
                                 .build())
                         .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("Config"))
+                                .name(Component.translatable("cbh.config"))
                                 .option(ButtonOption.createBuilder()
-                                        .name(Component.translatable("- Copy To Clipboard"))
+                                        .name(Component.translatable("cbh.config.copy_to_clipboard"))
                                         .action((_, _) -> {
                                             ConfigManager.save(); // technically unnecessary
                                             Minecraft.getInstance().keyboardHandler.setClipboard(ConfigManager.GSON.toJson(this));
                                         })
-                                        .text(Component.translatable("Copy"))
+                                        .text(Component.translatable("cbh.config.copy"))
                                         .build())
                                 .option(ButtonOption.createBuilder()
-                                        .name(Component.translatable("- Load From Clipboard"))
-                                        .description(OptionDescription.of(Component.translatable("Loads settings from your clipboard if they're valid. The screen will close, reopen it to see your new values.")))
-                                        .text(Component.translatable("Load"))
+                                        .name(Component.translatable("cbh.config.load_from_clipboard"))
+                                        .description(OptionDescription.of(Component.translatable("cbh.config.load_from_clipboard.description")))
+                                        .text(Component.translatable("cbh.config.load"))
                                         .action((_, _) -> {
                                             try {
                                                 BlockHighlightConfig yeah = ConfigManager.GSON.fromJson(Minecraft.getInstance().keyboardHandler.getClipboard(), BlockHighlightConfig.class);
@@ -642,16 +644,16 @@ public class BlockHighlightConfig {
                                         })
                                         .build())
                                 .option(ButtonOption.createBuilder()
-                                        .name(Component.translatable("- Presets"))
+                                        .name(Component.translatable("cbh.config.presets"))
                                         .action((screen, _) -> Minecraft.getInstance().setScreenAndShow(new PresetsScreen(false, screen)))
-                                        .text(Component.translatable("Open"))
+                                        .text(Component.translatable("cbh.config.open"))
                                         .build())
                                 .build())
                         .build())
                 .save(ConfigManager::save)
                 .build();
         Screen generatedScreen = layout.generateScreen(parent);
-        Path firstOpenPath = FabricLoader.getInstance().getConfigDir().resolve(".cbh_info");
+        Path firstOpenPath = FabricLoader.getInstance().getConfigDir().resolve(".cbh_info"); // im ngl probably have a hidden config option
         if (Files.notExists(firstOpenPath)) {
             // presets screen
             try {
