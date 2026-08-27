@@ -10,5 +10,11 @@
   "cbh.config.lineWidth": "- Line Width",
   "cbh.config.cutFromCorner": "- Cut From Corner",
   "cbh.config.cutFromCenter": "- Cut From Center",
-  "cbh.config.alphaMultiplier": "- Opacity Multiplier"
+  "cbh.config.alphaMultiplier": "- Opacity Multiplier",
+
+  "cbh.presets.vanilla": "Give it to me plain!",
+  "cbh.presets.sweat": "PvP sweat",
+  "cbh.presets.trans": "Beautiful women!",
+  "cbh.presets.classic": "Classic CBH experience",
+  "cbh.presets.fancy": "Gimme all the bells 'n whistles!"
 }

@@ -94,21 +94,22 @@ public class PresetsScreen extends Screen {
 	}
 
 	public enum Preset {
-		VANILLA("vanilla", Component.literal("Give it to me plain!"), Blocks.COBBLESTONE),
-		SWEAT("sweat", Component.literal("PvP sweat"), Blocks.SMITHING_TABLE),
-		TRANS("trans", Component.literal("Beautiful women!"), Blocks.AMETHYST_BLOCK),
-		CLASSIC("classic", Component.literal("Classic CBH experience"), Blocks.OAK_PLANKS),
-		FANCY("fancy", Component.literal("Gimme all the bells 'n whistles!"), Blocks.BREWING_STAND);
+		VANILLA("vanilla", Blocks.COBBLESTONE),
+		SWEAT("sweat", Blocks.SMITHING_TABLE),
+		TRANS("trans", Blocks.AMETHYST_BLOCK),
+		CLASSIC("classic", Blocks.OAK_PLANKS),
+		FANCY("fancy", Blocks.BREWING_STAND);
 
 		public final String name;
 		public final Component meow;
 		public final Block block;
 		public final List<CBHLineRenderInfo> renderInfo = new ArrayList<>();
 
-		Preset(String name, Component meow, Block block) {
+		Preset(String name, Block block) {
 			this.name = name;
-			this.meow = meow;
 			this.block = block;
+			this.meow = Component.translatable("cbh.presets." + name);
+
 			BlockHighlightConfig cfg = ConfigManager.getPreset(this);
 
 			float[] arr = new float[6];
