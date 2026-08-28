@@ -2,6 +2,7 @@ package tektonikal.customblockhighlight;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.client.Camera;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
@@ -15,27 +16,27 @@ import java.awt.*;
 import static tektonikal.customblockhighlight.Renderer.getLerpedColor;
 
 public class Vertexer {
-	public static void vertexBoxQuads(PoseStack.Pose pose, VertexConsumer builder, AABB box, Color cols, Color col2, float[] alpha) {
+	public static void vertexBoxQuads(PoseStack.Pose pose, VertexConsumer builder, AABB box, Pair<Color, Color> cols, float[] alpha) {
 		float normaliser = (float) box.getMinPosition().distanceTo(box.getMaxPosition());
-		vertexQuad(pose, builder, cols, col2, Math.round(alpha[0]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ));
-		vertexQuad(pose, builder, cols, col2, Math.round(alpha[1]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.minZ));
-		vertexQuad(pose, builder, cols, col2, Math.round(alpha[2]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.minY, (float) box.minZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ));
-		vertexQuad(pose, builder, cols, col2, Math.round(alpha[3]), box.getMinPosition(), normaliser, new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ));
-		vertexQuad(pose, builder, cols, col2, Math.round(alpha[4]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.minX, (float) box.minY, (float) box.minZ));
-		vertexQuad(pose, builder, cols, col2, Math.round(alpha[5]), box.getMinPosition(), normaliser, new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ));
+		vertexQuad(pose, builder, cols, Math.round(alpha[0]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ));
+		vertexQuad(pose, builder, cols, Math.round(alpha[1]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.minZ));
+		vertexQuad(pose, builder, cols, Math.round(alpha[2]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.minY, (float) box.minZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ));
+		vertexQuad(pose, builder, cols, Math.round(alpha[3]), box.getMinPosition(), normaliser, new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ));
+		vertexQuad(pose, builder, cols, Math.round(alpha[4]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.minX, (float) box.minY, (float) box.minZ));
+		vertexQuad(pose, builder, cols, Math.round(alpha[5]), box.getMinPosition(), normaliser, new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ));
 	}
-	public static void vertexQuad(PoseStack.Pose pose, VertexConsumer builder, Color c1, Color c2, int alpha, Vec3 minPos, float normaliser, Vec3... vecs) {
-		Color[] cols = new Color[vecs.length];
+	public static void vertexQuad(PoseStack.Pose pose, VertexConsumer builder, Pair<Color, Color> cols, int alpha, Vec3 minPos, float normaliser, Vec3... vecs) {
+		Color[] colors = new Color[vecs.length];
 		for(int i = 0; i < vecs.length; i++){
-			cols[i] = getLerpedColor(c1, c2, (float) (minPos.distanceTo(vecs[i]) / normaliser));
+			colors[i] = getLerpedColor(cols.first(), cols.second(), (float) (minPos.distanceTo(vecs[i]) / normaliser));
 		}
-		builder.addVertex(pose, vecs[3].toVector3f()).setColor(cols[3].getRed(), cols[3].getGreen(), cols[3].getBlue(), alpha);
-		builder.addVertex(pose, vecs[2].toVector3f()).setColor(cols[2].getRed(), cols[2].getGreen(), cols[2].getBlue(), alpha);
-		builder.addVertex(pose, vecs[1].toVector3f()).setColor(cols[1].getRed(), cols[1].getGreen(), cols[1].getBlue(), alpha);
-		builder.addVertex(pose, vecs[0].toVector3f()).setColor(cols[0].getRed(), cols[0].getGreen(), cols[0].getBlue(), alpha);
+		builder.addVertex(pose, vecs[3].toVector3f()).setColor(colors[3].getRed(), colors[3].getGreen(), colors[3].getBlue(), alpha);
+		builder.addVertex(pose, vecs[2].toVector3f()).setColor(colors[2].getRed(), colors[2].getGreen(), colors[2].getBlue(), alpha);
+		builder.addVertex(pose, vecs[1].toVector3f()).setColor(colors[1].getRed(), colors[1].getGreen(), colors[1].getBlue(), alpha);
+		builder.addVertex(pose, vecs[0].toVector3f()).setColor(colors[0].getRed(), colors[0].getGreen(), colors[0].getBlue(), alpha);
 	}
 
-	public static void vertexBoxLines(PoseStack.Pose pose, VertexConsumer builder, AABB box, Color col, Color col2, float[] alpha, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult) {
+	public static void vertexBoxLines(PoseStack.Pose pose, VertexConsumer builder, AABB box, Pair<Color, Color> cols, float[] alpha, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult) {
 		float x1 = (float) box.minX;
 		float y1 = (float) box.minY;
 		float z1 = (float) box.minZ;
@@ -43,14 +44,14 @@ public class Vertexer {
 		float y2 = (float) box.maxY;
 		float z2 = (float) box.maxZ;
 		double normaliser = box.getMinPosition().distanceTo(box.getMaxPosition());
-		Color x1y1z1 = getLerpedColor(col, col2, (float) (box.getMinPosition().distanceTo(new Vec3(x1, y1, z1)) / normaliser));
-		Color x2y1z1 = getLerpedColor(col, col2, (float) (box.getMinPosition().distanceTo(new Vec3(x2, y1, z1)) / normaliser));
-		Color x1y1z2 = getLerpedColor(col, col2, (float) (box.getMinPosition().distanceTo(new Vec3(x1, y1, z2)) / normaliser));
-		Color x1y2z2 = getLerpedColor(col, col2, (float) (box.getMinPosition().distanceTo(new Vec3(x1, y2, z2)) / normaliser));
-		Color x2y2z2 = getLerpedColor(col, col2, (float) (box.getMinPosition().distanceTo(new Vec3(x2, y2, z2)) / normaliser));
-		Color x2y2z1 = getLerpedColor(col, col2, (float) (box.getMinPosition().distanceTo(new Vec3(x2, y2, z1)) / normaliser));
-		Color x1y2z1 = getLerpedColor(col, col2, (float) (box.getMinPosition().distanceTo(new Vec3(x1, y2, z1)) / normaliser));
-		Color x2y1z2 = getLerpedColor(col, col2, (float) (box.getMinPosition().distanceTo(new Vec3(x2, y1, z2)) / normaliser));
+		Color x1y1z1 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x1, y1, z1)) / normaliser));
+		Color x2y1z1 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x2, y1, z1)) / normaliser));
+		Color x1y1z2 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x1, y1, z2)) / normaliser));
+		Color x1y2z2 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x1, y2, z2)) / normaliser));
+		Color x2y2z2 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x2, y2, z2)) / normaliser));
+		Color x2y2z1 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x2, y2, z1)) / normaliser));
+		Color x1y2z1 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x1, y2, z1)) / normaliser));
+		Color x2y1z2 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x2, y1, z2)) / normaliser));
 
         /*
         (facing west)

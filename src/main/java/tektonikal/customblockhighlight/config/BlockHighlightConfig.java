@@ -4,10 +4,12 @@ import com.google.gson.JsonSyntaxException;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import dev.isxander.yacl3.impl.ProvidesBindingForDeprecation;
+import it.unimi.dsi.fastutil.Pair;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.FaceMode;
@@ -21,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.sun.jna.Platform.isWindows;
+import static net.minecraft.util.Util.getMillis;
 
 @SuppressWarnings("NoTranslation") // temporary fix until fletching table finds a solution
 public class BlockHighlightConfig {
@@ -48,6 +51,13 @@ public class BlockHighlightConfig {
 		public Color col2 = Color.WHITE;
 		public int alpha = 255;
 		public RainbowSettings rainbowSettings = new RainbowSettings(false, 5, 250, 1, 1);
+
+		public Pair<Color, Color> getColors(boolean isCrystalObstructed, Color crystalHelperCol) {
+			return Pair.of(
+					isCrystalObstructed ? crystalHelperCol : this.rainbowSettings.enabled ? this.rainbowSettings.getRainbowCol(true) : this.col1,
+					isCrystalObstructed ? crystalHelperCol : this.rainbowSettings.enabled ? this.rainbowSettings.getRainbowCol(false) : this.col2
+			);
+		}
 	}
 
 	public static class RainbowSettings {
@@ -64,6 +74,11 @@ public class BlockHighlightConfig {
             this.saturation = saturation;
             this.brightness = brightness;
         }
+		public Color getRainbowCol(boolean primaryCol) {
+			float rainbowState = Mth.ceil((getMillis() + (primaryCol ? 0 : this.delay))) * this.speed / 50;
+			rainbowState %= 360;
+			return Color.getHSBColor(rainbowState / 360, this.saturation, this.brightness);
+		}
     }
 
 	public static class LineConfig {
@@ -99,12 +114,8 @@ public class BlockHighlightConfig {
 
     //fill stuffs
     public boolean fillEnabled = true;
-		// todo: consider turning this {
-        public Color fillCol = Color.BLACK;
-        public Color fillCol2 = Color.WHITE;
-        public int fillOpacity = 128;
-        public boolean fillRainbow = false;
-		// todo part 2: } all into its own thing, since its used in lines too
+
+		public ColorSetting fillCol = new ColorSetting();
         public FaceMode fillType = FaceMode.ALL;
         public float fillExpand = 0.001F;
         public DepthTestMode fillDepthTest = DepthTestMode.HIDDEN_ONLY;
@@ -133,6 +144,9 @@ public class BlockHighlightConfig {
  	public boolean allowEntities = true;
  	public boolean allowLiquids = true;
 	public boolean rotations = false;
+	public boolean showWhenNoHud = false;
+	public boolean showWhenNoInteraction = false;
+
 
 	//@formatter:on
     @Updatable
@@ -341,23 +355,23 @@ public class BlockHighlightConfig {
             .build();
     public static Option<Color> o_fillCol = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.primary"))
-            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.fillCol, newVal -> ACTIVE_INSTANCE.fillCol = newVal))
+            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.fillCol.col1, newVal -> ACTIVE_INSTANCE.fillCol.col1 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
     public static Option<Color> o_fillCol2 = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.secondary"))
-            .stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.fillCol2, newVal -> ACTIVE_INSTANCE.fillCol2 = newVal))
+            .stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.fillCol.col2, newVal -> ACTIVE_INSTANCE.fillCol.col2 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
     public static Option<Integer> o_fillOpacity = Option.<Integer>createBuilder()
             .name(Component.translatable("cbh.config.opacity"))
-            .stateManager(StateManager.createInstant(128, () -> ACTIVE_INSTANCE.fillOpacity, newVal -> ACTIVE_INSTANCE.fillOpacity = newVal))
+            .stateManager(StateManager.createInstant(128, () -> ACTIVE_INSTANCE.fillCol.alpha, newVal -> ACTIVE_INSTANCE.fillCol.alpha = newVal))
             .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 255).step(1).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
             .build();
     @Updatable
     public static Option<Boolean> o_fillRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.fillRainbow, newVal -> ACTIVE_INSTANCE.fillRainbow = newVal))
+            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();

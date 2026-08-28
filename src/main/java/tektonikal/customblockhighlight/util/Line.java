@@ -11,6 +11,7 @@ import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import java.awt.*;
 
 import static tektonikal.customblockhighlight.Blockhighlight.ease;
+import static tektonikal.customblockhighlight.Blockhighlight.easeF;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
 
 public class Line {
@@ -39,8 +40,12 @@ public class Line {
 		this.maxPos = new Vec3(ease(this.maxPos.x, maxPosTo.x, getActiveInstance().easeSpeed), ease(this.maxPos.y, maxPosTo.y, getActiveInstance().easeSpeed), ease(this.maxPos.z, maxPosTo.z, getActiveInstance().easeSpeed));
 	}
 
-	public void update(boolean b) {
-		this.alphaMultiplier = (float) ease(this.alphaMultiplier, b ? 1 : 0, 10);
+	public void update(boolean in) {
+		if (in) {
+			this.alphaMultiplier = getActiveInstance().fadeIn ? easeF(this.alphaMultiplier, 1, getActiveInstance().fadeInSpeed) : 1;
+		} else {
+			this.alphaMultiplier = getActiveInstance().fadeOut ? easeF(this.alphaMultiplier, 0, getActiveInstance().fadeOutSpeed) : 0;
+		}
 	}
 
 	public void render(PoseStack ms, VertexConsumer buf, Color c1, Color c2, int alpha, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult) {

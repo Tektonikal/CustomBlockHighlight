@@ -12,6 +12,7 @@ import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.config.ConfigManager;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.GuiOutlineRenderer;
 
+import static tektonikal.customblockhighlight.Renderer.mc;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.o_cutFromCenter;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.o_cutFromCorner;
 
@@ -47,7 +48,7 @@ public class Blockhighlight implements ModInitializer {
     }
 
     public static double ease(double start, double end, float speed) {
-		return (start + (end - start) * (1 - Math.exp(-(1.0F / Minecraft.getInstance().getFps()) * speed)));
+		return (start + (end - start) * (1 - Math.exp(-((double) mc.getFrameTimeNs() / 1000000000) * speed)));
 	}
 	public static float easeF(double start, double end, float speed) {
 		return (float) ease(start, end, speed);
