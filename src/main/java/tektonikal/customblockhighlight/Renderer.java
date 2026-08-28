@@ -61,6 +61,7 @@ import static tektonikal.customblockhighlight.Blockhighlight.ease;
 import static tektonikal.customblockhighlight.Blockhighlight.easeF;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
 
+// TODO :!! !! reset shit when changing configs
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
 	public static final Camera camera = mc.gameRenderer.mainCamera();
