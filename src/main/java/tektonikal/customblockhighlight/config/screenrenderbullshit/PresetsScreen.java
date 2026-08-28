@@ -115,8 +115,8 @@ public class PresetsScreen extends Screen {
 			for (var lineConfig : cfg.lineConfigs()) {
 				if (lineConfig.enabled) {
 					float[] arr = new float[6];
-					Arrays.fill(arr, lineConfig.lineAlpha);
-					renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), lineConfig.lineCol, lineConfig.lineCol2, arr, lineConfig.lineWidth, lineConfig.lineDepthTest, lineConfig.cutFromCenter, lineConfig.cutFromCorner));
+					Arrays.fill(arr, lineConfig.color.alpha);
+					renderInfo.add(new CBHLineRenderInfo(Shapes.block().move(-0.5F, -0.5F, -0.5F), lineConfig.color.col1, lineConfig.color.col2, arr, lineConfig.lineWidth, lineConfig.lineDepthTest, lineConfig.cutFromCenter, lineConfig.cutFromCorner));
 				}
 			}
 		}

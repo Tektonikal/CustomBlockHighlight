@@ -435,7 +435,7 @@ public class Renderer {
 		if (getActiveInstance().outlineType == FaceMode.EDGES) {
 			for (var lineConfig : getActiveInstance().reversedLineConfigs()) {
 				if (lineConfig.enabled) {
-					Pair<Color, Color> mainCols = getColors(isCrystalObstructed, lineConfig.outlineRainbow, getActiveInstance().delay, lineConfig.lineCol, lineConfig.lineCol2, getActiveInstance().crystalHelperLineColor);
+					Pair<Color, Color> mainCols = getColors(isCrystalObstructed, lineConfig.color.rainbowSettings.enabled, getActiveInstance().delay, lineConfig.color.col1, lineConfig.color.col2, getActiveInstance().crystalHelperLineColor);
 					Renderer.drawEdgeOutline(stack, easeBox, lines, mainCols.first, mainCols.second, edgeAlpha, lineConfig.lineWidth, lineConfig.cutFromCenter, lineConfig.cutFromCorner, lineConfig.outerThicknessMult, lineConfig.innerThicknessMult, 0);
 				}
 			}
@@ -443,8 +443,8 @@ public class Renderer {
 			AABB inflated = easeBox.inflate(getActiveInstance().lineExpand);
 			for (var lineConfig : getActiveInstance().reversedLineConfigs()) {
 				if (lineConfig.enabled) {
-					Pair<Color, Color> mainCols = getColors(isCrystalObstructed, lineConfig.outlineRainbow, getActiveInstance().delay, lineConfig.lineCol, lineConfig.lineCol2, getActiveInstance().crystalHelperLineColor);
-					Renderer.drawBoxOutline(stack, inflated, mainCols.first, mainCols.second, getFades(lineConfig.lineAlpha), lineConfig.lineWidth, lineConfig.cutFromCenter, lineConfig.cutFromCorner, lineConfig.outerThicknessMult, lineConfig.innerThicknessMult, 0);
+					Pair<Color, Color> mainCols = getColors(isCrystalObstructed, lineConfig.color.rainbowSettings.enabled, getActiveInstance().delay, lineConfig.color.col1, lineConfig.color.col2, getActiveInstance().crystalHelperLineColor);
+					Renderer.drawBoxOutline(stack, inflated, mainCols.first, mainCols.second, getFades(lineConfig.color.alpha), lineConfig.lineWidth, lineConfig.cutFromCenter, lineConfig.cutFromCorner, lineConfig.outerThicknessMult, lineConfig.innerThicknessMult, 0);
 				}
 			}
 		}
@@ -472,9 +472,9 @@ public class Renderer {
 			if (getActiveInstance().allowEntities) {
 				for (Direction dir : Direction.values()) {
 					sideFades[dir.ordinal()] = getActiveInstance().fadeIn ? easeF(sideFades[dir.ordinal()], getActiveInstance().fillOpacity, getActiveInstance().fadeInSpeed) : getActiveInstance().fillOpacity;
-					lineFades[dir.ordinal()] = getActiveInstance().fadeIn ? easeF(lineFades[dir.ordinal()], getActiveInstance().primary.lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().primary.lineAlpha;
+					lineFades[dir.ordinal()] = getActiveInstance().fadeIn ? easeF(lineFades[dir.ordinal()], getActiveInstance().primary.color.alpha, getActiveInstance().fadeInSpeed) : getActiveInstance().primary.color.alpha;
 				}
-				edgeAlpha = getActiveInstance().fadeIn ? easeF(edgeAlpha, getActiveInstance().primary.lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().primary.lineAlpha;
+				edgeAlpha = getActiveInstance().fadeIn ? easeF(edgeAlpha, getActiveInstance().primary.color.alpha, getActiveInstance().fadeInSpeed) : getActiveInstance().primary.color.alpha;
 			} else {
 				miss = true;
 				exitFades();
@@ -483,7 +483,7 @@ public class Renderer {
 			if (mc.level.isEmptyBlock(block.getBlockPos()) || miss) {
 				exitFades();
 			} else {
-				edgeAlpha = getActiveInstance().fadeIn ? easeF(edgeAlpha, getActiveInstance().primary.lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().primary.lineAlpha;
+				edgeAlpha = getActiveInstance().fadeIn ? easeF(edgeAlpha, getActiveInstance().primary.color.alpha, getActiveInstance().fadeInSpeed) : getActiveInstance().primary.color.alpha;
 				EnumSet<Direction> sides = getSides(getActiveInstance().fillType, block.getBlockPos(), evilHitResult);
 				EnumSet<Direction> lines = getSides(getActiveInstance().outlineType, block.getBlockPos(), evilHitResult);
 				for (Direction dir : Direction.values()) {
@@ -493,7 +493,7 @@ public class Renderer {
 						sideFades[dir.ordinal()] = getActiveInstance().fadeOut ? easeF(sideFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 					}
 					if (lines.contains(dir)) {
-						lineFades[dir.ordinal()] = getActiveInstance().fadeIn ? easeF(lineFades[dir.ordinal()], getActiveInstance().primary.lineAlpha, getActiveInstance().fadeInSpeed) : getActiveInstance().primary.lineAlpha;
+						lineFades[dir.ordinal()] = getActiveInstance().fadeIn ? easeF(lineFades[dir.ordinal()], getActiveInstance().primary.color.alpha, getActiveInstance().fadeInSpeed) : getActiveInstance().primary.color.alpha;
 					} else {
 						lineFades[dir.ordinal()] = getActiveInstance().fadeOut ? easeF(lineFades[dir.ordinal()], 0, getActiveInstance().fadeOutSpeed) : 0;
 					}

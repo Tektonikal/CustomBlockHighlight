@@ -44,10 +44,10 @@ public class BlockHighlightConfig {
 		};
 	}
 	public static class ColorSetting {
-		public Color col1;
-		public Color col2;
-		public int alpha;
-		public RainbowSettings rainbowSettings;
+		public Color col1 = Color.BLACK;
+		public Color col2 = Color.WHITE;
+		public int alpha = 255;
+		public RainbowSettings rainbowSettings = new RainbowSettings(false, 5, 250, 1, 1);
 	}
 
 	public static class RainbowSettings {
@@ -55,10 +55,12 @@ public class BlockHighlightConfig {
         public int delay;
         public float saturation;
         public float brightness;
+		public float speed;
 
-        public RainbowSettings(boolean enabled, int delay, float saturation, float brightness) {
+        public RainbowSettings(boolean enabled, float speed, int delay, float saturation, float brightness) {
             this.enabled = enabled;
-            this.delay = delay;
+	        this.speed = speed;
+	        this.delay = delay;
             this.saturation = saturation;
             this.brightness = brightness;
         }
@@ -66,7 +68,7 @@ public class BlockHighlightConfig {
 
 	public static class LineConfig {
 		public boolean enabled;
-		public ColorSetting colorSettings = new ColorSetting();
+		public ColorSetting color = new ColorSetting();
 		public float lineWidth = 5F;
 		public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
 		public float cutFromCenter = 0.25F;
@@ -142,23 +144,23 @@ public class BlockHighlightConfig {
             .build();
     public static Option<Color> o_lineCol = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.primary"))
-            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.primary.lineCol, newVal -> ACTIVE_INSTANCE.primary.lineCol = newVal))
+            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.primary.color.col1, newVal -> ACTIVE_INSTANCE.primary.color.col1 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
 	public static final Option<Color> o_lineCol2 = Option.<Color>createBuilder()
 			.name(Component.translatable("cbh.config.secondary"))
-			.stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.primary.lineCol2, newVal -> ACTIVE_INSTANCE.primary.lineCol2 = newVal))
+			.stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.primary.color.col2, newVal -> ACTIVE_INSTANCE.primary.color.col2 = newVal))
 			.controller(ColorControllerBuilder::create)
 			.build();
     public static Option<Integer> o_lineAlpha = Option.<Integer>createBuilder()
             .name(Component.translatable("cbh.config.opacity"))
             .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
-            .stateManager(StateManager.createInstant(255, () -> ACTIVE_INSTANCE.primary.lineAlpha, newVal -> ACTIVE_INSTANCE.primary.lineAlpha = newVal))
+            .stateManager(StateManager.createInstant(255, () -> ACTIVE_INSTANCE.primary.color.alpha, newVal -> ACTIVE_INSTANCE.primary.color.alpha = newVal))
             .build();
     @Updatable
     public static Option<Boolean> o_outlineRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.primary.outlineRainbow, newVal -> ACTIVE_INSTANCE.primary.outlineRainbow = newVal))
+            .stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
@@ -219,23 +221,23 @@ public class BlockHighlightConfig {
             .build();
     public static Option<Color> o_slineCol = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.primary"))
-            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.secondary.lineCol, newVal -> ACTIVE_INSTANCE.secondary.lineCol = newVal))
+            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.secondary.color.col1, newVal -> ACTIVE_INSTANCE.secondary.color.col1 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
     public static Option<Color> o_slineCol2 = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.secondary"))
-            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.secondary.lineCol2, newVal -> ACTIVE_INSTANCE.secondary.lineCol2 = newVal))
+            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.secondary.color.col2, newVal -> ACTIVE_INSTANCE.secondary.color.col2 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
     public static Option<Integer> o_slineAlphaMultiplier = Option.<Integer>createBuilder()
             .name(Component.translatable("cbh.config.alphaMultiplier"))
-            .stateManager(StateManager.createInstant(1, () -> ACTIVE_INSTANCE.secondary.lineAlpha, newVal -> ACTIVE_INSTANCE.secondary.lineAlpha = newVal))
+            .stateManager(StateManager.createInstant(1, () -> ACTIVE_INSTANCE.secondary.color.alpha, newVal -> ACTIVE_INSTANCE.secondary.color.alpha = newVal))
             .controller(intOption -> IntegerSliderControllerBuilder.create(intOption).range(0, 255).step(1))
             .build();
     @Updatable
     public static Option<Boolean> o_soutlineRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.secondary.outlineRainbow, newVal -> ACTIVE_INSTANCE.secondary.outlineRainbow = newVal))
+            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
@@ -279,23 +281,23 @@ public class BlockHighlightConfig {
             .build();
     public static Option<Color> o_tlineCol = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.primary"))
-            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.tertiary.lineCol, newVal -> ACTIVE_INSTANCE.tertiary.lineCol = newVal))
+            .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.tertiary.color.col1, newVal -> ACTIVE_INSTANCE.tertiary.color.col1 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
     public static Option<Color> o_tlineCol2 = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.secondary"))
-            .stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.tertiary.lineCol2, newVal -> ACTIVE_INSTANCE.tertiary.lineCol2 = newVal))
+            .stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.tertiary.color.col2, newVal -> ACTIVE_INSTANCE.tertiary.color.col2 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
 	public static Option<Integer> o_tlineAlphaMultiplier = Option.<Integer>createBuilder()
 			.name(Component.translatable("cbh.config.alphaMultiplier"))
-			.stateManager(StateManager.createInstant(1, () -> ACTIVE_INSTANCE.tertiary.lineAlpha, newVal -> ACTIVE_INSTANCE.tertiary.lineAlpha = newVal))
+			.stateManager(StateManager.createInstant(1, () -> ACTIVE_INSTANCE.tertiary.color.alpha, newVal -> ACTIVE_INSTANCE.tertiary.color.alpha = newVal))
 			.controller(intOption -> IntegerSliderControllerBuilder.create(intOption).range(0, 255).step(1))
 			.build();
     @Updatable
     public static Option<Boolean> o_toutlineRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.tertiary.outlineRainbow, newVal -> ACTIVE_INSTANCE.tertiary.outlineRainbow = newVal))
+            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
