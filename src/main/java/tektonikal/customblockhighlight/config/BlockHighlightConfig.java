@@ -43,6 +43,12 @@ public class BlockHighlightConfig {
 			default -> throw new IllegalStateException();
 		};
 	}
+	public static class ColorSetting {
+		public Color col1;
+		public Color col2;
+		public int alpha;
+		public RainbowSettings rainbowSettings;
+	}
 
 	public static class RainbowSettings {
         public boolean enabled;
@@ -60,10 +66,7 @@ public class BlockHighlightConfig {
 
 	public static class LineConfig {
 		public boolean enabled;
-		public Color lineCol = Color.BLACK;
-		public Color lineCol2 = Color.BLACK;
-		public int lineAlpha = 255;
-		public boolean outlineRainbow = false;
+		public ColorSetting colorSettings = new ColorSetting();
 		public float lineWidth = 5F;
 		public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
 		public float cutFromCenter = 0.25F;
