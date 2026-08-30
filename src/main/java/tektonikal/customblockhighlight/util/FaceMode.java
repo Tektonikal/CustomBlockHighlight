@@ -7,16 +7,12 @@ public enum FaceMode implements NameableEnum {
 	AIR_EXPOSED,
 	ALL,
 	CONCEALED,
-	EDGES,
 	LOOKAT;
 
 	@Override
 	public Component getDisplayName() {
 		return Component.translatable(switch (this) {
 			case ALL -> "cbh.enum.faceMode.all";
-            //THIS HAS TO GO!
-			case EDGES -> "Edges";
-
 			case AIR_EXPOSED -> "cbh.enum.faceMode.airExposed";
 			case CONCEALED -> "cbh.enum.faceMode.concealed";
 			case LOOKAT -> "cbh.enum.faceMode.lookAt";

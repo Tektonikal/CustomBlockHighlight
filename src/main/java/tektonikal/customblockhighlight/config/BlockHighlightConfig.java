@@ -13,6 +13,7 @@ import net.minecraft.util.Mth;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.FaceMode;
+import tektonikal.customblockhighlight.util.ShapeStyle;
 
 import java.awt.*;
 import java.io.IOException;
@@ -86,6 +87,9 @@ public class BlockHighlightConfig {
 		public ColorSetting color = new ColorSetting();
 		public float lineWidth = 5F;
 		public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
+		public float lineExpand = 0;
+		public FaceMode outlineType = FaceMode.AIR_EXPOSED;
+		public ShapeStyle shapeStyle = ShapeStyle.CLASSIC_BOX;
 		public float cutFromCenter = 0.25F;
 		public float cutFromCorner = 0;
 		public float innerThicknessMult = 1;
@@ -109,12 +113,9 @@ public class BlockHighlightConfig {
 
     //@formatter:off
     //outline stuff
-    public float lineExpand = 0;
-	public FaceMode outlineType = FaceMode.AIR_EXPOSED;
 
     //fill stuffs
     public boolean fillEnabled = true;
-
 		public ColorSetting fillCol = new ColorSetting();
         public FaceMode fillType = FaceMode.ALL;
         public float fillExpand = 0.001F;
@@ -187,7 +188,7 @@ public class BlockHighlightConfig {
                     Component.translatable("cbh.config.mode.description.5"),
                     Component.translatable("cbh.config.mode.description.6")
             ))
-            .stateManager(StateManager.createInstant(FaceMode.AIR_EXPOSED, () -> ACTIVE_INSTANCE.outlineType, newVal -> ACTIVE_INSTANCE.outlineType = newVal))
+            .stateManager(StateManager.createInstant(FaceMode.AIR_EXPOSED, () -> ACTIVE_INSTANCE.primary.outlineType, newVal -> ACTIVE_INSTANCE.primary.outlineType = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
             .build();
     public static Option<DepthTestMode> o_lineDepthTest = Option.<DepthTestMode>createBuilder()
@@ -198,7 +199,7 @@ public class BlockHighlightConfig {
             .build();
     public static Option<Float> o_lineExpand = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.expand"))
-            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.lineExpand, newVal -> ACTIVE_INSTANCE.lineExpand = newVal))
+            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.primary.lineExpand, newVal -> ACTIVE_INSTANCE.primary.lineExpand = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
             .build();
     public static Option<Float> o_lineWidth = Option.<Float>createBuilder()
@@ -385,11 +386,6 @@ public class BlockHighlightConfig {
                     Component.translatable("cbh.config.mode.description.6")
             ))
             .stateManager(StateManager.createInstant(FaceMode.ALL, () -> ACTIVE_INSTANCE.fillType, newVal -> ACTIVE_INSTANCE.fillType = newVal))
-            .addListener((option, _) -> {
-                if (option.pendingValue() == FaceMode.EDGES) {
-                    option.requestSet(FaceMode.LOOKAT);
-                }
-            })
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
             .build();
     public static Option<DepthTestMode> o_fillDepthTest = Option.<DepthTestMode>createBuilder()
@@ -527,6 +523,16 @@ public class BlockHighlightConfig {
             .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.rotations, newVal -> ACTIVE_INSTANCE.rotations = newVal))
             .controller(TickBoxControllerBuilder::create)
             .build();
+	public static Option<Boolean> o_showWhenNoHud = Option.<Boolean>createBuilder()
+			.name(Component.translatable("cbh.config.show_when_no_hud"))
+			.stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.showWhenNoHud, newVal -> ACTIVE_INSTANCE.showWhenNoHud = newVal))
+			.controller(TickBoxControllerBuilder::create)
+			.build();
+	public static Option<Boolean> o_showWhenNoInteraction = Option.<Boolean>createBuilder()
+			.name(Component.translatable("cbh.config.show_when_no_interaction"))
+			.stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.showWhenNoInteraction, newVal -> ACTIVE_INSTANCE.showWhenNoInteraction = newVal))
+			.controller(TickBoxControllerBuilder::create)
+			.build();
 
     public Screen getConfigScreen(Screen parent) {
         var layout = YetAnotherConfigLib.createBuilder()
@@ -642,6 +648,8 @@ public class BlockHighlightConfig {
                                 .option(o_crystalHelper)
                                 .option(o_crystalHelperLineColor)
                                 .option(o_crystalHelperFillColor)
+		                        .option(o_showWhenNoHud)
+		                        .option(o_showWhenNoInteraction)
                                 .build())
                         .group(OptionGroup.createBuilder()
                                 .name(Component.translatable("cbh.config"))

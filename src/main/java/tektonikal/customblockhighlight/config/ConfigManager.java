@@ -9,6 +9,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import static org.apache.commons.io.function.Erase.rethrow;
@@ -54,6 +55,9 @@ public class ConfigManager {
 	public static BlockHighlightConfig loadFromFile(Path path) {
 		try {
 			return loadFromJsonString(Files.readString(path));
+		} catch (NoSuchFileException e) {
+			save(new BlockHighlightConfig());
+			return load();
 		} catch (IOException ignored) {
 			return null;
 		}
