@@ -87,7 +87,8 @@ public class BlockHighlightConfig {
 		public ColorSetting color = new ColorSetting();
 		public float lineWidth = 5F;
 		public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
-		public float lineExpand = 0;
+		public float lineExpandBlocks = 0;
+		public float lineExpandPercentage = 0;
 		public FaceMode outlineType = FaceMode.AIR_EXPOSED;
 		public ShapeStyle shapeStyle = ShapeStyle.CLASSIC_BOX;
 		public float cutFromCenter = 0.25F;
@@ -133,10 +134,6 @@ public class BlockHighlightConfig {
 	public float lineThicknessAnimationSpeed = 15F;
 	public boolean animateLineCuts = true;
 	public float lineCutAnimationSpeed = 15F;
-    public float rainbowSpeed = 5;
-    public int delay = 250;
-    public float saturation = 1;
-    public float brightness = 1;
     public boolean crystalHelper = true;
     public Color crystalHelperLineColor = Color.RED;
  	public Color crystalHelperFillColor = Color.RED;
@@ -179,6 +176,27 @@ public class BlockHighlightConfig {
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
+	public static Option<Float> o_lineRainbowSpeed = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.speed"))
+			.stateManager(StateManager.createInstant(5F, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.speed, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.speed = newVal))
+			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 10F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
+			.build();
+	public static Option<Integer> o_lineRainbowDelay = Option.<Integer>createBuilder()
+			.name(Component.translatable("cbh.config.delay"))
+			.stateManager(StateManager.createInstant(250, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.delay, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.delay = newVal))
+			.description(OptionDescription.of(Component.translatable("cbh.config.delay.description")))
+			.controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.translatable(value + " ms")))
+			.build();
+	public static Option<Float> o_lineSaturation = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.saturation"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.saturation, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.saturation = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_lineBrightness = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.brightness"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.brightness, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.brightness = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
     public static Option<FaceMode> o_outlineType = Option.<FaceMode>createBuilder()
             .name(Component.translatable("cbh.config.mode"))
             .description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
@@ -199,7 +217,7 @@ public class BlockHighlightConfig {
             .build();
     public static Option<Float> o_lineExpand = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.expand"))
-            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.primary.lineExpand, newVal -> ACTIVE_INSTANCE.primary.lineExpand = newVal))
+            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.primary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.primary.lineExpandBlocks = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
             .build();
     public static Option<Float> o_lineWidth = Option.<Float>createBuilder()
@@ -244,11 +262,11 @@ public class BlockHighlightConfig {
             .stateManager(StateManager.createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.secondary.color.col2, newVal -> ACTIVE_INSTANCE.secondary.color.col2 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
-    public static Option<Integer> o_slineAlphaMultiplier = Option.<Integer>createBuilder()
-            .name(Component.translatable("cbh.config.alphaMultiplier"))
-            .stateManager(StateManager.createInstant(1, () -> ACTIVE_INSTANCE.secondary.color.alpha, newVal -> ACTIVE_INSTANCE.secondary.color.alpha = newVal))
-            .controller(intOption -> IntegerSliderControllerBuilder.create(intOption).range(0, 255).step(1))
-            .build();
+	public static Option<Integer> o_slineAlpha = Option.<Integer>createBuilder()
+			.name(Component.translatable("cbh.config.opacity"))
+			.controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
+			.stateManager(StateManager.createInstant(255, () -> ACTIVE_INSTANCE.primary.color.alpha, newVal -> ACTIVE_INSTANCE.primary.color.alpha = newVal))
+			.build();
     @Updatable
     public static Option<Boolean> o_soutlineRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
@@ -256,6 +274,27 @@ public class BlockHighlightConfig {
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
+	public static Option<Float> o_slineRainbowSpeed = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.speed"))
+			.stateManager(StateManager.createInstant(5F, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.speed, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.speed = newVal))
+			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 10F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
+			.build();
+	public static Option<Integer> o_slineRainbowDelay = Option.<Integer>createBuilder()
+			.name(Component.translatable("cbh.config.delay"))
+			.stateManager(StateManager.createInstant(250, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.delay, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.delay = newVal))
+			.description(OptionDescription.of(Component.translatable("cbh.config.delay.description")))
+			.controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.translatable(value + " ms")))
+			.build();
+	public static Option<Float> o_slineSaturation = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.saturation"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.saturation, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.saturation = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_slineBrightness = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.brightness"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.brightness, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.brightness = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
     public static Option<DepthTestMode> o_slineDepthTest = Option.<DepthTestMode>createBuilder()
             .name(Component.translatable("cbh.config.depthTest"))
             .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
@@ -267,6 +306,11 @@ public class BlockHighlightConfig {
             .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1f", value) + " px")))
             .stateManager(StateManager.createInstant(5F, () -> ACTIVE_INSTANCE.secondary.lineWidth, newVal -> ACTIVE_INSTANCE.secondary.lineWidth = newVal))
             .build();
+	public static Option<Float> o_slineExpand = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.expand"))
+			.stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.secondary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.secondary.lineExpandBlocks = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
+			.build();
     public static Option<Float> o_scutFromCorner = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCorner"))
             .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.secondary.cutFromCorner, newVal -> ACTIVE_INSTANCE.secondary.cutFromCorner = newVal))
@@ -287,6 +331,18 @@ public class BlockHighlightConfig {
             .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.secondary.innerThicknessMult, newVal -> ACTIVE_INSTANCE.secondary.innerThicknessMult = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
+	public static Option<FaceMode> o_soutlineType = Option.<FaceMode>createBuilder()
+			.name(Component.translatable("cbh.config.mode"))
+			.description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
+					Component.translatable("cbh.config.mode.description.2"),
+					Component.translatable("cbh.config.mode.description.3"),
+					Component.translatable("cbh.config.mode.description.4"),
+					Component.translatable("cbh.config.mode.description.5"),
+					Component.translatable("cbh.config.mode.description.6")
+			))
+			.stateManager(StateManager.createInstant(FaceMode.AIR_EXPOSED, () -> ACTIVE_INSTANCE.secondary.outlineType, newVal -> ACTIVE_INSTANCE.secondary.outlineType = newVal))
+			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
+			.build();
     @Updatable
     public static Option<Boolean> o_tertiary = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.enabled"))
@@ -304,10 +360,10 @@ public class BlockHighlightConfig {
             .stateManager(StateManager.createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.tertiary.color.col2, newVal -> ACTIVE_INSTANCE.tertiary.color.col2 = newVal))
             .controller(ColorControllerBuilder::create)
             .build();
-	public static Option<Integer> o_tlineAlphaMultiplier = Option.<Integer>createBuilder()
-			.name(Component.translatable("cbh.config.alphaMultiplier"))
-			.stateManager(StateManager.createInstant(1, () -> ACTIVE_INSTANCE.tertiary.color.alpha, newVal -> ACTIVE_INSTANCE.tertiary.color.alpha = newVal))
-			.controller(intOption -> IntegerSliderControllerBuilder.create(intOption).range(0, 255).step(1))
+	public static Option<Integer> o_tlineAlpha = Option.<Integer>createBuilder()
+			.name(Component.translatable("cbh.config.opacity"))
+			.controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
+			.stateManager(StateManager.createInstant(255, () -> ACTIVE_INSTANCE.tertiary.color.alpha, newVal -> ACTIVE_INSTANCE.tertiary.color.alpha = newVal))
 			.build();
     @Updatable
     public static Option<Boolean> o_toutlineRainbow = Option.<Boolean>createBuilder()
@@ -316,7 +372,41 @@ public class BlockHighlightConfig {
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
-    public static Option<DepthTestMode> o_tlineDepthTest = Option.<DepthTestMode>createBuilder()
+	public static Option<Float> o_tlineRainbowSpeed = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.speed"))
+			.stateManager(StateManager.createInstant(5F, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.speed, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.speed = newVal))
+			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 10F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
+			.build();
+	public static Option<Integer> o_tlineRainbowDelay = Option.<Integer>createBuilder()
+			.name(Component.translatable("cbh.config.delay"))
+			.stateManager(StateManager.createInstant(250, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.delay, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.delay = newVal))
+			.description(OptionDescription.of(Component.translatable("cbh.config.delay.description")))
+			.controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.translatable(value + " ms")))
+			.build();
+	public static Option<Float> o_tlineSaturation = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.saturation"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.saturation, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.saturation = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_tlineBrightness = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.brightness"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.brightness, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.brightness = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<FaceMode> o_toutlineType = Option.<FaceMode>createBuilder()
+			.name(Component.translatable("cbh.config.mode"))
+			.description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
+					Component.translatable("cbh.config.mode.description.2"),
+					Component.translatable("cbh.config.mode.description.3"),
+					Component.translatable("cbh.config.mode.description.4"),
+					Component.translatable("cbh.config.mode.description.5"),
+					Component.translatable("cbh.config.mode.description.6")
+			))
+			.stateManager(StateManager.createInstant(FaceMode.AIR_EXPOSED, () -> ACTIVE_INSTANCE.tertiary.outlineType, newVal -> ACTIVE_INSTANCE.tertiary.outlineType = newVal))
+			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
+			.build();
+
+	public static Option<DepthTestMode> o_tlineDepthTest = Option.<DepthTestMode>createBuilder()
             .name(Component.translatable("cbh.config.depthTest"))
             .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
             .stateManager(StateManager.createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.tertiary.lineDepthTest, newVal -> ACTIVE_INSTANCE.tertiary.lineDepthTest = newVal))
@@ -327,6 +417,11 @@ public class BlockHighlightConfig {
             .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1f", value) + " px")))
             .stateManager(StateManager.createInstant(3F, () -> ACTIVE_INSTANCE.tertiary.lineWidth, newVal -> ACTIVE_INSTANCE.tertiary.lineWidth = newVal))
             .build();
+	public static Option<Float> o_tlineExpand = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.expand"))
+			.stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.tertiary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.tertiary.lineExpandBlocks = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
+			.build();
     public static Option<Float> o_tcutFromCorner = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCorner"))
             .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.tertiary.cutFromCorner, newVal -> ACTIVE_INSTANCE.tertiary.cutFromCorner = newVal))
@@ -376,7 +471,29 @@ public class BlockHighlightConfig {
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
             .build();
-    public static Option<FaceMode> o_fillType = Option.<FaceMode>createBuilder()
+	public static Option<Float> o_fillRainbowSpeed = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.speed"))
+			.stateManager(StateManager.createInstant(5F, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.speed, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.speed = newVal))
+			.controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 10F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
+			.build();
+	public static Option<Integer> o_fillRainbowDelay = Option.<Integer>createBuilder()
+			.name(Component.translatable("cbh.config.delay"))
+			.stateManager(StateManager.createInstant(250, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.delay, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.delay = newVal))
+			.description(OptionDescription.of(Component.translatable("cbh.config.delay.description")))
+			.controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.translatable(value + " ms")))
+			.build();
+	public static Option<Float> o_fillSaturation = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.saturation"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.saturation, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.saturation = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<Float> o_fillBrightness = Option.<Float>createBuilder()
+			.name(Component.translatable("cbh.config.brightness"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.brightness, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.brightness = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+
+	public static Option<FaceMode> o_fillType = Option.<FaceMode>createBuilder()
             .name(Component.translatable("cbh.config.mode"))
             .description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
                     Component.translatable("cbh.config.mode.description.2"),
@@ -455,27 +572,6 @@ public class BlockHighlightConfig {
             .stateManager(StateManager.createInstant(15F, () -> ACTIVE_INSTANCE.lineThicknessAnimationSpeed, newVal -> ACTIVE_INSTANCE.lineThicknessAnimationSpeed = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
             .build();
-    public static Option<Integer> o_delay = Option.<Integer>createBuilder()
-            .name(Component.translatable("cbh.config.delay"))
-            .stateManager(StateManager.createInstant(250, () -> ACTIVE_INSTANCE.delay, newVal -> ACTIVE_INSTANCE.delay = newVal))
-            .description(OptionDescription.of(Component.translatable("cbh.config.delay.description")))
-            .controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.translatable(value + " ms")))
-            .build();
-    public static Option<Float> o_rainbowSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.speed"))
-            .stateManager(StateManager.createInstant(5F, () -> ACTIVE_INSTANCE.rainbowSpeed, newVal -> ACTIVE_INSTANCE.rainbowSpeed = newVal))
-            .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 10F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
-            .build();
-    public static Option<Float> o_saturation = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.saturation"))
-            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.saturation, newVal -> ACTIVE_INSTANCE.saturation = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_brightness = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.brightness"))
-            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.brightness, newVal -> ACTIVE_INSTANCE.brightness = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
     public static Option<Boolean> o_connectedBlocks = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.connected_outlines"))
             .description(OptionDescription.of(Component.translatable("cbh.config.connected_outlines.description")))
@@ -546,6 +642,10 @@ public class BlockHighlightConfig {
                                 .option(o_lineCol2)
                                 .option(o_lineAlpha)
                                 .option(o_outlineRainbow)
+		                        .option(o_lineRainbowSpeed)
+		                        .option(o_lineRainbowDelay)
+		                        .option(o_lineSaturation)
+		                        .option(o_lineBrightness)
                                 .build())
                         .group(OptionGroup.createBuilder()
                                 .name(Component.translatable("cbh.config.misc"))
@@ -561,34 +661,64 @@ public class BlockHighlightConfig {
                                 .option(o_cutFromCenter)
                                 .option(o_innerThicknessMult)
                                 .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.secondary_layer"))
-                                .option(o_secondary)
-                                .option(o_slineCol)
-                                .option(o_slineCol2)
-                                .option(o_slineAlphaMultiplier)
-                                .option(o_soutlineRainbow)
-                                .option(o_slineDepthTest)
-                                .option(o_slineWidth)
-                                .option(o_scutFromCorner)
-                                .option(o_souterThicknessMult)
-                                .option(o_scutFromCenter)
-                                .option(o_sinnerThicknessMult)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.tertiary_layer"))
-                                .option(o_tertiary)
-                                .option(o_tlineCol)
-                                .option(o_tlineCol2)
-                                .option(o_tlineAlphaMultiplier)
-                                .option(o_toutlineRainbow)
-                                .option(o_tlineDepthTest)
-                                .option(o_tlineWidth)
-                                .option(o_tcutFromCorner)
-                                .option(o_touterThicknessMult)
-                                .option(o_tcutFromCenter)
-                                .option(o_tinnerThicknessMult)
-                                .build())
+		                .group(OptionGroup.createBuilder()
+				                .name(Component.translatable("SECONDARY"))
+				                .option(o_secondary)
+				                .build())
+		                .group(OptionGroup.createBuilder()
+				                .name(Component.translatable("cbh.config.color"))
+				                .option(o_slineCol)
+				                .option(o_slineCol2)
+				                .option(o_slineAlpha)
+				                .option(o_soutlineRainbow)
+				                .option(o_slineRainbowSpeed)
+				                .option(o_slineRainbowDelay)
+				                .option(o_slineSaturation)
+				                .option(o_slineBrightness)
+				                .build())
+		                .group(OptionGroup.createBuilder()
+				                .name(Component.translatable("cbh.config.misc"))
+				                .option(o_soutlineType)
+				                .option(o_slineDepthTest)
+				                .option(o_slineExpand)
+				                .option(o_slineWidth)
+				                .build())
+		                .group(OptionGroup.createBuilder()
+				                .name(Component.translatable("cbh.config.subdiv"))
+				                .option(o_scutFromCorner)
+				                .option(o_souterThicknessMult)
+				                .option(o_scutFromCenter)
+				                .option(o_sinnerThicknessMult)
+				                .build())
+		                .group(OptionGroup.createBuilder()
+				                .name(Component.translatable("TERTIARY"))
+				                .option(o_tertiary)
+				                .build())
+		                .group(OptionGroup.createBuilder()
+				                .name(Component.translatable("cbh.config.color"))
+				                .option(o_tlineCol)
+				                .option(o_tlineCol2)
+				                .option(o_tlineAlpha)
+				                .option(o_toutlineRainbow)
+				                .option(o_tlineRainbowSpeed)
+				                .option(o_tlineRainbowDelay)
+				                .option(o_tlineSaturation)
+				                .option(o_tlineBrightness)
+				                .build())
+		                .group(OptionGroup.createBuilder()
+				                .name(Component.translatable("cbh.config.misc"))
+				                .option(o_toutlineType)
+				                .option(o_tlineDepthTest)
+				                .option(o_tlineExpand)
+				                .option(o_tlineWidth)
+				                .build())
+		                .group(OptionGroup.createBuilder()
+				                .name(Component.translatable("cbh.config.subdiv"))
+				                .option(o_tcutFromCorner)
+				                .option(o_touterThicknessMult)
+				                .option(o_tcutFromCenter)
+				                .option(o_tinnerThicknessMult)
+				                .build())
                         .build())
                 .category(ConfigCategory.createBuilder()
                         .name(Component.translatable("cbh.config.fill"))
@@ -630,13 +760,6 @@ public class BlockHighlightConfig {
                                 .name(Component.translatable("cbh.config.line_thickness"))
                                 .option(o_animateLineThickness)
                                 .option(o_lineThicknessSpeed)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.rainbow_"))
-                                .option(o_delay)
-                                .option(o_rainbowSpeed)
-                                .option(o_saturation)
-                                .option(o_brightness)
                                 .build())
                         .group(OptionGroup.createBuilder()
                                 .name(Component.translatable("cbh.config.misc"))
@@ -704,6 +827,7 @@ public class BlockHighlightConfig {
     }
 
     public void update(Option<Boolean> option, Boolean enabled) {
+		//TODO: remake this
         if (option == o_outlineEnabled) {
             o_lineCol.setAvailable(enabled);
             o_lineCol2.setAvailable(enabled);
@@ -760,7 +884,7 @@ public class BlockHighlightConfig {
         if (option == o_secondary) {
             o_slineCol.setAvailable(enabled);
             o_slineCol2.setAvailable(enabled);
-            o_slineAlphaMultiplier.setAvailable(enabled);
+            o_slineAlpha.setAvailable(enabled);
             o_soutlineRainbow.setAvailable(enabled);
             o_slineDepthTest.setAvailable(enabled);
             o_slineWidth.setAvailable(enabled);
@@ -770,7 +894,7 @@ public class BlockHighlightConfig {
         if (option == o_tertiary) {
             o_tlineCol.setAvailable(enabled);
             o_tlineCol2.setAvailable(enabled);
-            o_tlineAlphaMultiplier.setAvailable(enabled);
+            o_lineAlpha.setAvailable(enabled);
             o_toutlineRainbow.setAvailable(enabled);
             o_tlineDepthTest.setAvailable(enabled);
             o_tlineWidth.setAvailable(enabled);

@@ -4,6 +4,7 @@
   "package": "tektonikal.customblockhighlight.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "VoxelShapeAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

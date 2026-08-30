@@ -44,6 +44,7 @@ import net.minecraft.world.phys.shapes.*;
 import org.joml.*;
 import org.jspecify.annotations.NonNull;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
+import tektonikal.customblockhighlight.mixin.VoxelShapeAccessor;
 import tektonikal.customblockhighlight.util.*;
 
 import java.awt.*;
@@ -123,7 +124,7 @@ public class Renderer {
 	public static final Matrix4f lastProjMat = new Matrix4f();
 	public static final Matrix4f lastModMat = new Matrix4f();
 
-	public static final List<LineState> lineStates = Stream.generate(LineState::new).limit(3).collect(Collectors.toCollection(ArrayList::new));
+	public static final List<LineState> lineStates = new ArrayList<>(Stream.of(new LineState(), new LineState(), new LineState()).toList());
 
 
 	// todo: consider `activeBuffer` which holds the  active buffer? see finishDraw too, duplicated logic where only difference is fields
@@ -152,7 +153,7 @@ public class Renderer {
 		if (colorTexture == null) return;
 		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
 			if (lines) {
-				renderPass.setPipeline(getPipeline(BlockHighlightConfig.getActiveInstance().getLineConfig(layer).lineDepthTest, true));
+				renderPass.setPipeline(getPipeline(getActiveInstance().getLineConfig(layer).lineDepthTest, true));
 			} else {
 				renderPass.setPipeline(getPipeline(getActiveInstance().fillDepthTest, false));
 			}
@@ -206,12 +207,13 @@ public class Renderer {
 
 	public static void drawLineLayer(PoseStack stack, BlockHighlightConfig.LineConfig cfg, boolean obstructed, int layer) {
 		if (cfg.enabled) {
-			doEvilMatrixPreparations(stack, easeBox, cfg.shapeStyle == ShapeStyle.MODEL_SHAPE ? cfg.lineExpand : 0);
+			AABB box = easeBox.inflate(cfg.lineExpandBlocks);
+			doEvilMatrixPreparations(stack, box, cfg.shapeStyle == ShapeStyle.MODEL_SHAPE ? cfg.lineExpandBlocks : 0);
 			StagedVertexBuffer.Draw draw = startDrawing(true);
 			VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-			AABB zeroed = moveToZero(easeBox);
+			AABB zeroed = moveToZero(box);
 			Pair<Color, Color> cols = cfg.color.getColors(obstructed, getActiveInstance().crystalHelperLineColor);
-			if (cfg.shapeStyle == ShapeStyle.MODEL_SHAPE) {
+			if (cfg.shapeStyle == ShapeStyle.COLLISION_SHAPE) {
 				double normalised = zeroed.getMinPosition().distanceTo(zeroed.getMaxPosition());
 				for (Line line : Util.concat(lines, toRemove)) {
 					line.render(stack, buffer,
@@ -264,7 +266,6 @@ public class Renderer {
 		return shape.move(shape.bounds().getMinPosition().reverse());
 	}
 
-	//TODO: allow combining / excluding side sets?
 	//TODO: make this adjust based on rotation
 	private static EnumSet<Direction> getSides(FaceMode type, BlockPos pos, HitResult evilHitResult) {
 		return switch (type) {
@@ -310,7 +311,7 @@ public class Renderer {
 		if ((!mc.gui.hud.isHidden() || getActiveInstance().showWhenNoHud) && (!mc.player.gameMode().isBlockPlacingRestricted() || getActiveInstance().showWhenNoInteraction)) {
 			get().push("Custom block outline pre");
 			HitResult evilHitResult = getHitResult();
-			easeBoxAndEdges(evilHitResult, getVoxelShape(evilHitResult));
+			easeBoxAndEdges(evilHitResult, scale(getVoxelShape(evilHitResult), 0.75F));
 			get().popPush("Custom block outline render");
 			renderEverything(c, evilHitResult);
 			get().pop();
@@ -477,14 +478,7 @@ public class Renderer {
 				float pitch = (float) ((d == Direction.UP) ? (-Math.PI / 2F) : (Math.PI / 2F));
 				target = new Quaternionf(lastHorizontalDirection.getRotation()).rotateX(pitch);
 			}
-
-			List<AABB> aabbs = mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos()).toAabbs();
-			if (aabbs.size() == 1) {
-				Vec3 vec = aabbs.getFirst().getMinPosition().subtract(aabbs.getFirst().getMaxPosition());
-				if (!(vec.x == vec.y && vec.y == vec.z)) {
-					target = new Quaternionf();
-				}
-			} else {
+			if (((VoxelShapeAccessor) mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos())).invokeIsCubeLike()) {
 				target = new Quaternionf();
 			}
 
@@ -566,5 +560,25 @@ public class Renderer {
 			}
 		}
 		return null;
+	}
+
+	public static VoxelShape scale(VoxelShape shape, float scale) {
+		Vec3 center = shape.bounds().getCenter();
+		ArrayList<VoxelShape> shapes = new ArrayList<>();
+		shape.toAabbs().forEach(aabb -> shapes.add(Shapes.create(scaleAABBWithCenter(aabb, center, scale))));
+		return Shapes.or(Shapes.empty(), shapes.toArray(VoxelShape[]::new));
+	}
+
+
+	public static AABB scaleAABBWithCenter(AABB aabb, Vec3 center, float scaleFactor) {
+		double minX = aabb.minX;
+		double minY = aabb.minY;
+		double minZ = aabb.minZ;
+
+		double maxX = aabb.maxX;
+		double maxY = aabb.maxY;
+		double maxZ = aabb.maxZ;
+
+		return aabb.setMinX(center.x + (minX - center.x) * scaleFactor).setMinY(center.y + (minY - center.y) * scaleFactor).setMinZ(center.z + (minZ - center.z) * scaleFactor).setMaxX(center.x + (maxX - center.x) * scaleFactor).setMaxY(center.y + (maxY - center.y) * scaleFactor).setMaxZ(center.z + (maxZ - center.z) * scaleFactor);
 	}
 }
