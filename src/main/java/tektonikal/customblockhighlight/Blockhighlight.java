@@ -34,20 +34,21 @@ public class Blockhighlight implements ModInitializer {
         first.addEventListener((option, event) -> {
             if (event == OptionEventListener.Event.STATE_CHANGE) {
                 if (option.pendingValue() + second.pendingValue() >= 0.95) {
-                        second.requestSet(Mth.clamp(second.pendingValue(), 0, 0.95F - option.pendingValue()));
+                        second.requestSet(Mth.clamp(second.pendingValue(), 0, Math.clamp(0.95F - option.pendingValue(), 0, 1)));
                 }
             }
         });
         second.addEventListener((option, event) -> {
             if (event == OptionEventListener.Event.STATE_CHANGE) {
                 if (option.pendingValue() + first.pendingValue() >= 0.95) {
-                        first.requestSet(Mth.clamp(first.pendingValue(), 0, 0.95F - option.pendingValue()));
+                        first.requestSet(Mth.clamp(first.pendingValue(), 0, Math.clamp(0.95F - option.pendingValue(), 0, 1)));
                 }
             }
         });
     }
 
     public static double ease(double start, double end, float speed) {
+        //TODO: vsync lied to me
 		return (start + (end - start) * (1 - Math.exp(-((double) mc.getFrameTimeNs() / 1000000000) * speed)));
 	}
 	public static float easeF(double start, double end, float speed) {

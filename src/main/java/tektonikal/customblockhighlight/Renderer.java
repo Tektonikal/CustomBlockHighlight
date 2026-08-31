@@ -214,7 +214,7 @@ public class Renderer {
 							Math.round(lineStates.get(layer).getEdgeAlpha()), cfg.lineWidth, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
 				}
 			} else {
-				Vertexer.vertexBoxLines(stack.last(), buffer, zeroed, cols, lineStates.get(layer).getLineFades(), cfg.lineWidth * lineProg, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
+				Vertexer.vertexBoxLines(stack.last(), buffer, inflateWithAnchor(scaleTowards(zeroed, zeroed.getCenter(), cfg.lineExpandPercentage), zeroed.getCenter(), cfg.lineExpandBlocks), cols, lineStates.get(layer).getLineFades(), cfg.lineWidth * lineProg, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
 			}
 			finishDraw(true, draw, layer);
 			stack.popPose();
@@ -557,7 +557,7 @@ public class Renderer {
 		}
 		return null;
 	}
-
+    //TODO: this is really bad. maybe opt for doing this with matrix operations?
 	public static VoxelShape scaleBoth(VoxelShape shape, float scalePercentage, float fixedScale) {
 		Vec3 center = shape.bounds().getCenter();
 		ArrayList<VoxelShape> shapes = new ArrayList<>();
