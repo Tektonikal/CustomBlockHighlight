@@ -51,7 +51,6 @@ import java.awt.*;
 import java.lang.Math;
 import java.util.*;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
@@ -112,8 +111,6 @@ public class Renderer {
 	public static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
 
 	public static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
-	public static List<Line> lines = new ArrayList<>();
-	public static List<Line> toRemove = new ArrayList<>();
 
 	public static float scaleProg = 0;
 	public static float lineProg = 0;
@@ -181,7 +178,7 @@ public class Renderer {
 	}
 
 	public static void drawBoxFill(PoseStack stack, AABB box, Pair<Color, Color> cols, float[] alpha) {
-		doEvilMatrixPreparations(stack, box, getActiveInstance().fillExpand);
+		doEvilMatrixPreparations(stack, box);
 		StagedVertexBuffer.Draw draw = startDrawing(false);
 		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
 		Vertexer.vertexBoxQuads(stack.last(), buffer, moveToZero(box), cols, alpha);
@@ -189,7 +186,7 @@ public class Renderer {
 		stack.popPose();
 	}
 
-	private static void doEvilMatrixPreparations(PoseStack stack, AABB box, float lineExpand) {
+	private static void doEvilMatrixPreparations(PoseStack stack, AABB box) {
 		stack.pushPose();
 		stack.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
 		Vec3 vec = moveToZero(box).getCenter();
@@ -198,24 +195,19 @@ public class Renderer {
 			stack.rotateAround(rotation, 0, 0, 0);
 		}
 		stack.scale(scaleProg, scaleProg, scaleProg);
-		if (lineExpand != 0) {
-			float yeah = lineExpand * 2 + 1;
-			stack.scale(yeah, yeah, yeah);
-		}
 		stack.translate(vec.reverse());
 	}
 
 	public static void drawLineLayer(PoseStack stack, BlockHighlightConfig.LineConfig cfg, boolean obstructed, int layer) {
 		if (cfg.enabled) {
-			AABB box = easeBox.inflate(cfg.lineExpandBlocks);
-			doEvilMatrixPreparations(stack, box, cfg.shapeStyle == ShapeStyle.MODEL_SHAPE ? cfg.lineExpandBlocks : 0);
+			doEvilMatrixPreparations(stack, easeBox);
 			StagedVertexBuffer.Draw draw = startDrawing(true);
 			VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-			AABB zeroed = moveToZero(box);
+			AABB zeroed = moveToZero(easeBox);
 			Pair<Color, Color> cols = cfg.color.getColors(obstructed, getActiveInstance().crystalHelperLineColor);
 			if (cfg.shapeStyle == ShapeStyle.COLLISION_SHAPE) {
 				double normalised = zeroed.getMinPosition().distanceTo(zeroed.getMaxPosition());
-				for (Line line : Util.concat(lines, toRemove)) {
+				for (Line line : Util.concat(lineStates.get(layer).lines, lineStates.get(layer).toRemove)) {
 					line.render(stack, buffer,
 							getLerpedColor(cols.first(), cols.second(), (float) (zeroed.getMinPosition().distanceTo(line.minPos) / normalised)),
 							getLerpedColor(cols.first(), cols.second(), (float) (zeroed.getMinPosition().distanceTo(line.maxPos) / normalised)),
@@ -230,31 +222,35 @@ public class Renderer {
 	}
 
 	public static void updateLines(VoxelShape shape) {
-		//TODO: these don't sort by depth anymore
-		List<Line> newLines = new ArrayList<>();
-		shape.forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
-		if (lines.isEmpty() || !getActiveInstance().doEasing) {
-			lines = newLines;
-		}
-		while (lines.size() < newLines.size()) {
+		getActiveInstance().lineConfigs().forEach(lineConfig -> {
+			final VoxelShape evilShape = scaleBoth(shape, lineConfig.lineExpandPercentage, lineConfig.lineExpandBlocks);
+			LineState state = lineStates.get(getActiveInstance().reversedLineConfigs().indexOf(lineConfig));
+			//TODO: these don't sort by depth anymore
+			List<Line> newLines = new ArrayList<>();
+			evilShape.forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
+			if (state.lines.isEmpty() || !getActiveInstance().doEasing) {
+				state.lines = newLines;
+			}
+			while (state.lines.size() < newLines.size()) {
 //            if (!toRemove.isEmpty()) {
 //                lines.add(toRemove.getFirst());
 //                toRemove.removeFirst();
 //            } else {
-			lines.add(new Line(shape.bounds().getCenter(), shape.bounds().getCenter()));
+				state.lines.add(new Line(evilShape.bounds().getCenter(), evilShape.bounds().getCenter()));
 //            }
-		}
-		while (lines.size() > newLines.size()) {
-			toRemove.add(lines.getLast());
-			lines.removeLast();
-		}
-		lines.forEach(line -> {
-			Line target = newLines.get(lines.indexOf(line));
-			line.moveTo(target.minPos, target.maxPos);
-			line.update(true);
+			}
+			while (state.lines.size() > newLines.size()) {
+				state.toRemove.add(state.lines.getLast());
+				state.lines.removeLast();
+			}
+			state.lines.forEach(line -> {
+				Line target = newLines.get(state.lines.indexOf(line));
+				line.moveTo(target.minPos, target.maxPos);
+				line.update(true);
+			});
+			state.toRemove.forEach(line -> line.update(false));
+			state.toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
 		});
-		toRemove.forEach(line -> line.update(false));
-		toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
 	}
 
 	//TODO: minimize usage of moveToZero
@@ -311,7 +307,7 @@ public class Renderer {
 		if ((!mc.gui.hud.isHidden() || getActiveInstance().showWhenNoHud) && (!mc.player.gameMode().isBlockPlacingRestricted() || getActiveInstance().showWhenNoInteraction)) {
 			get().push("Custom block outline pre");
 			HitResult evilHitResult = getHitResult();
-			easeBoxAndEdges(evilHitResult, scale(getVoxelShape(evilHitResult), 0.75F));
+			easeBoxAndEdges(evilHitResult, getVoxelShape(evilHitResult));
 			get().popPush("Custom block outline render");
 			renderEverything(c, evilHitResult);
 			get().pop();
@@ -562,15 +558,17 @@ public class Renderer {
 		return null;
 	}
 
-	public static VoxelShape scale(VoxelShape shape, float scale) {
+	public static VoxelShape scaleBoth(VoxelShape shape, float scalePercentage, float fixedScale) {
 		Vec3 center = shape.bounds().getCenter();
 		ArrayList<VoxelShape> shapes = new ArrayList<>();
-		shape.toAabbs().forEach(aabb -> shapes.add(Shapes.create(scaleAABBWithCenter(aabb, center, scale))));
-		return Shapes.or(Shapes.empty(), shapes.toArray(VoxelShape[]::new));
+		shape.toAabbs().forEach(aabb -> shapes.add(Shapes.create(inflateWithAnchor(scaleTowards(aabb, center, scalePercentage), center, fixedScale))));
+		return or(Shapes.empty(), shapes.toArray(VoxelShape[]::new));
+	}
+	public static VoxelShape or(final VoxelShape first, final VoxelShape... tail) {
+		return Arrays.stream(tail).reduce(first, (shape, shape2) -> Shapes.joinUnoptimized(shape, shape2, BooleanOp.OR));
 	}
 
-
-	public static AABB scaleAABBWithCenter(AABB aabb, Vec3 center, float scaleFactor) {
+	public static AABB scaleTowards(AABB aabb, Vec3 center, float scaleFactor) {
 		double minX = aabb.minX;
 		double minY = aabb.minY;
 		double minZ = aabb.minZ;
@@ -579,6 +577,22 @@ public class Renderer {
 		double maxY = aabb.maxY;
 		double maxZ = aabb.maxZ;
 
-		return aabb.setMinX(center.x + (minX - center.x) * scaleFactor).setMinY(center.y + (minY - center.y) * scaleFactor).setMinZ(center.z + (minZ - center.z) * scaleFactor).setMaxX(center.x + (maxX - center.x) * scaleFactor).setMaxY(center.y + (maxY - center.y) * scaleFactor).setMaxZ(center.z + (maxZ - center.z) * scaleFactor);
+		return aabb
+				.setMinX(center.x + (minX - center.x) * scaleFactor)
+				.setMinY(center.y + (minY - center.y) * scaleFactor)
+				.setMinZ(center.z + (minZ - center.z) * scaleFactor)
+				.setMaxX(center.x + (maxX - center.x) * scaleFactor)
+				.setMaxY(center.y + (maxY - center.y) * scaleFactor)
+				.setMaxZ(center.z + (maxZ - center.z) * scaleFactor);
+	}
+
+	public static AABB inflateWithAnchor(AABB aabb, Vec3 anchor, float amount) {
+		return aabb.setMinX(aabb.minX + Math.signum(aabb.minX - anchor.x) * amount)
+				.setMaxX(aabb.maxX + Math.signum(aabb.maxX - anchor.x) * amount)
+				.setMinY(aabb.minY + Math.signum(aabb.minY - anchor.y) * amount)
+				.setMaxY(aabb.maxY + Math.signum(aabb.maxY - anchor.y) * amount)
+				.setMinZ(aabb.minZ + Math.signum(aabb.minZ - anchor.z) * amount)
+				.setMaxZ(aabb.maxZ + Math.signum(aabb.maxZ - anchor.z) * amount);
+
 	}
 }

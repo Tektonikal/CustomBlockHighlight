@@ -41,9 +41,9 @@ public class BlockHighlightConfig {
 
 	public LineConfig getLineConfig(int layer) {
 		return switch (layer) {
-			case 0 -> primary;
+			case 2 -> primary;
 			case 1 -> secondary;
-			case 2 -> tertiary;
+			case 0 -> tertiary;
 			default -> throw new IllegalStateException();
 		};
 	}
@@ -88,7 +88,7 @@ public class BlockHighlightConfig {
 		public float lineWidth = 5F;
 		public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
 		public float lineExpandBlocks = 0;
-		public float lineExpandPercentage = 0;
+		public float lineExpandPercentage = 1;
 		public FaceMode outlineType = FaceMode.AIR_EXPOSED;
 		public ShapeStyle shapeStyle = ShapeStyle.CLASSIC_BOX;
 		public float cutFromCenter = 0.25F;
@@ -220,6 +220,16 @@ public class BlockHighlightConfig {
             .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.primary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.primary.lineExpandBlocks = newVal))
             .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
             .build();
+	public static Option<Float> o_lineExpandPercent = Option.<Float>createBuilder()
+			.name(Component.translatable("EXPAND %"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.primary.lineExpandPercentage, newVal -> ACTIVE_INSTANCE.primary.lineExpandPercentage = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<ShapeStyle> o_shapeStyle = Option.<ShapeStyle>createBuilder()
+			.name(Component.translatable("SHAPE STYLE"))
+			.stateManager(StateManager.createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.primary.shapeStyle, newVal -> ACTIVE_INSTANCE.primary.shapeStyle = newVal))
+			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
+			.build();
     public static Option<Float> o_lineWidth = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.lineWidth"))
             .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(0.5F, 15F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1f", value) + " px")))
@@ -310,6 +320,16 @@ public class BlockHighlightConfig {
 			.name(Component.translatable("cbh.config.expand"))
 			.stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.secondary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.secondary.lineExpandBlocks = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
+			.build();
+	public static Option<Float> o_slineExpandPercent = Option.<Float>createBuilder()
+			.name(Component.translatable("EXPAND %"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.secondary.lineExpandPercentage, newVal -> ACTIVE_INSTANCE.secondary.lineExpandPercentage = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<ShapeStyle> o_sshapeStyle = Option.<ShapeStyle>createBuilder()
+			.name(Component.translatable("SHAPE STYLE"))
+			.stateManager(StateManager.createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.secondary.shapeStyle, newVal -> ACTIVE_INSTANCE.secondary.shapeStyle = newVal))
+			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
 			.build();
     public static Option<Float> o_scutFromCorner = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCorner"))
@@ -421,6 +441,16 @@ public class BlockHighlightConfig {
 			.name(Component.translatable("cbh.config.expand"))
 			.stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.tertiary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.tertiary.lineExpandBlocks = newVal))
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
+			.build();
+	public static Option<Float> o_tlineExpandPercent = Option.<Float>createBuilder()
+			.name(Component.translatable("EXPAND %"))
+			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.tertiary.lineExpandPercentage, newVal -> ACTIVE_INSTANCE.tertiary.lineExpandPercentage = newVal))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.build();
+	public static Option<ShapeStyle> o_tshapeStyle = Option.<ShapeStyle>createBuilder()
+			.name(Component.translatable("SHAPE STYLE"))
+			.stateManager(StateManager.createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.tertiary.shapeStyle, newVal -> ACTIVE_INSTANCE.tertiary.shapeStyle = newVal))
+			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
 			.build();
     public static Option<Float> o_tcutFromCorner = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCorner"))
@@ -650,10 +680,15 @@ public class BlockHighlightConfig {
                         .group(OptionGroup.createBuilder()
                                 .name(Component.translatable("cbh.config.misc"))
                                 .option(o_outlineType)
+		                        .option(o_shapeStyle)
                                 .option(o_lineDepthTest)
-                                .option(o_lineExpand)
                                 .option(o_lineWidth)
                                 .build())
+		                .group(OptionGroup.createBuilder()
+				                .name(Component.translatable("SCALING"))
+                                .option(o_lineExpand)
+				                .option(o_lineExpandPercent)
+				                .build())
                         .group(OptionGroup.createBuilder()
                                 .name(Component.translatable("cbh.config.subdiv"))
                                 .option(o_cutFromCorner)
@@ -679,9 +714,14 @@ public class BlockHighlightConfig {
 		                .group(OptionGroup.createBuilder()
 				                .name(Component.translatable("cbh.config.misc"))
 				                .option(o_soutlineType)
+				                .option(o_sshapeStyle)
 				                .option(o_slineDepthTest)
-				                .option(o_slineExpand)
 				                .option(o_slineWidth)
+				                .build())
+		                .group(OptionGroup.createBuilder()
+				                .name(Component.translatable("Scaling"))
+				                .option(o_slineExpand)
+				                .option(o_slineExpandPercent)
 				                .build())
 		                .group(OptionGroup.createBuilder()
 				                .name(Component.translatable("cbh.config.subdiv"))
@@ -708,9 +748,14 @@ public class BlockHighlightConfig {
 		                .group(OptionGroup.createBuilder()
 				                .name(Component.translatable("cbh.config.misc"))
 				                .option(o_toutlineType)
+				                .option(o_tshapeStyle)
 				                .option(o_tlineDepthTest)
-				                .option(o_tlineExpand)
 				                .option(o_tlineWidth)
+				                .build())
+		                .group(OptionGroup.createBuilder()
+				                .name(Component.translatable("Scaling"))
+				                .option(o_tlineExpand)
+				                .option(o_tlineExpandPercent)
 				                .build())
 		                .group(OptionGroup.createBuilder()
 				                .name(Component.translatable("cbh.config.subdiv"))

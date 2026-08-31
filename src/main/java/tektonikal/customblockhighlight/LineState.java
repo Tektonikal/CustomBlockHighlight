@@ -1,6 +1,10 @@
 package tektonikal.customblockhighlight;
 
 import net.minecraft.core.Direction;
+import tektonikal.customblockhighlight.util.Line;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static tektonikal.customblockhighlight.Blockhighlight.easeF;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
@@ -8,6 +12,8 @@ import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getAct
 public class LineState {
 	public float edgeAlpha = 0;
 	public final float[] lineFades = new float[6];
+	public List<Line> lines = new ArrayList<>();
+	public List<Line> toRemove = new ArrayList<>();
 
 	public LineState() {
 
