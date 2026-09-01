@@ -178,7 +178,7 @@ public class Renderer {
 	}
 
 	public static void drawBoxFill(PoseStack stack, AABB box, Pair<Color, Color> cols, float[] alpha) {
-		doEvilMatrixPreparations(stack, box);
+		doEvilMatrixPreparations(stack, box, 1, 1);
 		StagedVertexBuffer.Draw draw = startDrawing(false);
 		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
 		Vertexer.vertexBoxQuads(stack.last(), buffer, moveToZero(box), cols, alpha);
@@ -186,7 +186,7 @@ public class Renderer {
 		stack.popPose();
 	}
 
-	private static void doEvilMatrixPreparations(PoseStack stack, AABB box) {
+	private static void doEvilMatrixPreparations(PoseStack stack, AABB box, float scaleBlocks, float scalePercentage) {
 		stack.pushPose();
 		stack.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
 		Vec3 vec = moveToZero(box).getCenter();
@@ -194,13 +194,17 @@ public class Renderer {
 		if (getActiveInstance().rotations) {
 			stack.rotateAround(rotation, 0, 0, 0);
 		}
+		AABB scaled = box.inflate(scaleBlocks);
+		Vector3f boxDim = new Vector3f((float) (scaled.getXsize() / box.getXsize()), (float) (scaled.getYsize() / box.getYsize()), (float) (scaled.getZsize() / box.getZsize()));
+		stack.scale(boxDim.x, boxDim.y, boxDim.z);
+		stack.scale(scalePercentage, scalePercentage, scalePercentage);
 		stack.scale(scaleProg, scaleProg, scaleProg);
 		stack.translate(vec.reverse());
 	}
 
 	public static void drawLineLayer(PoseStack stack, BlockHighlightConfig.LineConfig cfg, boolean obstructed, int layer) {
 		if (cfg.enabled) {
-			doEvilMatrixPreparations(stack, easeBox);
+			doEvilMatrixPreparations(stack, easeBox, cfg.lineExpandBlocks, cfg.lineExpandPercentage);
 			StagedVertexBuffer.Draw draw = startDrawing(true);
 			VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
 			AABB zeroed = moveToZero(easeBox);
@@ -223,11 +227,11 @@ public class Renderer {
 
 	public static void updateLines(VoxelShape shape) {
 		getActiveInstance().lineConfigs().forEach(lineConfig -> {
-			final VoxelShape evilShape = scaleBoth(shape, lineConfig.lineExpandPercentage, lineConfig.lineExpandBlocks);
+//			final VoxelShape evilShape = scaleBoth(shape, lineConfig.lineExpandPercentage, lineConfig.lineExpandBlocks);
 			LineState state = lineStates.get(getActiveInstance().reversedLineConfigs().indexOf(lineConfig));
 			//TODO: these don't sort by depth anymore
 			List<Line> newLines = new ArrayList<>();
-			evilShape.forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
+			shape.forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
 			if (state.lines.isEmpty() || !getActiveInstance().doEasing) {
 				state.lines = newLines;
 			}
@@ -236,7 +240,7 @@ public class Renderer {
 //                lines.add(toRemove.getFirst());
 //                toRemove.removeFirst();
 //            } else {
-				state.lines.add(new Line(evilShape.bounds().getCenter(), evilShape.bounds().getCenter()));
+				state.lines.add(new Line(shape.bounds().getCenter(), shape.bounds().getCenter()));
 //            }
 			}
 			while (state.lines.size() > newLines.size()) {
@@ -404,7 +408,6 @@ public class Renderer {
 
 	private static void drawFill(PoseStack stack, boolean isCrystalObstructed) {
 		boolean b = getActiveInstance().fillDepthTest != DepthTestMode.ALWAYS_PASS && getActiveInstance().fillExpand == 0;
-		//TODO: instead of expanding by fixed amount, do it based on a percentage of the box size
 		Renderer.drawBoxFill(stack, easeBox.inflate(getActiveInstance().fillExpand + (b ? 0.001 : 0)), getActiveInstance().fillCol.getColors(isCrystalObstructed, getActiveInstance().crystalHelperFillColor), sideFades);
 	}
 

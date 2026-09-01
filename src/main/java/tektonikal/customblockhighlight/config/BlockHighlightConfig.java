@@ -29,6 +29,7 @@ import static net.minecraft.util.Util.getMillis;
 @SuppressWarnings("NoTranslation") // temporary fix until fletching table finds a solution
 public class BlockHighlightConfig {
     public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val -> Component.translatable(String.format("%.2f", val).replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
+	public static final ValueFormatter<Float> BLOCKS_FORMATTER_THREE_PLACES = val -> Component.translatable(String.format("%.3f", val).replace(".000", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
     @SuppressWarnings("UnusedAssignment") // required for clinit stuff
     public static BlockHighlightConfig ACTIVE_INSTANCE = new BlockHighlightConfig();
 
@@ -275,7 +276,7 @@ public class BlockHighlightConfig {
 	public static Option<Integer> o_slineAlpha = Option.<Integer>createBuilder()
 			.name(Component.translatable("cbh.config.opacity"))
 			.controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
-			.stateManager(StateManager.createInstant(255, () -> ACTIVE_INSTANCE.primary.color.alpha, newVal -> ACTIVE_INSTANCE.primary.color.alpha = newVal))
+			.stateManager(StateManager.createInstant(255, () -> ACTIVE_INSTANCE.secondary.color.alpha, newVal -> ACTIVE_INSTANCE.secondary.color.alpha = newVal))
 			.build();
     @Updatable
     public static Option<Boolean> o_soutlineRainbow = Option.<Boolean>createBuilder()
@@ -319,7 +320,7 @@ public class BlockHighlightConfig {
 	public static Option<Float> o_slineExpand = Option.<Float>createBuilder()
 			.name(Component.translatable("cbh.config.expand"))
 			.stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.secondary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.secondary.lineExpandBlocks = newVal))
-			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.0625F).formatValue(BLOCKS_FORMATTER_THREE_PLACES))
 			.build();
 	public static Option<Float> o_slineExpandPercent = Option.<Float>createBuilder()
 			.name(Component.translatable("EXPAND %"))
@@ -440,12 +441,12 @@ public class BlockHighlightConfig {
 	public static Option<Float> o_tlineExpand = Option.<Float>createBuilder()
 			.name(Component.translatable("cbh.config.expand"))
 			.stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.tertiary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.tertiary.lineExpandBlocks = newVal))
-			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-2F, 1F).step(0.0625F).formatValue(BLOCKS_FORMATTER_THREE_PLACES))
 			.build();
 	public static Option<Float> o_tlineExpandPercent = Option.<Float>createBuilder()
 			.name(Component.translatable("EXPAND %"))
 			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.tertiary.lineExpandPercentage, newVal -> ACTIVE_INSTANCE.tertiary.lineExpandPercentage = newVal))
-			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	public static Option<ShapeStyle> o_tshapeStyle = Option.<ShapeStyle>createBuilder()
 			.name(Component.translatable("SHAPE STYLE"))
