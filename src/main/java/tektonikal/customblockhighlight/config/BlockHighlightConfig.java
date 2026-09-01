@@ -120,7 +120,8 @@ public class BlockHighlightConfig {
     public boolean fillEnabled = true;
 		public ColorSetting fillCol = new ColorSetting();
         public FaceMode fillType = FaceMode.ALL;
-        public float fillExpand = 0.001F;
+        public float fillExpandBlocks = 0F;
+    public float fillExpandPercent = 1F;
         public DepthTestMode fillDepthTest = DepthTestMode.HIDDEN_ONLY;
     //extras
     public boolean doEasing = true;
@@ -219,12 +220,12 @@ public class BlockHighlightConfig {
     public static Option<Float> o_lineExpand = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.expand"))
             .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.primary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.primary.lineExpandBlocks = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
+            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-2F, 1F).step(0.0625F).formatValue(BLOCKS_FORMATTER_THREE_PLACES))
             .build();
 	public static Option<Float> o_lineExpandPercent = Option.<Float>createBuilder()
 			.name(Component.translatable("EXPAND %"))
 			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.primary.lineExpandPercentage, newVal -> ACTIVE_INSTANCE.primary.lineExpandPercentage = newVal))
-			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	public static Option<ShapeStyle> o_shapeStyle = Option.<ShapeStyle>createBuilder()
 			.name(Component.translatable("SHAPE STYLE"))
@@ -320,12 +321,12 @@ public class BlockHighlightConfig {
 	public static Option<Float> o_slineExpand = Option.<Float>createBuilder()
 			.name(Component.translatable("cbh.config.expand"))
 			.stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.secondary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.secondary.lineExpandBlocks = newVal))
-			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.0625F).formatValue(BLOCKS_FORMATTER_THREE_PLACES))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-2F, 1F).step(0.0625F).formatValue(BLOCKS_FORMATTER_THREE_PLACES))
 			.build();
 	public static Option<Float> o_slineExpandPercent = Option.<Float>createBuilder()
 			.name(Component.translatable("EXPAND %"))
 			.stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.secondary.lineExpandPercentage, newVal -> ACTIVE_INSTANCE.secondary.lineExpandPercentage = newVal))
-			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	public static Option<ShapeStyle> o_sshapeStyle = Option.<ShapeStyle>createBuilder()
 			.name(Component.translatable("SHAPE STYLE"))
@@ -542,10 +543,15 @@ public class BlockHighlightConfig {
             .stateManager(StateManager.createInstant(DepthTestMode.HIDDEN_ONLY, () -> ACTIVE_INSTANCE.fillDepthTest, newVal -> ACTIVE_INSTANCE.fillDepthTest = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
             .build();
-    public static Option<Float> o_fillExpand = Option.<Float>createBuilder()
+    public static Option<Float> o_fillExpandBlocks = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.expand"))
-            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.fillExpand, newVal -> ACTIVE_INSTANCE.fillExpand = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-1F, 1F).step(0.05F).formatValue(BLOCKS_FORMATTER_TWO_PLACES))
+            .stateManager(StateManager.createInstant(0F, () -> ACTIVE_INSTANCE.fillExpandBlocks, newVal -> ACTIVE_INSTANCE.fillExpandBlocks = newVal))
+            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-2F, 1F).step(0.0625F).formatValue(BLOCKS_FORMATTER_THREE_PLACES))
+            .build();
+    public static Option<Float> o_fillExpandPercent = Option.<Float>createBuilder()
+            .name(Component.translatable("EXPAND %"))
+            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.fillExpandPercent, newVal -> ACTIVE_INSTANCE.fillExpandPercent = newVal))
+            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     @Updatable
     public static Option<Boolean> o_doEasing = Option.<Boolean>createBuilder()
@@ -777,10 +783,14 @@ public class BlockHighlightConfig {
                                 .option(o_fillRainbow)
                                 .build())
                         .group(OptionGroup.createBuilder()
+                                .name(Component.translatable("Scaling"))
+                                .option(o_fillExpandBlocks)
+                                .option(o_fillExpandPercent)
+                                .build())
+                        .group(OptionGroup.createBuilder()
                                 .name(Component.translatable("cbh.config.misc"))
                                 .option(o_fillType)
                                 .option(o_fillDepthTest)
-                                .option(o_fillExpand)
                                 .build())
                         .build())
                 .category(ConfigCategory.createBuilder()
@@ -898,7 +908,8 @@ public class BlockHighlightConfig {
             o_fillRainbow.setAvailable(enabled);
             o_fillType.setAvailable(enabled);
             o_fillDepthTest.setAvailable(enabled);
-            o_fillExpand.setAvailable(enabled);
+            o_fillExpandBlocks.setAvailable(enabled);
+            o_fillExpandPercent.setAvailable(enabled);
         }
         if (option == o_fadeIn) {
             o_fadeInSpeed.setAvailable(enabled);

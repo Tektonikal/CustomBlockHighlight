@@ -178,7 +178,7 @@ public class Renderer {
 	}
 
 	public static void drawBoxFill(PoseStack stack, AABB box, Pair<Color, Color> cols, float[] alpha) {
-		doEvilMatrixPreparations(stack, box, 1, 1);
+		doEvilMatrixPreparations(stack, box, getActiveInstance().fillExpandBlocks, getActiveInstance().fillExpandPercent);
 		StagedVertexBuffer.Draw draw = startDrawing(false);
 		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
 		Vertexer.vertexBoxQuads(stack.last(), buffer, moveToZero(box), cols, alpha);
@@ -218,7 +218,7 @@ public class Renderer {
 							Math.round(lineStates.get(layer).getEdgeAlpha()), cfg.lineWidth, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
 				}
 			} else {
-				Vertexer.vertexBoxLines(stack.last(), buffer, inflateWithAnchor(scaleTowards(zeroed, zeroed.getCenter(), cfg.lineExpandPercentage), zeroed.getCenter(), cfg.lineExpandBlocks), cols, lineStates.get(layer).getLineFades(), cfg.lineWidth * lineProg, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
+				Vertexer.vertexBoxLines(stack.last(), buffer, zeroed, cols, lineStates.get(layer).getLineFades(), cfg.lineWidth * lineProg, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
 			}
 			finishDraw(true, draw, layer);
 			stack.popPose();
@@ -407,8 +407,8 @@ public class Renderer {
 	}
 
 	private static void drawFill(PoseStack stack, boolean isCrystalObstructed) {
-		boolean b = getActiveInstance().fillDepthTest != DepthTestMode.ALWAYS_PASS && getActiveInstance().fillExpand == 0;
-		Renderer.drawBoxFill(stack, easeBox.inflate(getActiveInstance().fillExpand + (b ? 0.001 : 0)), getActiveInstance().fillCol.getColors(isCrystalObstructed, getActiveInstance().crystalHelperFillColor), sideFades);
+		boolean b = getActiveInstance().fillDepthTest != DepthTestMode.ALWAYS_PASS && getActiveInstance().fillExpandBlocks == 0 && getActiveInstance().fillExpandPercent == 0;
+		Renderer.drawBoxFill(stack, easeBox.inflate(b ? 0.001 : 0), getActiveInstance().fillCol.getColors(isCrystalObstructed, getActiveInstance().crystalHelperFillColor), sideFades);
 	}
 
 	private static void drawOutlines(PoseStack stack, boolean isCrystalObstructed) {
@@ -559,43 +559,5 @@ public class Renderer {
 			}
 		}
 		return null;
-	}
-    //TODO: this is really bad. maybe opt for doing this with matrix operations?
-	public static VoxelShape scaleBoth(VoxelShape shape, float scalePercentage, float fixedScale) {
-		Vec3 center = shape.bounds().getCenter();
-		ArrayList<VoxelShape> shapes = new ArrayList<>();
-		shape.toAabbs().forEach(aabb -> shapes.add(Shapes.create(inflateWithAnchor(scaleTowards(aabb, center, scalePercentage), center, fixedScale))));
-		return or(Shapes.empty(), shapes.toArray(VoxelShape[]::new));
-	}
-	public static VoxelShape or(final VoxelShape first, final VoxelShape... tail) {
-		return Arrays.stream(tail).reduce(first, (shape, shape2) -> Shapes.joinUnoptimized(shape, shape2, BooleanOp.OR));
-	}
-
-	public static AABB scaleTowards(AABB aabb, Vec3 center, float scaleFactor) {
-		double minX = aabb.minX;
-		double minY = aabb.minY;
-		double minZ = aabb.minZ;
-
-		double maxX = aabb.maxX;
-		double maxY = aabb.maxY;
-		double maxZ = aabb.maxZ;
-
-		return aabb
-				.setMinX(center.x + (minX - center.x) * scaleFactor)
-				.setMinY(center.y + (minY - center.y) * scaleFactor)
-				.setMinZ(center.z + (minZ - center.z) * scaleFactor)
-				.setMaxX(center.x + (maxX - center.x) * scaleFactor)
-				.setMaxY(center.y + (maxY - center.y) * scaleFactor)
-				.setMaxZ(center.z + (maxZ - center.z) * scaleFactor);
-	}
-
-	public static AABB inflateWithAnchor(AABB aabb, Vec3 anchor, float amount) {
-		return aabb.setMinX(aabb.minX + Math.signum(aabb.minX - anchor.x) * amount)
-				.setMaxX(aabb.maxX + Math.signum(aabb.maxX - anchor.x) * amount)
-				.setMinY(aabb.minY + Math.signum(aabb.minY - anchor.y) * amount)
-				.setMaxY(aabb.maxY + Math.signum(aabb.maxY - anchor.y) * amount)
-				.setMinZ(aabb.minZ + Math.signum(aabb.minZ - anchor.z) * amount)
-				.setMaxZ(aabb.maxZ + Math.signum(aabb.maxZ - anchor.z) * amount);
-
 	}
 }
