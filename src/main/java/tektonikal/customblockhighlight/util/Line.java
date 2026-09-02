@@ -9,6 +9,7 @@ import tektonikal.customblockhighlight.Vertexer;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 
 import java.awt.*;
+import java.util.Objects;
 
 import static tektonikal.customblockhighlight.Blockhighlight.ease;
 import static tektonikal.customblockhighlight.Blockhighlight.easeF;
@@ -52,4 +53,13 @@ public class Line {
 		Vec3 normal = getNormal();
 		Vertexer.vertexLine(ms.last(), buf, (float) minPos.x, (float) minPos.y, (float) minPos.z, (float) maxPos.x, (float) maxPos.y, (float) maxPos.z, c1, c2, Math.round(alpha * alphaMultiplier), (float) normal.x, (float) normal.y, (float) normal.z, width, cutFromCenter, cutFromCorner, outerMult, innerMult);
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == null || getClass() != o.getClass()) return false;
+
+		Line line = (Line) o;
+		return (Objects.equals(minPos, line.minPos) && Objects.equals(maxPos, line.maxPos)) || Objects.equals(maxPos, line.minPos) && Objects.equals(minPos, line.maxPos);
+	}
+
 }

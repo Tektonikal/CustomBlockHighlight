@@ -19,16 +19,21 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.StagedVertexBuffer;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
 import net.minecraft.client.renderer.rendertype.LayeringTransform;
 import net.minecraft.client.renderer.rendertype.OutputTarget;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.resources.model.SimpleModelWrapper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.HangingEntity;
+import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.world.item.BoatItem;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.*;
@@ -43,6 +48,7 @@ import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import org.joml.*;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.mixin.VoxelShapeAccessor;
 import tektonikal.customblockhighlight.util.*;
@@ -51,6 +57,7 @@ import java.awt.*;
 import java.lang.Math;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
@@ -58,7 +65,7 @@ import static net.minecraft.client.renderer.RenderPipelines.LINES;
 import static net.minecraft.util.profiling.Profiler.get;
 import static tektonikal.customblockhighlight.Blockhighlight.ease;
 import static tektonikal.customblockhighlight.Blockhighlight.easeF;
-import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
+import static tektonikal.customblockhighlight.config.BlockHighlightConfig.*;
 
 // TODO :!! !! reset shit when changing configs
 public class Renderer {
@@ -95,7 +102,6 @@ public class Renderer {
 					.withCull(false)
 					.build()
 	);
-
 	public static final RenderType linesNoDepth = RenderType.create("lines_no_depth",
 			RenderSetup.builder(Renderer.LINE_NO_DEPTH)
 					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
@@ -209,7 +215,7 @@ public class Renderer {
 			VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
 			AABB zeroed = moveToZero(easeBox);
 			Pair<Color, Color> cols = cfg.color.getColors(obstructed, getActiveInstance().crystalHelperLineColor);
-			if (cfg.shapeStyle == ShapeStyle.COLLISION_SHAPE) {
+			if (cfg.shapeStyle != ShapeStyle.CLASSIC_BOX) {
 				double normalised = zeroed.getMinPosition().distanceTo(zeroed.getMaxPosition());
 				for (Line line : Util.concat(lineStates.get(layer).lines, lineStates.get(layer).toRemove)) {
 					line.render(stack, buffer,
@@ -225,13 +231,44 @@ public class Renderer {
 		}
 	}
 
-	public static void updateLines(VoxelShape shape) {
+	public static void updateLines(VoxelShape shape, HitResult evilHitResult) {
 		getActiveInstance().lineConfigs().forEach(lineConfig -> {
 //			final VoxelShape evilShape = scaleBoth(shape, lineConfig.lineExpandPercentage, lineConfig.lineExpandBlocks);
 			LineState state = lineStates.get(getActiveInstance().reversedLineConfigs().indexOf(lineConfig));
 			//TODO: these don't sort by depth anymore
-			List<Line> newLines = new ArrayList<>();
-			shape.forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
+			ArrayList<Line> newLines = new ArrayList<>();
+			if (lineConfig.shapeStyle == ShapeStyle.MODEL_SHAPE) {
+				if (evilHitResult instanceof BlockHitResult bhr) {
+					List<BlockStateModelPart> s = new ArrayList<>();
+					mc.getModelManager().getBlockStateModelSet().get(mc.level.getBlockState(bhr.getBlockPos())).collectParts(RandomSource.create(), s);
+					Direction dir = getDirection(bhr);
+					if (dir != null) {
+						List<BlockStateModelPart> s2 = new ArrayList<>();
+						mc.getModelManager().getBlockStateModelSet().get(mc.level.getBlockState(bhr.getBlockPos().relative(dir))).collectParts(RandomSource.create(), s2);
+						s2.forEach(blockStateModelPart -> {
+							((SimpleModelWrapper) blockStateModelPart).quads().getAll().forEach(quad -> {
+//								newLines.add(new Line(new Vec3(quad.position0()).add(dir.getUnitVec3()), new Vec3(quad.position1()).add(dir.getUnitVec3())));
+//								newLines.add(new Line(new Vec3(quad.position1()).add(dir.getUnitVec3()), new Vec3(quad.position2()).add(dir.getUnitVec3())));
+//								newLines.add(new Line(new Vec3(quad.position2()).add(dir.getUnitVec3()), new Vec3(quad.position3()).add(dir.getUnitVec3())));
+//								newLines.add(new Line(new Vec3(quad.position3()).add(dir.getUnitVec3()), new Vec3(quad.position0()).add(dir.getUnitVec3())));
+							});
+						});
+					}
+					ArrayList<Line> finalNewLines = newLines;
+					s.forEach(blockStateModelPart -> {
+						((SimpleModelWrapper) blockStateModelPart).quads().getAll().forEach(quad -> {
+							finalNewLines.add(new Line(new Vec3(quad.position0()), new Vec3(quad.position1())));
+							finalNewLines.add(new Line(new Vec3(quad.position1()), new Vec3(quad.position2())));
+							finalNewLines.add(new Line(new Vec3(quad.position2()), new Vec3(quad.position3())));
+							finalNewLines.add(new Line(new Vec3(quad.position3()), new Vec3(quad.position0())));
+						});
+					});
+					newLines = newLines.stream().distinct().collect(Collectors.toCollection(ArrayList::new));
+				}
+			} else {
+				ArrayList<Line> finalNewLines1 = newLines;
+				shape.forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> finalNewLines1.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
+			}
 			if (state.lines.isEmpty() || !getActiveInstance().doEasing) {
 				state.lines = newLines;
 			}
@@ -247,14 +284,19 @@ public class Renderer {
 				state.toRemove.add(state.lines.getLast());
 				state.lines.removeLast();
 			}
+			ArrayList<Line> finalNewLines2 = newLines;
 			state.lines.forEach(line -> {
-				Line target = newLines.get(state.lines.indexOf(line));
+				Line target = finalNewLines2.get(state.lines.indexOf(line));
 				line.moveTo(target.minPos, target.maxPos);
 				line.update(true);
 			});
 			state.toRemove.forEach(line -> line.update(false));
 			state.toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
 		});
+	}
+
+	public static @Nullable Direction getDirection(BlockHitResult bhr) {
+		return joinConnected(bhr.getBlockPos());
 	}
 
 	//TODO: minimize usage of moveToZero
@@ -320,33 +362,39 @@ public class Renderer {
 
 	public static HitResult getHitResult() {
 		if (mc.level == null || mc.player == null || mc.getCameraEntity() == null) return null;
-		//TODO: make this fancier
-		if (getActiveInstance().allowLiquids && (mc.player.getMainHandItem().is(Items.BUCKET) || mc.player.getOffhandItem().is(Items.BUCKET))) {
-			HitResult yeah = pick(mc.getCameraEntity(), mc.player.blockInteractionRange(), mc.getDeltaTracker().getRealtimeDeltaTicks(), true);
-			if (yeah instanceof BlockHitResult hit) {
-				if (mc.level.getFluidState(hit.getBlockPos()).isSource()) {
-					return yeah;
-				}
+		if (getActiveInstance().allowLiquids && isHoldingValidItem()) {
+			HitResult yeah = pick(mc.getCameraEntity(), mc.player.blockInteractionRange(), mc.getDeltaTracker().getRealtimeDeltaTicks());
+			if (yeah instanceof BlockHitResult) {
+				return yeah;
 			}
 		}
 		return mc.hitResult;
+	}
+
+	public static boolean isHoldingValidItem() {
+		if (getActiveInstance().onlyWhenHoldingAppropriate) {
+			return mc.player.getMainHandItem().is(Items.BUCKET) || mc.player.getOffhandItem().is(Items.BUCKET) || mc.player.getMainHandItem().is(Items.LILY_PAD) || mc.player.getOffhandItem().is(Items.LILY_PAD) || mc.player.getMainHandItem().getItem() instanceof BoatItem || mc.player.getOffhandItem().getItem() instanceof BoatItem;
+		} else {
+			return true;
+		}
 	}
 
 	public static @NonNull VoxelShape getVoxelShape(HitResult evilHitResult) {
 		VoxelShape shape = Shapes.block();
 		if (mc.level == null || mc.getCameraEntity() == null) return shape;
 		if (evilHitResult instanceof BlockHitResult block) {
-			BlockState state = mc.level.getBlockState(block.getBlockPos());
-			shape = state.getShape(mc.level, block.getBlockPos());
+			BlockPos pos = block.getBlockPos();
+			BlockState state = mc.level.getBlockState(pos);
+			shape = mc.level.getFluidState(pos).isEmpty() ? state.getShape(mc.level, pos) : mc.level.getFluidState(pos).getShape(mc.level, pos);
 			shape = shape.isEmpty() ? Shapes.block() : shape;
 			//get connected blocks
 			if (getActiveInstance().connectedBlocks) {
-				Direction connected = joinConnected(block.getBlockPos());
+				Direction connected = joinConnected(pos);
 				if (connected != null) {
-					shape = Shapes.join(shape, mc.level.getBlockState(block.getBlockPos().relative(connected)).getShape(mc.level, block.getBlockPos().relative(connected), CollisionContext.of(mc.getCameraEntity())).move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR);
+					shape = Shapes.join(shape, mc.level.getBlockState(pos.relative(connected)).getShape(mc.level, pos.relative(connected), CollisionContext.of(mc.getCameraEntity())).move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR);
 				}
 			}
-			shape = shape.move(block.getBlockPos());
+			shape = shape.move(pos);
 		} else if (evilHitResult instanceof EntityHitResult entityHitResult && getActiveInstance().allowEntities) {
 			Entity entity = entityHitResult.getEntity();
 			//so, so sloppy. might also have the worst workaround of the century for hanging stuff
@@ -366,7 +414,7 @@ public class Renderer {
 		} else {
 			easeBox = targetBox;
 		}
-		updateLines(moveToZero(shape));
+		updateLines(moveToZero(shape), evilHitResult);
 	}
 
 	private static void renderEverything(LevelRenderContext c, HitResult hitResult) {
@@ -477,7 +525,7 @@ public class Renderer {
 				float pitch = (float) ((d == Direction.UP) ? (-Math.PI / 2F) : (Math.PI / 2F));
 				target = new Quaternionf(lastHorizontalDirection.getRotation()).rotateX(pitch);
 			}
-			if (((VoxelShapeAccessor) mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos())).invokeIsCubeLike()) {
+			if (!((VoxelShapeAccessor) mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos())).invokeIsCubeLike()) {
 				target = new Quaternionf();
 			}
 
@@ -496,12 +544,12 @@ public class Renderer {
 		lineStates.forEach(lineState -> lineState.edgeAlpha = getActiveInstance().fadeOut ? easeF(lineState.edgeAlpha, 0, getActiveInstance().fadeOutSpeed) : 0);
 	}
 
-	public static HitResult pick(Entity e, final double range, final float a, final boolean withLiquids) {
+	public static HitResult pick(Entity e, final double range, final float a) {
 		if (mc.level == null) return null;
 		Vec3 from = e.getEyePosition(a);
 		Vec3 viewVector = e.getViewVector(a);
 		Vec3 to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
-		return mc.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, withLiquids ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.NONE, e));
+		return mc.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, getActiveInstance().onlySourceBlocks ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.ANY, e));
 	}
 
 	private static Direction joinConnected(BlockPos pos) {
