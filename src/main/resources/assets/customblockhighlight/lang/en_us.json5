@@ -9,6 +9,8 @@
       "color": "Color",
       "misc": "Miscellaneous",
       "subdiv": "Subdivision",
+      "scaling": "Scaling",
+      "render_conditions": "Render Conditions",
       "secondary_layer": "Secondary Layer",
       "tertiary_layer": "Tertiary Layer",
       "fill": "Fill",
@@ -26,6 +28,7 @@
       "open": "Open",
       // other
       "enabled": "Enabled",
+      "enabled_in": "- Enabled",
       "primary": "- Primary",
       "secondary": "- Secondary",
       "opacity": "- Opacity",
@@ -34,7 +37,7 @@
       "rainbow_": "Rainbow",
       "rainbow": "- Rainbow",
       "mode": {
-        ".": "- Mode",
+        ".": "- Face Mode",
         "description.1": "Modes:",
         "description.2": "- Air Exposed",
         "description.3": "- All",
@@ -46,22 +49,23 @@
         ".": "- Depth Test",
         "description": "Control how this element will appear through walls. Beware of using this with layered lines, visual issues may occur!"
       },
-      "expand": "- Adjust Size By",
+      "expand_blocks": "- Adjust Size By (Blocks)",
+      "expand_percent": "- Adjust Size By (Percentage)",
       "lineWidth": "- Line Width",
       "cutFromCorner": "- Cut From Corner",
       "cutFromCenter": "- Cut From Center",
       "alphaMultiplier": "- Opacity Multiplier",
       "outer_thickness_multiplier": "  - Outer Thickness Multiplier",
-      "inner_thickness_multiplier": "  - Outer Thickness Multiplier",
-      "speed": "- Speed",
+      "inner_thickness_multiplier": "  - Inner Thickness Multiplier",
+      "speed": "  - Speed",
       "in": "- In",
       "out": "- Out",
       "delay": {
-        ".": "- Delay",
+        ".": "  - Delay",
         "description": "How much to delay the rainbow color used for the secondary part of the gradient."
       },
-      "saturation": "- Saturation",
-      "brightness": "- Brightness",
+      "saturation": "  - Saturation",
+      "brightness": "  - Brightness",
       "connected_outlines": {
         ".": "- Connected Outlines",
         "description": "This applies to both the fill and outline. Maybe I'll change it later, who knows?"
@@ -71,7 +75,7 @@
         "description": "Continues moving the outline box toward its target even when it's not being rendered."
       },
       "crystal_helper": {
-        ".": "- Crystal Helper",
+        ".": "Crystal Helper",
         "description": "Highlights the block in the color below when you are looking at an obsidian block that crystals cannot be placed on.",
         "line_color": "  - Line Color",
         "fill_color": "  - Fill Color"
@@ -98,6 +102,7 @@
     },
     "enum": {
       "shapeStyle": {
+        ".": "Shape Style",
         "classic": "Classic (Bounds)",
         "collision": "Collision Shape",
         "model": "Model Shape"

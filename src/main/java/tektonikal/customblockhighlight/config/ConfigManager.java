@@ -15,71 +15,76 @@ import java.nio.file.Path;
 import static org.apache.commons.io.function.Erase.rethrow;
 
 public class ConfigManager {
-	@SuppressWarnings("deprecation")
-	public static Gson GSON = new GsonBuilder()
-			.setFieldNamingPolicy(FieldNamingPolicy.IDENTITY)
-			.serializeNulls()
-			.registerTypeHierarchyAdapter(Color.class, new GsonConfigInstance.ColorTypeAdapter())
-			.registerTypeAdapter(BlockHighlightConfig.class, (InstanceCreator<BlockHighlightConfig>) _ -> new BlockHighlightConfig())
-			.setPrettyPrinting()
-			.create();
+    @SuppressWarnings("deprecation")
+    public static Gson GSON = new GsonBuilder()
+            .setFieldNamingPolicy(FieldNamingPolicy.IDENTITY)
+            .serializeNulls()
+            .registerTypeHierarchyAdapter(Color.class, new GsonConfigInstance.ColorTypeAdapter())
+            .registerTypeAdapter(BlockHighlightConfig.class, (InstanceCreator<BlockHighlightConfig>) _ -> new BlockHighlightConfig())
+            .setPrettyPrinting()
+            .create();
 
-	private static final Path DEFAULT_PATH = FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json");
+    private static final Path DEFAULT_PATH = FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json");
 
-	public static void save() {
-		save(BlockHighlightConfig.ACTIVE_INSTANCE);
-	}
+    public static void save() {
+        save(BlockHighlightConfig.ACTIVE_INSTANCE);
+    }
 
-	public static void save(BlockHighlightConfig instance) {
-		String json = GSON.toJson(instance);
-		try {
-			Files.writeString(DEFAULT_PATH, json);
-		} catch (IOException e) {
-			throw rethrow(e);
-		}
-	}
+    public static void save(BlockHighlightConfig instance) {
+        String json = GSON.toJson(instance);
+        try {
+            Files.writeString(DEFAULT_PATH, json);
+        } catch (IOException e) {
+            throw rethrow(e);
+        }
+    }
 
-	public static BlockHighlightConfig load() {
-		return loadFromFile(DEFAULT_PATH);
-	}
+    public static BlockHighlightConfig load() {
+        return loadFromFile(DEFAULT_PATH);
+    }
 
-	public static BlockHighlightConfig loadPreset(String name) {
-		try (var stream = PresetsScreen.class.getResourceAsStream("/assets/presets/" + name + ".json")) {
-			if (stream == null) return null;
-			return loadFromJsonString(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
-		} catch (IOException ignored) {
-			return null;
-		}
-	}
+    public static BlockHighlightConfig loadPreset(String name) {
+        try (var stream = PresetsScreen.class.getResourceAsStream("/assets/presets/" + name + ".json")) {
+            if (stream == null) return null;
+            return loadFromJsonString(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
 
-	public static BlockHighlightConfig loadFromFile(Path path) {
-		try {
-			return loadFromJsonString(Files.readString(path));
-		} catch (NoSuchFileException e) {
-			save(new BlockHighlightConfig());
-			return load();
-		} catch (IOException ignored) {
-			return null;
-		}
-	}
+    public static BlockHighlightConfig loadFromFile(Path path) {
+        try {
+            return loadFromJsonString(Files.readString(path));
+        } catch (NoSuchFileException e) {
+            save(new BlockHighlightConfig());
+            return load();
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
 
-	public static BlockHighlightConfig loadFromJsonString(String json) {
-		try {
-			BlockHighlightConfig config = GSON.fromJson(json, BlockHighlightConfig.class);
-			if (config == null) return new BlockHighlightConfig().applyValuesToOptionInstances();
-			return config.applyValuesToOptionInstances();
-		} catch (JsonSyntaxException e) {
-			// todo log
-			return new BlockHighlightConfig().applyValuesToOptionInstances(); // todo figure out what we actually wanna do
-		}
-	}
+    public static BlockHighlightConfig loadFromJsonString(String json) {
+        try {
+            BlockHighlightConfig config = GSON.fromJson(json, BlockHighlightConfig.class);
+            if (config == null) return new BlockHighlightConfig().applyValuesToOptionInstances();
+            return config.applyValuesToOptionInstances();
+        } catch (JsonSyntaxException e) {
+            // todo log
+            return new BlockHighlightConfig().applyValuesToOptionInstances(); // todo figure out what we actually wanna do
+        }
+    }
 
-	public static BlockHighlightConfig getPreset(PresetsScreen.Preset preset) {
-		try (var stream = PresetsScreen.class.getResourceAsStream("/assets/presets/" + preset.name + ".json")) {
-			if (stream == null) throw new NullPointerException();
-			return GSON.fromJson(new String(stream.readAllBytes(), StandardCharsets.UTF_8), BlockHighlightConfig.class);
-		} catch (IOException e) {
-			throw rethrow(e);
-		}
-	}
+    public static BlockHighlightConfig getPreset(PresetsScreen.Preset preset) {
+        try (var stream = PresetsScreen.class.getResourceAsStream("/assets/presets/" + preset.name + ".json")) {
+            if (stream == null) throw new NullPointerException();
+            try {
+                return GSON.fromJson(new String(stream.readAllBytes(), StandardCharsets.UTF_8), BlockHighlightConfig.class);
+            }
+            catch (Exception e) {
+                return BlockHighlightConfig.getActiveInstance();
+            }
+        } catch (IOException e) {
+            throw rethrow(e);
+        }
+    }
 }
