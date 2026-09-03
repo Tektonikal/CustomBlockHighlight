@@ -233,7 +233,7 @@ public class BlockHighlightConfig {
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	public static Option<ShapeStyle> o_shapeStyle = Option.<ShapeStyle>createBuilder()
-			.name(Component.translatable("SHAPE STYLE"))
+			.name(Component.translatable("cbh.enum.shape_style"))
 			.stateManager(StateManager.createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.primary.shapeStyle, newVal -> ACTIVE_INSTANCE.primary.shapeStyle = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
 			.build();
@@ -334,7 +334,7 @@ public class BlockHighlightConfig {
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	public static Option<ShapeStyle> o_sshapeStyle = Option.<ShapeStyle>createBuilder()
-			.name(Component.translatable("SHAPE STYLE"))
+			.name(Component.translatable("cbh.enum.shape_style"))
 			.stateManager(StateManager.createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.secondary.shapeStyle, newVal -> ACTIVE_INSTANCE.secondary.shapeStyle = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
 			.build();
@@ -455,7 +455,7 @@ public class BlockHighlightConfig {
 			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
 			.build();
 	public static Option<ShapeStyle> o_tshapeStyle = Option.<ShapeStyle>createBuilder()
-			.name(Component.translatable("SHAPE STYLE"))
+			.name(Component.translatable("cbh.enum.shape_style"))
 			.stateManager(StateManager.createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.tertiary.shapeStyle, newVal -> ACTIVE_INSTANCE.tertiary.shapeStyle = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
 			.build();
@@ -560,7 +560,7 @@ public class BlockHighlightConfig {
 			.build();
 	@Updatable
 	public static Option<Boolean> o_doEasing = Option.<Boolean>createBuilder()
-			.name(Component.translatable("cbh.config.enabled"))
+			.name(Component.translatable("cbh.config.enabled_in"))
 			.stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.doEasing, newVal -> ACTIVE_INSTANCE.doEasing = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
@@ -592,7 +592,7 @@ public class BlockHighlightConfig {
 			.build();
 	@Updatable
 	public static Option<Boolean> o_scale = Option.<Boolean>createBuilder()
-			.name(Component.translatable("cbh.config.enabled"))
+			.name(Component.translatable("cbh.config.enabled_in"))
 			.stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.scale, newVal -> ACTIVE_INSTANCE.scale = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
@@ -604,7 +604,7 @@ public class BlockHighlightConfig {
 			.build();
 	@Updatable
 	public static Option<Boolean> o_animateLineThickness = Option.<Boolean>createBuilder()
-			.name(Component.translatable("cbh.config.enabled"))
+			.name(Component.translatable("cbh.config.enabled_in"))
 			.stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.animateLineThickness, newVal -> ACTIVE_INSTANCE.animateLineThickness = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.addListener((option, _) -> ACTIVE_INSTANCE.update(option, option.pendingValue()))
@@ -628,7 +628,7 @@ public class BlockHighlightConfig {
 			.build();
 	@Updatable
 	public static Option<Boolean> o_crystalHelper = Option.<Boolean>createBuilder()
-			.name(Component.translatable("cbh.config.crystal_helper.enabled"))
+			.name(Component.translatable("cbh.config.enabled_in"))
 			.description(OptionDescription.of(Component.translatable("cbh.config.crystal_helper.description")))
 			.stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.crystalHelper, newVal -> ACTIVE_INSTANCE.crystalHelper = newVal))
 			.controller(TickBoxControllerBuilder::create)
@@ -656,12 +656,12 @@ public class BlockHighlightConfig {
 			.controller(TickBoxControllerBuilder::create)
 			.build();
 	public static Option<Boolean> o_whenHoldingAppropriate = Option.<Boolean>createBuilder()
-			.name(Component.translatable("ONLY HOLDING APPROPRIATE"))
+			.name(Component.translatable("cbh.config.holding_appropriate_item"))
 			.stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.onlyWhenHoldingAppropriate, newVal -> ACTIVE_INSTANCE.onlyWhenHoldingAppropriate = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
 	public static Option<Boolean> o_onlySourceBlocks = Option.<Boolean>createBuilder()
-			.name(Component.translatable("ONLY SOURCE BLOCKS"))
+			.name(Component.translatable("cbh.config.only_source_blocks"))
 			.stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.onlySourceBlocks, newVal -> ACTIVE_INSTANCE.onlySourceBlocks = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();

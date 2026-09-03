@@ -89,8 +89,10 @@
         ".": "- Rotations",
         "description": "Rotates the outline based on what side of the block you're looking at. Not a finalized or stable feature, here be dragons!"
       },
-      "show_when_no_hud": "Show In Hidden HUD",
-      "show_when_no_interaction": "Show When Unable To Interact"
+      "show_when_no_hud": "- Show In Hidden HUD",
+      "show_when_no_interaction": "- Show When Unable To Interact",
+      "only_source_blocks": "  - Only Source Blocks",
+      "holding_appropriate_item": "  - Only When Holding Appropriate Item"
     },
     "presets": {
       "screenTitle": "CBH Presets Screen",
@@ -101,8 +103,8 @@
       "fancy": "Gimme all the bells 'n whistles!"
     },
     "enum": {
-      "shapeStyle": {
-        ".": "Shape Style",
+      "shape_style": {
+        ".": "- Shape Style",
         "classic": "Classic (Bounds)",
         "collision": "Collision Shape",
         "model": "Model Shape"

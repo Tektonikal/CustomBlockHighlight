@@ -11,9 +11,9 @@ public enum ShapeStyle implements NameableEnum {
     @Override
     public Component getDisplayName() {
         return Component.translatable(switch (this) {
-            case CLASSIC_BOX -> "cbh.enum.shapeStyle.classic";
-            case COLLISION_SHAPE -> "cbh.enum.shapeStyle.collision";
-            case MODEL_SHAPE -> "cbh.enum.shapeStyle.model";
+            case CLASSIC_BOX -> "cbh.enum.shape_style.classic";
+            case COLLISION_SHAPE -> "cbh.enum.shape_style.collision";
+            case MODEL_SHAPE -> "cbh.enum.shape_style.model";
         });
     }
 }
