@@ -32,7 +32,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.HangingEntity;
-import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.item.BoatItem;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
@@ -73,6 +72,9 @@ public class Renderer {
 	public static final Camera camera = mc.gameRenderer.mainCamera();
 
 	public static final float[] sideFades = new float[6];
+	public static List<Line> lines = new ArrayList<>();
+	public static List<Line> toRemove = new ArrayList<>();
+
 
 	public static final RenderPipeline LINE_NO_DEPTH = RenderPipelines.register(
 			RenderPipeline.builder(RenderPipelines.LINES_SNIPPET)
@@ -217,7 +219,7 @@ public class Renderer {
 			Pair<Color, Color> cols = cfg.color.getColors(obstructed, getActiveInstance().crystalHelperLineColor);
 			if (cfg.shapeStyle != ShapeStyle.CLASSIC_BOX) {
 				double normalised = zeroed.getMinPosition().distanceTo(zeroed.getMaxPosition());
-				for (Line line : Util.concat(lineStates.get(layer).lines, lineStates.get(layer).toRemove)) {
+				for (Line line : Util.concat(lines, toRemove)) {
 					line.render(stack, buffer,
 							getLerpedColor(cols.first(), cols.second(), (float) (zeroed.getMinPosition().distanceTo(line.minPos) / normalised)),
 							getLerpedColor(cols.first(), cols.second(), (float) (zeroed.getMinPosition().distanceTo(line.maxPos) / normalised)),
@@ -232,12 +234,11 @@ public class Renderer {
 	}
 
 	public static void updateLines(VoxelShape shape, HitResult evilHitResult) {
-		getActiveInstance().lineConfigs().forEach(lineConfig -> {
 //			final VoxelShape evilShape = scaleBoth(shape, lineConfig.lineExpandPercentage, lineConfig.lineExpandBlocks);
-			LineState state = lineStates.get(getActiveInstance().reversedLineConfigs().indexOf(lineConfig));
 			//TODO: these don't sort by depth anymore
 			ArrayList<Line> newLines = new ArrayList<>();
-			if (lineConfig.shapeStyle == ShapeStyle.MODEL_SHAPE) {
+			//TODO: have separate list of lines for model
+			if (true) {
 				if (evilHitResult instanceof BlockHitResult bhr) {
 					List<BlockStateModelPart> s = new ArrayList<>();
 					mc.getModelManager().getBlockStateModelSet().get(mc.level.getBlockState(bhr.getBlockPos())).collectParts(RandomSource.create(), s);
@@ -257,10 +258,11 @@ public class Renderer {
 					ArrayList<Line> finalNewLines = newLines;
 					s.forEach(blockStateModelPart -> {
 						((SimpleModelWrapper) blockStateModelPart).quads().getAll().forEach(quad -> {
-							finalNewLines.add(new Line(new Vec3(quad.position0()), new Vec3(quad.position1())));
-							finalNewLines.add(new Line(new Vec3(quad.position1()), new Vec3(quad.position2())));
-							finalNewLines.add(new Line(new Vec3(quad.position2()), new Vec3(quad.position3())));
-							finalNewLines.add(new Line(new Vec3(quad.position3()), new Vec3(quad.position0())));
+							Vec3 offset = mc.level.getBlockState(bhr.getBlockPos()).getShape(mc.level, bhr.getBlockPos()).bounds().getMinPosition().reverse();
+							finalNewLines.add(new Line(new Vec3(quad.position0()).add(offset), new Vec3(quad.position1()).add(offset)));
+							finalNewLines.add(new Line(new Vec3(quad.position1()).add(offset), new Vec3(quad.position2()).add(offset)));
+							finalNewLines.add(new Line(new Vec3(quad.position2()).add(offset), new Vec3(quad.position3()).add(offset)));
+							finalNewLines.add(new Line(new Vec3(quad.position3()).add(offset), new Vec3(quad.position0()).add(offset)));
 						});
 					});
 					newLines = newLines.stream().distinct().collect(Collectors.toCollection(ArrayList::new));
@@ -269,30 +271,29 @@ public class Renderer {
 				ArrayList<Line> finalNewLines1 = newLines;
 				shape.forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> finalNewLines1.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
 			}
-			if (state.lines.isEmpty() || !getActiveInstance().doEasing) {
-				state.lines = newLines;
+			if (lines.isEmpty() || !getActiveInstance().doEasing) {
+				lines = newLines;
 			}
-			while (state.lines.size() < newLines.size()) {
+			while (lines.size() < newLines.size()) {
 //            if (!toRemove.isEmpty()) {
 //                lines.add(toRemove.getFirst());
 //                toRemove.removeFirst();
 //            } else {
-				state.lines.add(new Line(shape.bounds().getCenter(), shape.bounds().getCenter()));
+				lines.add(new Line(shape.bounds().getCenter(), shape.bounds().getCenter()));
 //            }
 			}
-			while (state.lines.size() > newLines.size()) {
-				state.toRemove.add(state.lines.getLast());
-				state.lines.removeLast();
+			while (lines.size() > newLines.size()) {
+				toRemove.add(lines.getLast());
+				lines.removeLast();
 			}
 			ArrayList<Line> finalNewLines2 = newLines;
-			state.lines.forEach(line -> {
-				Line target = finalNewLines2.get(state.lines.indexOf(line));
+			lines.forEach(line -> {
+				Line target = finalNewLines2.get(lines.indexOf(line));
 				line.moveTo(target.minPos, target.maxPos);
 				line.update(true);
 			});
-			state.toRemove.forEach(line -> line.update(false));
-			state.toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
-		});
+			toRemove.forEach(line -> line.update(false));
+			toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
 	}
 
 	public static @Nullable Direction getDirection(BlockHitResult bhr) {

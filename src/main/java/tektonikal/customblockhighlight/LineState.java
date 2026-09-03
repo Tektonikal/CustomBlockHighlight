@@ -12,8 +12,6 @@ import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getAct
 public class LineState {
 	public float edgeAlpha = 0;
 	public final float[] lineFades = new float[6];
-	public List<Line> lines = new ArrayList<>();
-	public List<Line> toRemove = new ArrayList<>();
 
 	public LineState() {
 
