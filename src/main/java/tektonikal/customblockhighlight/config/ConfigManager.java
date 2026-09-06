@@ -24,7 +24,7 @@ public class ConfigManager {
             .setPrettyPrinting()
             .create();
 
-    private static final Path DEFAULT_PATH = FabricLoader.getInstance().getConfigDir().resolve("blockhighlight.json");
+    private static final Path DEFAULT_PATH = FabricLoader.getInstance().getConfigDir().resolve("custom-block-highlight.json");
 
     public static void save() {
         save(BlockHighlightConfig.ACTIVE_INSTANCE);

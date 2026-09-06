@@ -62,8 +62,8 @@ import java.util.stream.Stream;
 import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
 import static net.minecraft.client.renderer.RenderPipelines.LINES;
 import static net.minecraft.util.profiling.Profiler.get;
-import static tektonikal.customblockhighlight.Blockhighlight.ease;
-import static tektonikal.customblockhighlight.Blockhighlight.easeF;
+import static tektonikal.customblockhighlight.CustomBlockHighlight.ease;
+import static tektonikal.customblockhighlight.CustomBlockHighlight.easeF;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.*;
 
 // TODO :!! !! reset shit when changing configs
@@ -73,6 +73,7 @@ public class Renderer {
 
 	public static final float[] sideFades = new float[6];
 	public static List<Line> lines = new ArrayList<>();
+	public static List<Line> modelLines = new ArrayList<>();
 	public static List<Line> toRemove = new ArrayList<>();
 
 
@@ -115,7 +116,6 @@ public class Renderer {
 					.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
 					.createRenderSetup());
 
-	public static final StagedVertexBuffer stagedFaceBuffer = new StagedVertexBuffer(() -> " CBH sides", RenderType.SMALL_BUFFER_SIZE);
 	public static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
 
 	public static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
@@ -130,26 +130,24 @@ public class Renderer {
 	public static final Matrix4f lastModMat = new Matrix4f();
 
 	public static final List<LineState> lineStates = new ArrayList<>(Stream.of(new LineState(), new LineState(), new LineState()).toList());
-
+	//TODO:
+	/*
+	Things that model mode hates:
+	- small dripleaf
+	- Waterlogged non-full blocks
+	- Fluids
+	- All (block) entities
+	 */
 
 	// todo: consider `activeBuffer` which holds the  active buffer? see finishDraw too, duplicated logic where only difference is fields
 	public static StagedVertexBuffer.Draw startDrawing(boolean lines) {
-		if (lines) {
-			return stagedOutlineBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH, PrimitiveTopology.LINES);
-		} else {
-			return stagedFaceBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR, PrimitiveTopology.QUADS, RenderSystem.getProjectionType().vertexSorting());
-		}
+		return stagedOutlineBuffer.appendDraw(lines ? DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH : DefaultVertexFormat.POSITION_COLOR, lines ? PrimitiveTopology.LINES : PrimitiveTopology.QUADS, lines ? null : RenderSystem.getProjectionType().vertexSorting());
 	}
 
-	private static void finishDraw(boolean lines, StagedVertexBuffer.Draw draw, int layer) {
+	private static void finishDraw(boolean lines, StagedVertexBuffer.Draw draw, DepthTestMode mode) {
 		StagedVertexBuffer.ExecuteInfo info;
-		if (lines) {
-			stagedOutlineBuffer.upload();
-			info = stagedOutlineBuffer.getExecuteInfo(draw);
-		} else {
-			stagedFaceBuffer.upload();
-			info = stagedFaceBuffer.getExecuteInfo(draw);
-		}
+		stagedOutlineBuffer.upload();
+		info = stagedOutlineBuffer.getExecuteInfo(draw);
 		if (info == null) return;
 
 		GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
@@ -158,7 +156,7 @@ public class Renderer {
 		if (colorTexture == null) return;
 		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
 			if (lines) {
-				renderPass.setPipeline(getPipeline(getActiveInstance().getLineConfig(layer).lineDepthTest, true));
+				renderPass.setPipeline(getPipeline(mode, true));
 			} else {
 				renderPass.setPipeline(getPipeline(getActiveInstance().fillDepthTest, false));
 			}
@@ -169,12 +167,7 @@ public class Renderer {
 			renderPass.setIndexBuffer(info.indexBuffer(), info.indexType());
 			renderPass.drawIndexed(info.indexCount(), 1, info.firstIndex(), info.baseVertex(), 0);
 		}
-
-		if (lines) {
-			stagedOutlineBuffer.endFrame();
-		} else {
-			stagedFaceBuffer.endFrame();
-		}
+		stagedOutlineBuffer.endFrame();
 	}
 
 	public static RenderPipeline getPipeline(DepthTestMode mode, boolean lines) {
@@ -188,9 +181,9 @@ public class Renderer {
 	public static void drawBoxFill(PoseStack stack, AABB box, Pair<Color, Color> cols, float[] alpha) {
 		doEvilMatrixPreparations(stack, box, getActiveInstance().fillExpandBlocks, getActiveInstance().fillExpandPercent);
 		StagedVertexBuffer.Draw draw = startDrawing(false);
-		VertexConsumer buffer = stagedFaceBuffer.getVertexBuilder(draw);
+		VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
 		Vertexer.vertexBoxQuads(stack.last(), buffer, moveToZero(box), cols, alpha);
-		finishDraw(false, draw, 0);
+		finishDraw(false, draw, getActiveInstance().fillDepthTest);
 		stack.popPose();
 	}
 
@@ -210,94 +203,131 @@ public class Renderer {
 		stack.translate(vec.reverse());
 	}
 
-	public static void drawLineLayer(PoseStack stack, BlockHighlightConfig.LineConfig cfg, boolean obstructed, int layer) {
-		if (cfg.enabled) {
-			doEvilMatrixPreparations(stack, easeBox, cfg.lineExpandBlocks, cfg.lineExpandPercentage);
-			StagedVertexBuffer.Draw draw = startDrawing(true);
-			VertexConsumer buffer = stagedOutlineBuffer.getVertexBuilder(draw);
-			AABB zeroed = moveToZero(easeBox);
-			Pair<Color, Color> cols = cfg.color.getColors(obstructed, getActiveInstance().crystalHelperLineColor);
-			if (cfg.shapeStyle != ShapeStyle.CLASSIC_BOX) {
-				double normalised = zeroed.getMinPosition().distanceTo(zeroed.getMaxPosition());
-				for (Line line : Util.concat(lines, toRemove)) {
-					line.render(stack, buffer,
-							getLerpedColor(cols.first(), cols.second(), (float) (zeroed.getMinPosition().distanceTo(line.minPos) / normalised)),
-							getLerpedColor(cols.first(), cols.second(), (float) (zeroed.getMinPosition().distanceTo(line.maxPos) / normalised)),
-							Math.round(lineStates.get(layer).getEdgeAlpha()), cfg.lineWidth, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
-				}
-			} else {
-				Vertexer.vertexBoxLines(stack.last(), buffer, zeroed, cols, lineStates.get(layer).getLineFades(), cfg.lineWidth * lineProg, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
+	public static void drawLineLayer(PoseStack stack, BlockHighlightConfig.LineConfig cfg, boolean obstructed, int layer, VertexConsumer buffer) {
+		doEvilMatrixPreparations(stack, easeBox, cfg.lineExpandBlocks, cfg.lineExpandPercentage);
+		AABB zeroed = moveToZero(easeBox);
+		Pair<Color, Color> cols = cfg.color.getColors(obstructed, getActiveInstance().crystalHelperLineColor);
+		if (cfg.shapeStyle != ShapeStyle.CLASSIC_BOX) {
+			double normalised = zeroed.getMinPosition().distanceTo(zeroed.getMaxPosition());
+			for (Line line : Util.concat(cfg.shapeStyle == ShapeStyle.COLLISION_SHAPE ? lines : modelLines, toRemove)) {
+				line.render(stack, buffer,
+						getLerpedColor(cols.first(), cols.second(), (float) (zeroed.getMinPosition().distanceTo(line.minPos) / normalised)),
+						getLerpedColor(cols.first(), cols.second(), (float) (zeroed.getMinPosition().distanceTo(line.maxPos) / normalised)),
+						Math.round(lineStates.get(layer).getEdgeAlpha()), cfg.lineWidth, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
 			}
-			finishDraw(true, draw, layer);
-			stack.popPose();
+		} else {
+			Vertexer.vertexBoxLines(stack.last(), buffer, zeroed, cols, lineStates.get(layer).getLineFades(), cfg.lineWidth * lineProg, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
+		}
+		stack.popPose();
+	}
+
+	public static void updateModelLines(VoxelShape shape, HitResult evilHitResult) {
+		ArrayList<Line> newLines = new ArrayList<>();
+		if (evilHitResult instanceof BlockHitResult bhr) {
+			List<BlockStateModelPart> s = new ArrayList<>();
+			RandomSource randomSource = RandomSource.create(0);
+			BlockPos pos = bhr.getBlockPos();
+			mc.getModelManager().getBlockStateModelSet().get(mc.level.getBlockState(pos)).collectParts(randomSource, s);
+			Direction dir = joinConnected(pos);
+			if (dir != null) {
+				List<BlockStateModelPart> s2 = new ArrayList<>();
+				mc.getModelManager().getBlockStateModelSet().get(mc.level.getBlockState(pos.relative(dir))).collectParts(randomSource, s2);
+				Vec3 offset = Vec3.ZERO;
+				try {
+//					offset = mc.level.getBlockState(pos).getShape(mc.level, pos.relative(dir)).bounds().getMinPosition().reverse();
+					if (dir.getAxisDirection() != Direction.AxisDirection.NEGATIVE) {
+						offset = (dir.getUnitVec3());
+					}
+				} catch (Exception _) {
+				}
+				Vec3 finalOffset = offset;
+				s2.forEach(blockStateModelPart -> {
+					((SimpleModelWrapper) blockStateModelPart).quads().getAll().forEach(quad -> {
+						newLines.add(new Line(new Vec3(quad.position0()).add(finalOffset), new Vec3(quad.position1()).add(finalOffset)));
+						newLines.add(new Line(new Vec3(quad.position1()).add(finalOffset), new Vec3(quad.position2()).add(finalOffset)));
+						newLines.add(new Line(new Vec3(quad.position2()).add(finalOffset), new Vec3(quad.position3()).add(finalOffset)));
+						newLines.add(new Line(new Vec3(quad.position3()).add(finalOffset), new Vec3(quad.position0()).add(finalOffset)));
+					});
+				});
+			}
+			Vec3 offset = Vec3.ZERO;
+			try {
+//				offset = mc.level.getBlockState(pos).getShape(mc.level, pos).bounds().getMinPosition().reverse();
+				if (dir != null) {
+					if (dir.getAxisDirection() == Direction.AxisDirection.NEGATIVE) {
+						offset = (dir.getOpposite().getUnitVec3()).subtract(mc.level.getBlockState(pos).getOffset(pos));
+					}
+				} else {
+					offset = mc.level.getBlockState(pos).getShape(mc.level, pos).bounds().getMinPosition().reverse().subtract(mc.level.getBlockState(pos).getOffset(pos).reverse());
+				}
+			} catch (Exception _) {
+			}
+
+			Vec3 finalOffset = offset;
+			s.forEach(blockStateModelPart -> {
+				((SimpleModelWrapper) blockStateModelPart).quads().getAll().forEach(quad -> {
+					newLines.add(new Line(new Vec3(quad.position0()).add(finalOffset), new Vec3(quad.position1()).add(finalOffset)));
+					newLines.add(new Line(new Vec3(quad.position1()).add(finalOffset), new Vec3(quad.position2()).add(finalOffset)));
+					newLines.add(new Line(new Vec3(quad.position2()).add(finalOffset), new Vec3(quad.position3()).add(finalOffset)));
+					newLines.add(new Line(new Vec3(quad.position3()).add(finalOffset), new Vec3(quad.position0()).add(finalOffset)));
+				});
+			});
+		}
+		while (modelLines.size() < newLines.size()) {
+			modelLines.add(new Line(shape.bounds().getCenter(), shape.bounds().getCenter()));
+		}
+		while (modelLines.size() > newLines.size()) {
+			toRemove.add(modelLines.getLast());
+			modelLines.removeLast();
+		}
+		if (!getActiveInstance().doEasing) {
+			modelLines = newLines;
+		} else {
+			if (!modelLines.isEmpty()) {
+				modelLines.forEach(line -> {
+					Line target = newLines.get(modelLines.indexOf(line));
+					line.moveTo(target.minPos, target.maxPos);
+					line.update(true);
+				});
+			}
 		}
 	}
 
-	public static void updateLines(VoxelShape shape, HitResult evilHitResult) {
-//			final VoxelShape evilShape = scaleBoth(shape, lineConfig.lineExpandPercentage, lineConfig.lineExpandBlocks);
-			//TODO: these don't sort by depth anymore
-			ArrayList<Line> newLines = new ArrayList<>();
-			//TODO: have separate list of lines for model
-			if (true) {
-				if (evilHitResult instanceof BlockHitResult bhr) {
-					List<BlockStateModelPart> s = new ArrayList<>();
-					mc.getModelManager().getBlockStateModelSet().get(mc.level.getBlockState(bhr.getBlockPos())).collectParts(RandomSource.create(), s);
-					Direction dir = getDirection(bhr);
-					if (dir != null) {
-						List<BlockStateModelPart> s2 = new ArrayList<>();
-						mc.getModelManager().getBlockStateModelSet().get(mc.level.getBlockState(bhr.getBlockPos().relative(dir))).collectParts(RandomSource.create(), s2);
-						s2.forEach(blockStateModelPart -> {
-							((SimpleModelWrapper) blockStateModelPart).quads().getAll().forEach(quad -> {
-//								newLines.add(new Line(new Vec3(quad.position0()).add(dir.getUnitVec3()), new Vec3(quad.position1()).add(dir.getUnitVec3())));
-//								newLines.add(new Line(new Vec3(quad.position1()).add(dir.getUnitVec3()), new Vec3(quad.position2()).add(dir.getUnitVec3())));
-//								newLines.add(new Line(new Vec3(quad.position2()).add(dir.getUnitVec3()), new Vec3(quad.position3()).add(dir.getUnitVec3())));
-//								newLines.add(new Line(new Vec3(quad.position3()).add(dir.getUnitVec3()), new Vec3(quad.position0()).add(dir.getUnitVec3())));
-							});
-						});
-					}
-					ArrayList<Line> finalNewLines = newLines;
-					s.forEach(blockStateModelPart -> {
-						((SimpleModelWrapper) blockStateModelPart).quads().getAll().forEach(quad -> {
-							Vec3 offset = mc.level.getBlockState(bhr.getBlockPos()).getShape(mc.level, bhr.getBlockPos()).bounds().getMinPosition().reverse();
-							finalNewLines.add(new Line(new Vec3(quad.position0()).add(offset), new Vec3(quad.position1()).add(offset)));
-							finalNewLines.add(new Line(new Vec3(quad.position1()).add(offset), new Vec3(quad.position2()).add(offset)));
-							finalNewLines.add(new Line(new Vec3(quad.position2()).add(offset), new Vec3(quad.position3()).add(offset)));
-							finalNewLines.add(new Line(new Vec3(quad.position3()).add(offset), new Vec3(quad.position0()).add(offset)));
-						});
-					});
-					newLines = newLines.stream().distinct().collect(Collectors.toCollection(ArrayList::new));
-				}
-			} else {
-				ArrayList<Line> finalNewLines1 = newLines;
-				shape.forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> finalNewLines1.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
-			}
-			if (lines.isEmpty() || !getActiveInstance().doEasing) {
-				lines = newLines;
-			}
-			while (lines.size() < newLines.size()) {
-//            if (!toRemove.isEmpty()) {
-//                lines.add(toRemove.getFirst());
-//                toRemove.removeFirst();
-//            } else {
-				lines.add(new Line(shape.bounds().getCenter(), shape.bounds().getCenter()));
-//            }
-			}
-			while (lines.size() > newLines.size()) {
-				toRemove.add(lines.getLast());
-				lines.removeLast();
-			}
-			ArrayList<Line> finalNewLines2 = newLines;
-			lines.forEach(line -> {
-				Line target = finalNewLines2.get(lines.indexOf(line));
-				line.moveTo(target.minPos, target.maxPos);
-				line.update(true);
-			});
-			toRemove.forEach(line -> line.update(false));
-			toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
+	public static void updateLinesCommon() {
+		toRemove.forEach(line -> {
+			Vec3 center = getCenter();
+			line.moveTo(center, center);
+			line.update(false);
+		});
+		toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
 	}
 
-	public static @Nullable Direction getDirection(BlockHitResult bhr) {
-		return joinConnected(bhr.getBlockPos());
+	public static @NonNull Vec3 getCenter() {
+		return moveToZero(easeBox).getCenter();
+	}
+
+	public static void updateCollisionLines(VoxelShape shape) {
+		//these don't sort by depth anymore, nothing i can do, i think.
+		ArrayList<Line> newLines = new ArrayList<>();
+		shape.forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
+		while (lines.size() < newLines.size()) {
+			lines.add(new Line(shape.bounds().getCenter(), shape.bounds().getCenter()));
+		}
+		while (lines.size() > newLines.size()) {
+			toRemove.add(lines.getLast());
+			lines.removeLast();
+		}
+		if (!getActiveInstance().doEasing) {
+			lines = newLines;
+		} else {
+			if (!lines.isEmpty()) {
+				lines.forEach(line -> {
+					Line target = newLines.get(lines.indexOf(line));
+					line.moveTo(target.minPos, target.maxPos);
+					line.update(true);
+				});
+			}
+		}
 	}
 
 	//TODO: minimize usage of moveToZero
@@ -351,6 +381,7 @@ public class Renderer {
 	}
 
 	public static void mainLoop(LevelRenderContext c) {
+		if (mc.player == null || mc.player.gameMode() == null) return;
 		if ((!mc.gui.hud.isHidden() || getActiveInstance().showWhenNoHud) && (!mc.player.gameMode().isBlockPlacingRestricted() || getActiveInstance().showWhenNoInteraction)) {
 			get().push("Custom block outline pre");
 			HitResult evilHitResult = getHitResult();
@@ -363,6 +394,7 @@ public class Renderer {
 
 	public static HitResult getHitResult() {
 		if (mc.level == null || mc.player == null || mc.getCameraEntity() == null) return null;
+		if (mc.hitResult instanceof EntityHitResult) return mc.hitResult;
 		if (getActiveInstance().allowLiquids && isHoldingValidItem()) {
 			HitResult yeah = pick(mc.getCameraEntity(), mc.player.blockInteractionRange(), mc.getDeltaTracker().getRealtimeDeltaTicks());
 			if (yeah instanceof BlockHitResult) {
@@ -415,7 +447,9 @@ public class Renderer {
 		} else {
 			easeBox = targetBox;
 		}
-		updateLines(moveToZero(shape), evilHitResult);
+		updateCollisionLines(moveToZero(shape));
+		updateModelLines(moveToZero(shape), evilHitResult);
+		updateLinesCommon();
 	}
 
 	private static void renderEverything(LevelRenderContext c, HitResult hitResult) {
@@ -456,17 +490,32 @@ public class Renderer {
 	}
 
 	private static void drawFill(PoseStack stack, boolean isCrystalObstructed) {
-		boolean b = getActiveInstance().fillDepthTest != DepthTestMode.ALWAYS_PASS && getActiveInstance().fillExpandBlocks == 0 && getActiveInstance().fillExpandPercent == 0;
-		Renderer.drawBoxFill(stack, easeBox.inflate(b ? 0.001 : 0), getActiveInstance().fillCol.getColors(isCrystalObstructed, getActiveInstance().crystalHelperFillColor), sideFades);
+		boolean b = getActiveInstance().fillDepthTest != DepthTestMode.ALWAYS_PASS && getActiveInstance().fillExpandBlocks == 0 && getActiveInstance().fillExpandPercent == 1;
+		Renderer.drawBoxFill(stack, easeBox.inflate(b ? 0.00005 : 0), getActiveInstance().fillCol.getColors(isCrystalObstructed, getActiveInstance().crystalHelperFillColor), sideFades);
 	}
 
 	private static void drawOutlines(PoseStack stack, boolean isCrystalObstructed) {
 		// todo fix up profiling
 		get().push("pre");
 		if (mc.level == null) throw new IllegalStateException("level == null");
+		DepthTestMode prevMode = null;
+		StagedVertexBuffer.Draw draw = null;
+		VertexConsumer buffer = null;
 		for (var lineConfig : getActiveInstance().reversedLineConfigs()) {
-			drawLineLayer(stack, lineConfig, isCrystalObstructed, getActiveInstance().reversedLineConfigs().indexOf(lineConfig));
+			if (lineConfig.enabled) {
+				int layer = getActiveInstance().reversedLineConfigs().indexOf(lineConfig);
+				if (prevMode != lineConfig.lineDepthTest) {
+					if (prevMode != null) {
+						finishDraw(true, draw, prevMode);
+					}
+					draw = startDrawing(true);
+					prevMode = lineConfig.lineDepthTest;
+					buffer = stagedOutlineBuffer.getVertexBuilder(draw);
+				}
+				drawLineLayer(stack, lineConfig, isCrystalObstructed, layer, buffer);
+			}
 		}
+		finishDraw(true, draw, getActiveInstance().primary.lineDepthTest);
 		get().pop();
 	}
 
@@ -489,13 +538,12 @@ public class Renderer {
 				miss = true;
 				exitFades();
 			}
-			rotation.nlerp(new Quaternionf(), 0.05F);
+			rotation.nlerp(new Quaternionf(), (float) (1 - Math.exp(-((double) mc.getFrameTimeNs() / 1000000000) * getActiveInstance().rotationSpeed)));
 		} else if (evilHitResult instanceof BlockHitResult block) {
 			if (mc.level.isEmptyBlock(block.getBlockPos()) || miss) {
 				exitFades();
 			} else {
 				lineStates.forEach(lineState -> {
-					//TODO: something wrong is here because it will use force the last line layer's outline mode onto the other ones
 					EnumSet<Direction> lines = getSides(getActiveInstance().reversedLineConfigs().get(lineStates.indexOf(lineState)).outlineType, block.getBlockPos(), evilHitResult);
 					int targetAlpha = getActiveInstance().getLineConfig(lineStates.indexOf(lineState)).color.alpha;
 					for (Direction d : Direction.values()) {
@@ -530,7 +578,7 @@ public class Renderer {
 				target = new Quaternionf();
 			}
 
-			rotation.nlerp(target, 0.05F);
+			rotation.nlerp(target, (float) (1 - Math.exp(-((double) mc.getFrameTimeNs() / 1000000000) * getActiveInstance().rotationSpeed)));
 		}
 		//I didn't add in/out because it would BREAKKK. TODO THIS
 		scaleProg = getActiveInstance().scale ? easeF(scaleProg, miss ? 0 : 1, getActiveInstance().scaleSpeed) : 1;

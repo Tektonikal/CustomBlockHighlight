@@ -9,12 +9,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.shapes.Shapes;
 import org.jspecify.annotations.NonNull;
-import tektonikal.customblockhighlight.Blockhighlight;
+import tektonikal.customblockhighlight.CustomBlockHighlight;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.config.ConfigManager;
 import tektonikal.customblockhighlight.util.Tweener;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -86,7 +85,7 @@ public class PresetsScreen extends Screen {
 		yAngle = (float) Math.atan((centerY - Minecraft.getInstance().mouseHandler.getScaledYPos(Minecraft.getInstance().getWindow())) / 40.0F);
 
 		for (Preset preset : Preset.values()) {
-			presetVals[preset.ordinal()] = (float) Blockhighlight.ease(presetVals[preset.ordinal()], hoveredPreset == preset ? 0 : 1, 15);
+			presetVals[preset.ordinal()] = (float) CustomBlockHighlight.ease(presetVals[preset.ordinal()], hoveredPreset == preset ? 0 : 1, 15);
 			graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(-presetVals[preset.ordinal()] * 100, (preset.ordinal() * height) - (tweener.getF() * height), xAngleTweener.getF(), yAngleTweener.getF(), preset, 0, 0, width, height, 50F + (50 * (1 - presetVals[preset.ordinal()])), null));
 		}
 		graphics.nextStratum();

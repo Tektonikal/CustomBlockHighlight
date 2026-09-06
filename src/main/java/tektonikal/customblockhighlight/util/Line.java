@@ -4,15 +4,13 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import tektonikal.customblockhighlight.Renderer;
 import tektonikal.customblockhighlight.Vertexer;
-import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 
 import java.awt.*;
 import java.util.Objects;
 
-import static tektonikal.customblockhighlight.Blockhighlight.ease;
-import static tektonikal.customblockhighlight.Blockhighlight.easeF;
+import static tektonikal.customblockhighlight.CustomBlockHighlight.ease;
+import static tektonikal.customblockhighlight.CustomBlockHighlight.easeF;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
 
 public class Line {
@@ -59,7 +57,13 @@ public class Line {
 		if (o == null || getClass() != o.getClass()) return false;
 
 		Line line = (Line) o;
-		return (Objects.equals(minPos, line.minPos) && Objects.equals(maxPos, line.maxPos)) || Objects.equals(maxPos, line.minPos) && Objects.equals(minPos, line.maxPos);
+		return ((minPos.equals(line.minPos) && maxPos.equals(line.maxPos)) || (minPos.equals(line.maxPos) && maxPos.equals(line.minPos)));
 	}
 
+	@Override
+	public int hashCode() {
+		int result = minPos.hashCode();
+		result = 31 * result + maxPos.hashCode();
+		return result;
+	}
 }

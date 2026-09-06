@@ -19,7 +19,7 @@
 			"tektonikal.customblockhighlight.config.ModMenuIntegration"
 		],
 		"main": [
-			"tektonikal.customblockhighlight.Blockhighlight"
+          "tektonikal.customblockhighlight.CustomBlockHighlight"
 		]
 	},
   "mixins": ["customblockhighlight.mixins.json"],

@@ -1,12 +1,8 @@
 package tektonikal.customblockhighlight;
 
 import net.minecraft.core.Direction;
-import tektonikal.customblockhighlight.util.Line;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static tektonikal.customblockhighlight.Blockhighlight.easeF;
+import static tektonikal.customblockhighlight.CustomBlockHighlight.easeF;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
 
 public class LineState {

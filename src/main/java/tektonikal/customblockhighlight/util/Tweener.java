@@ -1,8 +1,7 @@
 package tektonikal.customblockhighlight.util;
 
 import net.minecraft.util.Mth;
-import tektonikal.customblockhighlight.Blockhighlight;
-import tektonikal.customblockhighlight.Renderer;
+import tektonikal.customblockhighlight.CustomBlockHighlight;
 
 import java.util.function.Supplier;
 
@@ -22,7 +21,7 @@ public class Tweener {
 	}
 
 	public void update() {
-		value = Blockhighlight.ease(value, target.get().doubleValue(), speed);
+		value = CustomBlockHighlight.ease(value, target.get().doubleValue(), speed);
 		if (isAtTarget()) value = target.get().doubleValue();
 	}
 
