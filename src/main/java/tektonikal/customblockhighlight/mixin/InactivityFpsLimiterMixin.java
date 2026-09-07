@@ -2,7 +2,9 @@ package tektonikal.customblockhighlight.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.mojang.blaze3d.platform.FramerateLimitTracker;
+import dev.isxander.yacl3.gui.YACLScreen;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,7 +22,7 @@ public abstract class InactivityFpsLimiterMixin {
 	@ModifyReturnValue(method = "getFramerateLimit", at = @At("RETURN"))
 	int yeah(int original) {
 		if (getThrottleReason() == FramerateLimitTracker.FramerateThrottleReason.OUT_OF_LEVEL_MENU &&
-				Minecraft.getInstance().gui.screen() instanceof PresetsScreen) {
+				Minecraft.getInstance().gui.screen() instanceof PresetsScreen || (Minecraft.getInstance().gui.screen() instanceof YACLScreen s && s.config.title().equals(Component.translatable("cbh.config.title")))) {
 			return framerateLimit;
 		}
 		return original;

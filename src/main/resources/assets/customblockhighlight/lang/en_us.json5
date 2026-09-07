@@ -3,6 +3,9 @@
     // TODO: divide further by category.. don't have everything just in config
     "config": {
       ".": "Config",
+      "general": "General",
+      "global_toggle": " - Global Mod Toggle",
+      "show_vanilla_outline": " - Show Vanilla Outline",
       "main_outline_toggle_desc": "Completely toggle all line rendering.",
       "non_primary_layer_toggle_desc": "Enable another line layer. Each layer renders under the preceding ones.",
       // layout
@@ -19,9 +22,9 @@
       "extras": "Extras",
       "easing": "Easing",
       "easing.description": "Controls how fast the outline moves between targets, as well as individual lines from the model. Disable to turn off all animation.",
-      "fade": "Fade",
-      "scale": "Scale",
-      "line_thickness": "Line Thickness",
+      "fade": "Fading Animations",
+      "scale": "Scale Animation",
+      "line_thickness": "Line Thickness Animation",
       "copy_to_clipboard": "- Copy To Clipboard",
       "copy": "Copy",
       "load_from_clipboard": "- Load From Clipboard",
@@ -41,7 +44,7 @@
       "rainbow": "- Rainbow",
       "mode": {
         ".": "- Face Mode",
-        "description.1": "Dictates what faces are visible when looking at a block.",
+        "description.1": "Dictates what faces are visible when looking at a block. Only works with the Bounds mode.",
         "description.2": "- Air Exposed",
         "description.3": "- All",
         "description.4": "- Concealed Faces",
@@ -70,7 +73,7 @@
       "brightness": "  - Brightness",
       "connected_outlines": {
         ".": "- Connected Outlines",
-        "description": "This applies to both the fill and outline. Maybe I'll change it later, who knows?"
+        "description": "Connects double blocks like chests. Applies to both the fill and outline."
       },
       "update_when_unfocused": {
         ".": "- Update When Unfocused",
@@ -85,16 +88,18 @@
       "select_entities": "- Select Entities",
       "select_fluids": {
         ".": "- Select Fluids",
-        "description": "Makes fluid source blocks valid targets when holding a bucket."
+        "description": "Makes fluid blocks valid targets."
       },
       "rotations": {
-        ".": "- Rotations",
+        ".": "- Rotations (Beta)",
         "description": "Rotates the outline based on what side of the block you're looking at. Not a finalized or stable feature, here be dragons!"
       },
       "show_when_no_hud": "- Show In Hidden HUD",
       "show_when_no_interaction": "- Show When Unable To Interact",
+      "show_when_no_interaction.desc": "Stops rendering of the selection when in adventure or spectator mode.",
       "only_source_blocks": "  - Only Source Blocks",
-      "holding_appropriate_item": "  - Only When Holding Appropriate Item"
+      "holding_appropriate_item": "  - Only When Holding Appropriate Item",
+      "holding_appropriate_item_desc": "Boats, buckets, and lily pads."
     },
     "presets": {
       "screenTitle": "CBH Presets Screen",
@@ -110,7 +115,7 @@
         "description": "Dictates how the outline shape will be computed.",
         "classic": "Classic (Bounds)",
         "collision": "Collision Shape",
-        "model": "Model Shape"
+        "model": "Model Shape (Beta)"
       },
       "faceMode": {
         "all": "All",

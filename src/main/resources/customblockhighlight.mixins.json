@@ -12,6 +12,7 @@
   "client": [
     "GameRendererMixin",
     "InactivityFpsLimiterMixin",
+    "YACLScreenMixin",
     "ShapeOutlineFeatureRendererMixin"
   ]
 }

@@ -23,10 +23,10 @@ public class PresetsScreen extends Screen {
 	private final Screen parent;
 
 	private Preset hoveredPreset = Preset.VANILLA;
-	private float xAngle, yAngle;
 	private final float[] presetVals = new float[Preset.values().length];
 
 	private final Tweener tweener = new Tweener(() -> hoveredPreset.ordinal(), 15);
+	private float xAngle, yAngle;
 	private final Tweener xAngleTweener = new Tweener(() -> xAngle, 20);
 	private final Tweener yAngleTweener = new Tweener(() -> yAngle, 20);
 

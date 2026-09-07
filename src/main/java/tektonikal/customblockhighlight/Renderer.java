@@ -139,11 +139,17 @@ public class Renderer {
 	- All (block) entities
 	 */
 
-	// todo: consider `activeBuffer` which holds the  active buffer? see finishDraw too, duplicated logic where only difference is fields
 	public static StagedVertexBuffer.Draw startDrawing(boolean lines) {
 		return stagedOutlineBuffer.appendDraw(lines ? DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH : DefaultVertexFormat.POSITION_COLOR, lines ? PrimitiveTopology.LINES : PrimitiveTopology.QUADS, lines ? null : RenderSystem.getProjectionType().vertexSorting());
 	}
+	/*
+	- 1 layer: ~2.5% frametime
+	- 2 unique layers: ~20%
+	- 3 unique layers: ~27%
+	- 4 unique layers: ~30%
 
+	Conclusion: kill yourself mojang
+	 */
 	private static void finishDraw(boolean lines, StagedVertexBuffer.Draw draw, DepthTestMode mode) {
 		StagedVertexBuffer.ExecuteInfo info;
 		stagedOutlineBuffer.upload();
@@ -381,7 +387,7 @@ public class Renderer {
 	}
 
 	public static void mainLoop(LevelRenderContext c) {
-		if (mc.player == null || mc.player.gameMode() == null) return;
+		if (mc.player == null || mc.player.gameMode() == null || getActiveInstance().disableModRendering) return;
 		if ((!mc.gui.hud.isHidden() || getActiveInstance().showWhenNoHud) && (!mc.player.gameMode().isBlockPlacingRestricted() || getActiveInstance().showWhenNoInteraction)) {
 			get().push("Custom block outline pre");
 			HitResult evilHitResult = getHitResult();
@@ -447,8 +453,21 @@ public class Renderer {
 		} else {
 			easeBox = targetBox;
 		}
-		updateCollisionLines(moveToZero(shape));
-		updateModelLines(moveToZero(shape), evilHitResult);
+		boolean updateCL = false, updateML = false;
+		for (LineConfig c : getActiveInstance().lineConfigs()) {
+			if (c.shapeStyle == ShapeStyle.COLLISION_SHAPE) {
+				updateCL = true;
+			}
+			if (c.shapeStyle == ShapeStyle.MODEL_SHAPE) {
+				updateML = true;
+			}
+		}
+		if (updateCL) {
+			updateCollisionLines(moveToZero(shape));
+		}
+		if (updateML) {
+			updateModelLines(moveToZero(shape), evilHitResult);
+		}
 		updateLinesCommon();
 	}
 

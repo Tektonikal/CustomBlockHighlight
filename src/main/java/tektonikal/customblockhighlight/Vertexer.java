@@ -16,6 +16,7 @@ import java.awt.*;
 import static tektonikal.customblockhighlight.Renderer.getLerpedColor;
 
 public class Vertexer {
+
 	public static void vertexBoxQuads(PoseStack.Pose pose, VertexConsumer builder, AABB box, Pair<Color, Color> cols, float[] alpha) {
 		float normaliser = (float) box.getMinPosition().distanceTo(box.getMaxPosition());
 		vertexQuad(pose, builder, cols, Math.round(alpha[0]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ));
@@ -25,6 +26,7 @@ public class Vertexer {
 		vertexQuad(pose, builder, cols, Math.round(alpha[4]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.minX, (float) box.minY, (float) box.minZ));
 		vertexQuad(pose, builder, cols, Math.round(alpha[5]), box.getMinPosition(), normaliser, new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ));
 	}
+
 	public static void vertexQuad(PoseStack.Pose pose, VertexConsumer builder, Pair<Color, Color> cols, int alpha, Vec3 minPos, float normaliser, Vec3... vecs) {
 		Color[] colors = new Color[vecs.length];
 		for(int i = 0; i < vecs.length; i++){
@@ -44,14 +46,16 @@ public class Vertexer {
 		float y2 = (float) box.maxY;
 		float z2 = (float) box.maxZ;
 		double normaliser = box.getMinPosition().distanceTo(box.getMaxPosition());
-		Color x1y1z1 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x1, y1, z1)) / normaliser));
-		Color x2y1z1 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x2, y1, z1)) / normaliser));
-		Color x1y1z2 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x1, y1, z2)) / normaliser));
-		Color x1y2z2 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x1, y2, z2)) / normaliser));
-		Color x2y2z2 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x2, y2, z2)) / normaliser));
-		Color x2y2z1 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x2, y2, z1)) / normaliser));
-		Color x1y2z1 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x1, y2, z1)) / normaliser));
-		Color x2y1z2 = getLerpedColor(cols.first(), cols.second(), (float) (box.getMinPosition().distanceTo(new Vec3(x2, y1, z2)) / normaliser));
+		Color first = cols.first();
+		Color second = cols.second();
+		Color x1y1z1 = getLerpedColor(first, second, (float) (box.getMinPosition().distanceTo(new Vec3(x1, y1, z1)) / normaliser));
+		Color x2y1z1 = getLerpedColor(first, second, (float) (box.getMinPosition().distanceTo(new Vec3(x2, y1, z1)) / normaliser));
+		Color x1y1z2 = getLerpedColor(first, second, (float) (box.getMinPosition().distanceTo(new Vec3(x1, y1, z2)) / normaliser));
+		Color x1y2z2 = getLerpedColor(first, second, (float) (box.getMinPosition().distanceTo(new Vec3(x1, y2, z2)) / normaliser));
+		Color x2y2z2 = getLerpedColor(first, second, (float) (box.getMinPosition().distanceTo(new Vec3(x2, y2, z2)) / normaliser));
+		Color x2y2z1 = getLerpedColor(first, second, (float) (box.getMinPosition().distanceTo(new Vec3(x2, y2, z1)) / normaliser));
+		Color x1y2z1 = getLerpedColor(first, second, (float) (box.getMinPosition().distanceTo(new Vec3(x1, y2, z1)) / normaliser));
+		Color x2y1z2 = getLerpedColor(first, second, (float) (box.getMinPosition().distanceTo(new Vec3(x2, y1, z2)) / normaliser));
 
         /*
         (facing west)

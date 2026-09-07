@@ -111,6 +111,9 @@ public class BlockHighlightConfig {
 		}
 	}
 
+	public boolean disableModRendering = false;
+	public boolean drawVanillaOutline = false;
+
 	public LineConfig primary = new LineConfig(true);
 	public LineConfig secondary = new LineConfig(true);
 	public LineConfig tertiary = new LineConfig(false);
@@ -219,8 +222,7 @@ public class BlockHighlightConfig {
 					Component.translatable("cbh.config.mode.description.2"),
 					Component.translatable("cbh.config.mode.description.3"),
 					Component.translatable("cbh.config.mode.description.4"),
-					Component.translatable("cbh.config.mode.description.5"),
-					Component.translatable("cbh.config.mode.description.6")
+					Component.translatable("cbh.config.mode.description.5")
 			))
 			.stateManager(StateManager.createInstant(FaceMode.AIR_EXPOSED, () -> ACTIVE_INSTANCE.primary.outlineType, newVal -> ACTIVE_INSTANCE.primary.outlineType = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
@@ -548,8 +550,7 @@ public class BlockHighlightConfig {
 					Component.translatable("cbh.config.mode.description.2"),
 					Component.translatable("cbh.config.mode.description.3"),
 					Component.translatable("cbh.config.mode.description.4"),
-					Component.translatable("cbh.config.mode.description.5"),
-					Component.translatable("cbh.config.mode.description.6")
+					Component.translatable("cbh.config.mode.description.5")
 			))
 			.stateManager(StateManager.createInstant(FaceMode.ALL, () -> ACTIVE_INSTANCE.fillType, newVal -> ACTIVE_INSTANCE.fillType = newVal))
 			.controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
@@ -637,7 +638,7 @@ public class BlockHighlightConfig {
 			.build();
 	public static Option<Boolean> o_updateWhenUnfocused = Option.<Boolean>createBuilder()
 			.name(Component.translatable("cbh.config.update_when_unfocused"))
-//			.description(OptionDescription.of(Component.translatable("cbh.config.update_when_unfocused")))
+			.description(OptionDescription.of(Component.translatable("cbh.config.update_when_unfocused.description")))
 			.stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.updateWhenUnfocused, newVal -> ACTIVE_INSTANCE.updateWhenUnfocused = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
@@ -672,6 +673,7 @@ public class BlockHighlightConfig {
 			.build();
 	public static Option<Boolean> o_whenHoldingAppropriate = Option.<Boolean>createBuilder()
 			.name(Component.translatable("cbh.config.holding_appropriate_item"))
+			.description(OptionDescription.of(Component.translatable("cbh.config.holding_appropriate_item_desc")))
 			.stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.onlyWhenHoldingAppropriate, newVal -> ACTIVE_INSTANCE.onlyWhenHoldingAppropriate = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
@@ -699,7 +701,18 @@ public class BlockHighlightConfig {
 			.build();
 	public static Option<Boolean> o_showWhenNoInteraction = Option.<Boolean>createBuilder()
 			.name(Component.translatable("cbh.config.show_when_no_interaction"))
+			.description(OptionDescription.of(Component.translatable("cbh.config.show_when_no_interaction.desc")))
 			.stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.showWhenNoInteraction, newVal -> ACTIVE_INSTANCE.showWhenNoInteraction = newVal))
+			.controller(TickBoxControllerBuilder::create)
+			.build();
+	public static Option<Boolean> o_globalModToggle = Option.<Boolean>createBuilder()
+			.name(Component.translatable("cbh.config.global_toggle"))
+			.stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.disableModRendering, newVal -> ACTIVE_INSTANCE.disableModRendering = newVal))
+			.controller(TickBoxControllerBuilder::create)
+			.build();
+	public static Option<Boolean> o_vanillaOutline = Option.<Boolean>createBuilder()
+			.name(Component.translatable("cbh.config.show_vanilla_outline"))
+			.stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.drawVanillaOutline, newVal -> ACTIVE_INSTANCE.drawVanillaOutline = newVal))
 			.controller(TickBoxControllerBuilder::create)
 			.build();
 
@@ -708,7 +721,15 @@ public class BlockHighlightConfig {
 				.title(Component.translatable("cbh.config.title"))
 				.category(ConfigCategory.createBuilder()
 						.name(Component.translatable("cbh.config.outline"))
-						.option(o_outlineEnabled)
+						.group(OptionGroup.createBuilder()
+								.name(Component.translatable("cbh.config.general"))
+								.option(o_globalModToggle)
+								.option(o_vanillaOutline)
+								.build())
+						.group(OptionGroup.createBuilder()
+								.name(Component.translatable("cbh.config.outline"))
+								.option(o_outlineEnabled)
+								.build())
 						.group(OptionGroup.createBuilder()
 								.name(Component.translatable("cbh.config.color"))
 								.option(o_lineCol)
@@ -817,10 +838,10 @@ public class BlockHighlightConfig {
 								.option(o_fillCol2)
 								.option(o_fillOpacity)
 								.option(o_fillRainbow)
-                                .option(o_fillRainbowSpeed)
-                                .option(o_fillRainbowDelay)
-                                .option(o_fillSaturation)
-                                .option(o_fillBrightness)
+								.option(o_fillRainbowSpeed)
+								.option(o_fillRainbowDelay)
+								.option(o_fillSaturation)
+								.option(o_fillBrightness)
 								.build())
 						.group(OptionGroup.createBuilder()
 								.name(Component.translatable("cbh.config.scaling"))
@@ -1003,19 +1024,19 @@ public class BlockHighlightConfig {
 			o_secondary.setAvailable(enabled);
 			o_tertiary.setAvailable(enabled);
 		}
-		if(option == o_outlineRainbow){
+		if (option == o_outlineRainbow) {
 			o_lineRainbowSpeed.setAvailable(enabled);
 			o_lineRainbowDelay.setAvailable(enabled);
 			o_lineSaturation.setAvailable(enabled);
 			o_lineBrightness.setAvailable(enabled);
 		}
-		if(option == o_soutlineRainbow){
+		if (option == o_soutlineRainbow) {
 			o_slineRainbowSpeed.setAvailable(enabled);
 			o_slineRainbowDelay.setAvailable(enabled);
 			o_slineSaturation.setAvailable(enabled);
 			o_slineBrightness.setAvailable(enabled);
 		}
-		if(option == o_toutlineRainbow){
+		if (option == o_toutlineRainbow) {
 			o_tlineRainbowSpeed.setAvailable(enabled);
 			o_tlineRainbowDelay.setAvailable(enabled);
 			o_tlineSaturation.setAvailable(enabled);
@@ -1031,7 +1052,7 @@ public class BlockHighlightConfig {
 			o_fillExpandBlocks.setAvailable(enabled);
 			o_fillExpandPercent.setAvailable(enabled);
 		}
-		if(option == o_fillRainbow){
+		if (option == o_fillRainbow) {
 			o_fillRainbowSpeed.setAvailable(enabled);
 			o_fillRainbowDelay.setAvailable(enabled);
 			o_fillSaturation.setAvailable(enabled);
@@ -1084,7 +1105,7 @@ public class BlockHighlightConfig {
 			o_tcutFromCenter.setAvailable(enabled);
 			o_tcutFromCorner.setAvailable(enabled);
 		}
-		if(option == o_rotations){
+		if (option == o_rotations) {
 			o_rotationSpeed.setAvailable(enabled);
 		}
 	}
