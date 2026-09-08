@@ -139,6 +139,7 @@ public class BlockHighlightConfig {
     //extras
     public boolean doEasing = true;
     public float easeSpeed = 20F;
+    public boolean improvedEasing = false;
     public boolean fadeIn = true;
  	public float fadeInSpeed = 15F;
     public boolean fadeOut = true;
@@ -582,8 +583,14 @@ public class BlockHighlightConfig {
 	public static Option<Float> o_easeSpeed = Option.<Float>createBuilder()
 			.name(Component.translatable("cbh.config.speed"))
 			.stateManager(StateManager.createInstant(20F, () -> ACTIVE_INSTANCE.easeSpeed, newVal -> ACTIVE_INSTANCE.easeSpeed = newVal))
-			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 50F).step(0.5F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
+			.controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 100F).step(0.5F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
 			.build();
+    public static Option<Boolean> o_improvedEasing = Option.<Boolean>createBuilder()
+            .name(Component.translatable("cbh.config.improved_easing"))
+            .description(OptionDescription.of(Component.translatable("cbh.config.improved_easing.description")))
+            .stateManager(StateManager.createInstant(false, () -> ACTIVE_INSTANCE.improvedEasing, newVal -> ACTIVE_INSTANCE.improvedEasing = newVal))
+            .controller(TickBoxControllerBuilder::create)
+            .build();
 	public static Option<Boolean> o_fadeIn = Option.<Boolean>createBuilder()
 			.name(Component.translatable("cbh.config.in"))
 			.stateManager(StateManager.createInstant(true, () -> ACTIVE_INSTANCE.fadeIn, newVal -> ACTIVE_INSTANCE.fadeIn = newVal))
@@ -860,6 +867,7 @@ public class BlockHighlightConfig {
 								.name(Component.translatable("cbh.config.easing"))
 								.option(o_doEasing)
 								.option(o_easeSpeed)
+                                .option(o_improvedEasing)
 								.build())
 						.group(OptionGroup.createBuilder()
 								.name(Component.translatable("cbh.config.fade"))
@@ -1074,6 +1082,7 @@ public class BlockHighlightConfig {
 		}
 		if (option == o_doEasing) {
 			o_easeSpeed.setAvailable(enabled);
+            o_improvedEasing.setAvailable(enabled);
 		}
 		if (option == o_scale) {
 			o_scaleSpeed.setAvailable(enabled);

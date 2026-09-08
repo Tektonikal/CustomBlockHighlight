@@ -62,7 +62,7 @@ public class CustomBlockHighlight implements ModInitializer {
 
 	public static double ease(double start, double end, float speed) {
 		//TODO: vsync lied to me
-		if (mc.options.enableVsync().get()) {
+		if (mc.options.enableVsync().get() || !getActiveInstance().improvedEasing) {
 			return (start + (end - start) * (1 - Math.exp(-(1.0F / mc.getFps()) * speed)));
 		}
 		return (start + (end - start) * (1 - Math.exp(-((double) mc.getFrameTimeNs() / 1000000000) * speed)));
