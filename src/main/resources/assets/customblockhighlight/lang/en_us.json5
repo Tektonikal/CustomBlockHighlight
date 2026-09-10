@@ -25,7 +25,7 @@
       "easing": "Easing",
       "easing.description": "Controls how fast the outline moves between targets, as well as individual lines from the model. Disable to turn off all animation.",
       "fade": "Fading Animations",
-      "scale": "Scale Animation",
+      "scale": "Scaling Animation",
       "line_thickness": "Line Thickness Animation",
       "copy_to_clipboard": "- Copy To Clipboard",
       "copy": "Copy",
@@ -107,7 +107,7 @@
       "screenTitle": "CBH Presets Screen",
       "vanilla": "Give it to me plain!",
       "sweat": "PvP sweat",
-      "trans": "Beautiful women!",
+      "trans": "placeholder",
       "classic": "Classic CBH experience",
       "fancy": "Gimme all the bells 'n whistles!"
     },

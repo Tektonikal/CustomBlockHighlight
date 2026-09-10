@@ -378,12 +378,12 @@ public class BlockHighlightConfig {
     public static Option<Float> o_scutFromCorner = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCorner"))
             .stateManager(createInstant(0F, () -> ACTIVE_INSTANCE.secondary.cutFromCorner, newVal -> ACTIVE_INSTANCE.secondary.cutFromCorner = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_scutFromCenter = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCenter"))
             .stateManager(createInstant(0.25F, () -> ACTIVE_INSTANCE.secondary.cutFromCenter, newVal -> ACTIVE_INSTANCE.secondary.cutFromCenter = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_souterThicknessMult = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.outer_thickness_multiplier"))
@@ -500,12 +500,12 @@ public class BlockHighlightConfig {
     public static Option<Float> o_tcutFromCorner = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCorner"))
             .stateManager(createInstant(0F, () -> ACTIVE_INSTANCE.tertiary.cutFromCorner, newVal -> ACTIVE_INSTANCE.tertiary.cutFromCorner = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_tcutFromCenter = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCenter"))
             .stateManager(createInstant(0.25F, () -> ACTIVE_INSTANCE.tertiary.cutFromCenter, newVal -> ACTIVE_INSTANCE.tertiary.cutFromCenter = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
+            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
             .build();
     public static Option<Float> o_touterThicknessMult = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.outer_thickness_multiplier"))

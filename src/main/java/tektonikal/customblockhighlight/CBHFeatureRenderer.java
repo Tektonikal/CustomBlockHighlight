@@ -25,27 +25,36 @@ public class CBHFeatureRenderer extends RenderTypeFeatureRenderer<CBHFeatureRend
 	@Override
 	protected void buildGroup(FeatureFrameContext context, List<Submit> submits) {
 		for (Submit submit : submits) {
+            //fill
 			VertexConsumer blegh = switch (submit.fillInfo.mode()){
                 case NORMAL -> this.getVertexBuilder(RenderTypes.debugQuads());
                 case ALWAYS_PASS -> this.getVertexBuilder(Renderer.fillNoDepth);
                 case HIDDEN_ONLY -> this.getVertexBuilder(Renderer.fillConcealed);
             };
             PoseStack.Pose pose = submit.pose.copy();
+            AABB scaled = Shapes.block().move(-0.5F, -0.5F, -0.5F).bounds().inflate(submit.fillInfo.scaleBlocks());
+            AABB box = Shapes.block().move(-0.5F, -0.5F, -0.5F).bounds();
+            Vector3f boxDim = new Vector3f((float) (scaled.getXsize() / box.getXsize()), (float) (scaled.getYsize() / box.getYsize()), (float) (scaled.getZsize() / box.getZsize()));
+            pose.scale(boxDim.x, boxDim.y, boxDim.z);
             pose.scale(submit.fillInfo.scalePercent(), submit.fillInfo.scalePercent(), submit.fillInfo.scalePercent());
             Vertexer.vertexBoxQuads(pose, blegh, Shapes.block().move(-0.5F, -0.5F, -0.5F).bounds().inflate(0.0001 + submit.fillInfo.scaleBlocks()), submit.fillInfo.cols(), submit.fillInfo.alphas());
+
+            //lines
 			submit.pose.pose().scaleLocal(256.0F / 255.0F);
+
 			for (CBHLineRenderInfo info : submit.info.reversed()) {
-            AABB scaled = info.shape().bounds().inflate(info.scaleBlocks());
-            AABB box = info.shape().bounds();
-            Vector3f boxDim = new Vector3f((float) (scaled.getXsize() / box.getXsize()), (float) (scaled.getYsize() / box.getYsize()), (float) (scaled.getZsize() / box.getZsize()));
-            submit.pose.scale(boxDim.x, boxDim.y, boxDim.z);
-            submit.pose.scale(info.scalePercent(), info.scalePercent(), info.scalePercent());
+                PoseStack.Pose pose2 = submit.pose.copy();
+                AABB scaled2 = info.shape().bounds().inflate(info.scaleBlocks());
+                AABB box2 = info.shape().bounds();
+                Vector3f boxDim2 = new Vector3f((float) (scaled2.getXsize() / box2.getXsize()), (float) (scaled2.getYsize() / box2.getYsize()), (float) (scaled2.getZsize() / box2.getZsize()));
+                pose2.scale(boxDim2.x, boxDim2.y, boxDim2.z);
+                pose2.scale(info.scalePercent(), info.scalePercent(), info.scalePercent());
 				VertexConsumer builder = switch (info.mode()) {
 					case NORMAL -> this.getVertexBuilder(RenderTypes.lines());
 					case ALWAYS_PASS -> this.getVertexBuilder(Renderer.linesNoDepth);
 					case HIDDEN_ONLY -> this.getVertexBuilder(Renderer.linesConcealed);
 				};
-				Vertexer.vertexBoxLines(submit.pose, builder, info.shape().bounds(), info.cols(), info.alphas(), info.width(), info.cutFromCenter(), info.cutFromCorner(), info.outerMult(), info.innerMult());
+				Vertexer.vertexBoxLines(pose2, builder, info.shape().bounds(), info.cols(), info.alphas(), info.width(), info.cutFromCenter(), info.cutFromCorner(), info.outerMult(), info.innerMult());
 			}
 		}
 	}
