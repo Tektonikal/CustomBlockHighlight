@@ -4,7 +4,7 @@
     "config": {
       ".": "Config",
       "general": "General",
-      "global_toggle": " - Global Mod Toggle",
+      "global_toggle": " - Enable Mod Rendering",
       "show_vanilla_outline": " - Show Vanilla Outline",
       "main_outline_toggle_desc": "Completely toggle all line rendering.",
       "non_primary_layer_toggle_desc": "Enable another line layer. Each layer renders under the preceding ones.",
@@ -45,7 +45,7 @@
       "rainbow_": "Rainbow",
       "rainbow": "- Rainbow",
       "mode": {
-        ".": "- Face Mode",
+        ".": "  - Face Mode",
         "description.1": "Dictates what faces are visible when looking at a block. Only works with the Bounds mode.",
         "description.2": "- Air Exposed",
         "description.3": "- All",

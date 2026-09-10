@@ -24,7 +24,7 @@ public abstract class YACLScreenMixin{
 		CustomBlockHighlight.xAngle = (float) Math.atan((((guiGraphics.guiWidth() / 6F) * 5F) - Minecraft.getInstance().mouseHandler.getScaledXPos(Minecraft.getInstance().getWindow())) / 40.0F);
 		CustomBlockHighlight.yAngle = (float) Math.atan(((guiGraphics.guiHeight() / 2F) - Minecraft.getInstance().mouseHandler.getScaledYPos(Minecraft.getInstance().getWindow())) / 40.0F);
 		xAngleTweener.update(); yAngleTweener.update();
-		guiGraphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(0, 0, xAngleTweener.getF(), yAngleTweener.getF(), PresetsScreen.Preset.CLASSIC, 0, 0, guiGraphics.guiWidth(), guiGraphics.guiHeight(), 100F, null));
+		guiGraphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(0, 0, xAngleTweener.getF(), yAngleTweener.getF(), PresetsScreen.Preset.CURRENT_CONFIG, 0, 0, guiGraphics.guiWidth(), guiGraphics.guiHeight(), 75, null));
 		guiGraphics.nextStratum();
 	}
 }

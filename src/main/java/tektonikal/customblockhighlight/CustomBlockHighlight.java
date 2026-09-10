@@ -31,6 +31,11 @@ public class CustomBlockHighlight implements ModInitializer {
 		clampTwoOptions(o_cutFromCorner, o_cutFromCenter);
 		clampTwoOptions(o_scutFromCenter, o_scutFromCorner);
 		clampTwoOptions(o_tcutFromCenter, o_tcutFromCenter);
+        BlockHighlightConfig.update(o_shapeStyle, o_shapeStyle.stateManager().get());
+        BlockHighlightConfig.update(o_sshapeStyle, o_sshapeStyle.stateManager().get());
+        BlockHighlightConfig.update(o_tshapeStyle, o_tshapeStyle.stateManager().get());
+        BlockHighlightConfig.update(o_globalModToggle, false);
+        BlockHighlightConfig.update(o_globalModToggle, o_globalModToggle.stateManager().get());
 		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((_, _) -> getActiveInstance().drawVanillaOutline);
 		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
 		FeatureRendererRegistry.register(CBHFeatureRenderer.TYPE, CBHFeatureRenderer::new);
@@ -39,7 +44,7 @@ public class CustomBlockHighlight implements ModInitializer {
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
 			if(screen instanceof YACLScreen yaclScreen && yaclScreen.config.title().equals(Component.translatable("cbh.config.title"))){
 				ScreenEvents.afterExtract(screen).register((screen1, graphics, mouseX, mouseY, tickProgress) -> {
-					graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(0, 0, xAngleTweener.getF(), yAngleTweener.getF(), PresetsScreen.Preset.CLASSIC, 0, 0, scaledWidth, scaledHeight, 100F, null));
+					graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(0, 0, xAngleTweener.getF(), yAngleTweener.getF(), PresetsScreen.Preset.CURRENT_CONFIG, 0, 0, scaledWidth, scaledHeight, 75, null));
 				});
 			}
 		});

@@ -1,6 +1,7 @@
 package tektonikal.customblockhighlight.config.screenrenderbullshit;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import it.unimi.dsi.fastutil.Pair;
 import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.render.pip.PictureInPictureRenderer;
@@ -14,6 +15,8 @@ import org.joml.Quaternionf;
 import tektonikal.customblockhighlight.CBHFeatureRenderer;
 
 import java.awt.*;
+import java.lang.ref.PhantomReference;
+import java.util.List;
 
 public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState> {
 	@Override
@@ -24,6 +27,9 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
 	@Override
 	protected void renderToTexture(EvilRenderState renderState, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
 		if (renderState.preset() == null) return;
+        if(!PresetsScreen.shouldRender(renderState.preset())) {
+            return;
+        }
 
 		var blockModelResolver = new BlockModelResolver(Minecraft.getInstance().getModelManager());
 		var blockModelRenderState = new BlockModelRenderState();
@@ -45,7 +51,8 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
 		poseStack.translate(-0.5F, -0.5F, -0.5F);
 
 		blockModelRenderState.submit(poseStack, submitNodeCollector, LightCoordsUtil.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0);
-		CBHFeatureRenderer.Submit t = new CBHFeatureRenderer.Submit(renderState.preset().renderInfo, linePose);
+        Pair<List<CBHLineRenderInfo>, CBHFillRenderInfo> info = renderState.preset().renderInfo.get();
+        CBHFeatureRenderer.Submit t = new CBHFeatureRenderer.Submit(info.first(), linePose, info.right());
 		submitNodeCollector.submitCustom(SubmitRenderPhases.ALWAYS_ON_TOP, t);
 	}
 

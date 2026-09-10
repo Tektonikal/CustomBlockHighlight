@@ -47,7 +47,6 @@ import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import org.joml.*;
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.mixin.VoxelShapeAccessor;
 import tektonikal.customblockhighlight.util.*;
@@ -56,7 +55,6 @@ import java.awt.*;
 import java.lang.Math;
 import java.util.*;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
@@ -66,7 +64,6 @@ import static tektonikal.customblockhighlight.CustomBlockHighlight.ease;
 import static tektonikal.customblockhighlight.CustomBlockHighlight.easeF;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.*;
 
-// TODO :!! !! reset shit when changing configs
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
 	public static final Camera camera = mc.gameRenderer.mainCamera();
@@ -115,6 +112,12 @@ public class Renderer {
 					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
 					.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
 					.createRenderSetup());
+    public static final RenderType fillNoDepth = RenderType.create(
+            "fill_no_depth", RenderSetup.builder(FILL_NO_DEPTH).sortOnUpload().createRenderSetup()
+    );
+    public static final RenderType fillConcealed = RenderType.create(
+            "fill_concealed", RenderSetup.builder(FILL_CONCEALED_ONLY).sortOnUpload().createRenderSetup()
+    );
 
 	public static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
 
@@ -387,7 +390,7 @@ public class Renderer {
 	}
 
 	public static void mainLoop(LevelRenderContext c) {
-		if (mc.player == null || mc.player.gameMode() == null || getActiveInstance().disableModRendering) return;
+		if (mc.player == null || mc.player.gameMode() == null || !getActiveInstance().enableModRendering) return;
 		if ((!mc.gui.hud.isHidden() || getActiveInstance().showWhenNoHud) && (!mc.player.gameMode().isBlockPlacingRestricted() || getActiveInstance().showWhenNoInteraction)) {
 			get().push("Custom block outline pre");
 			HitResult evilHitResult = getHitResult();
