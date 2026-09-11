@@ -153,6 +153,7 @@ public class Renderer {
 
 	Conclusion: kill yourself mojang
 	 */
+    //TODO: batching layers together means that identical layers that do not have always pass will always z fight
 	private static void finishDraw(boolean lines, StagedVertexBuffer.Draw draw, DepthTestMode mode) {
 		StagedVertexBuffer.ExecuteInfo info;
 		stagedOutlineBuffer.upload();

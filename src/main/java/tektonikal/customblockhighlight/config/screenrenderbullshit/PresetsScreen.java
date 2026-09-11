@@ -108,7 +108,7 @@ public class PresetsScreen extends Screen {
         SWEAT("sweat", Blocks.SMITHING_TABLE),
         TRANS("trans", Blocks.AMETHYST_BLOCK),
         CLASSIC("classic", Blocks.OAK_PLANKS),
-        FANCY("fancy", Blocks.BREWING_STAND),
+        FANCY("fancy", Blocks.DARK_OAK_LOG),
         CURRENT_CONFIG("current", Blocks.GRASS_BLOCK),
         ;
 
@@ -141,6 +141,6 @@ public class PresetsScreen extends Screen {
     }
 
     public static boolean shouldRender(Preset preset) {
-        return (preset == Preset.CURRENT_CONFIG && BlockHighlightConfig.getActiveInstance().enableModRendering) || preset != null;
+        return (preset == Preset.CURRENT_CONFIG && BlockHighlightConfig.getActiveInstance().enableModRendering) || (preset != null && preset != Preset.CURRENT_CONFIG);
     }
 }

@@ -97,20 +97,35 @@ public class BlockHighlightConfig {
 
     public static class LineConfig {
         public boolean enabled;
-        public ColorSetting color = new ColorSetting(Color.WHITE, Color.BLACK, 255, new RainbowSettings(false, 5, 250, 1, 1));
-        public float lineWidth = 5F;
+        public ColorSetting color = new ColorSetting(Color.BLACK, Color.WHITE, 255, new RainbowSettings(true, 5, 250, 1, 1));
+        public float lineWidth = 2.5F;
         public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
         public float lineExpandBlocks = 0;
         public float lineExpandPercentage = 1;
         public FaceMode outlineType = FaceMode.AIR_EXPOSED;
-        public ShapeStyle shapeStyle = ShapeStyle.CLASSIC_BOX;
-        public float cutFromCenter = 0F;
+        public ShapeStyle shapeStyle = ShapeStyle.COLLISION_SHAPE;
+        public float cutFromCenter = 0.25F;
         public float cutFromCorner = 0;
         public float innerThicknessMult = 1;
         public float outerThicknessMult = 1;
 
         public LineConfig(boolean enabled) {
             this.enabled = enabled;
+        }
+
+        public LineConfig(boolean enabled, ColorSetting color, float lineWidth, DepthTestMode lineDepthTest, float lineExpandBlocks, float lineExpandPercentage, FaceMode outlineType, ShapeStyle shapeStyle, float cutFromCenter, float cutFromCorner, float innerThicknessMult, float outerThicknessMult) {
+            this.enabled = enabled;
+            this.color = color;
+            this.lineWidth = lineWidth;
+            this.lineDepthTest = lineDepthTest;
+            this.lineExpandBlocks = lineExpandBlocks;
+            this.lineExpandPercentage = lineExpandPercentage;
+            this.outlineType = outlineType;
+            this.shapeStyle = shapeStyle;
+            this.cutFromCenter = cutFromCenter;
+            this.cutFromCorner = cutFromCorner;
+            this.innerThicknessMult = innerThicknessMult;
+            this.outerThicknessMult = outerThicknessMult;
         }
     }
 
