@@ -1,12 +1,13 @@
 package tektonikal.customblockhighlight.config.screenrenderbullshit;
 
+//? if >=1.21.8 {
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?}
 
 public record EvilRenderState(
-		float x,
-		float y,
 		float xAngle,
 		float yAngle,
 		PresetsScreen.Preset preset,
@@ -19,8 +20,6 @@ public record EvilRenderState(
 		@Nullable ScreenRectangle bounds
 ) implements PictureInPictureRenderState {
 	public EvilRenderState(
-			final float x,
-			final float y,
 			final float xAngle,
 			final float yAngle,
 			final PresetsScreen.Preset preset,
@@ -31,6 +30,8 @@ public record EvilRenderState(
 			final float scale,
 			@Nullable final ScreenRectangle scissorArea
 	) {
-		this(x, y, xAngle, yAngle, preset, x0, y0, x1, y1, scale, scissorArea, PictureInPictureRenderState.getBounds(x0, y0, x1, y1, scissorArea));
+		this(xAngle, yAngle, preset, x0, y0, x1, y1, scale, scissorArea,
+				PictureInPictureRenderState.getBounds(x0, y0, x1, y1, scissorArea));
 	}
 }
+//?}

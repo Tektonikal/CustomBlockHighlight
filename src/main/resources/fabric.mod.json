@@ -1,8 +1,8 @@
 {
 	"schemaVersion": 1,
-	"id": "custom-block-highlight",
+	"id": "${id}",
 	"version": "${version}",
-	"name": "Custom Block Highlight",
+	"name": "${name}",
 	"description": "Revitalize the block outline.",
 	"authors": ["Tektonikal"],
     "contributors": ["kr1v", "awruff"],
@@ -24,9 +24,9 @@
 	},
   "mixins": ["customblockhighlight.mixins.json"],
   "depends": {
-		"fabricloader": ">=${loader_version}",
+		"fabricloader": ">=${loader}",
 		"fabric-api": "*",
-		"minecraft": "~${minecraft_version}",
+		"minecraft": "${minecraft}",
 		"yet_another_config_lib_v3": "*"
 	},
 	"custom": {
