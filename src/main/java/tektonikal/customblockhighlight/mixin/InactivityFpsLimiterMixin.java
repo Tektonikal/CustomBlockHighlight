@@ -1,5 +1,6 @@
 package tektonikal.customblockhighlight.mixin;
 
+//? if >=1.21.4 {
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.mojang.blaze3d.platform.FramerateLimitTracker;
 import dev.isxander.yacl3.gui.YACLScreen;
@@ -13,18 +14,23 @@ import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen
 @Mixin(FramerateLimitTracker.class)
 public abstract class InactivityFpsLimiterMixin {
 
+	//? if >=1.21.5 {
 	@Shadow
 	public abstract FramerateLimitTracker.FramerateThrottleReason getThrottleReason();
+	//?}
 
 	@Shadow
 	private int framerateLimit;
 
 	@ModifyReturnValue(method = "getFramerateLimit", at = @At("RETURN"))
 	int yeah(int original) {
+		//? if >=1.21.5 {
 		if (getThrottleReason() == FramerateLimitTracker.FramerateThrottleReason.OUT_OF_LEVEL_MENU &&
 				Minecraft.getInstance().gui.screen() instanceof PresetsScreen || (Minecraft.getInstance().gui.screen() instanceof YACLScreen s && s.config.title().equals(Component.translatable("cbh.config.title")))) {
 			return framerateLimit;
 		}
+		//?}
 		return original;
 	}
 }
+//?}

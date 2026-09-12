@@ -2,21 +2,20 @@ package tektonikal.customblockhighlight;
 
 import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionEventListener;
-import dev.isxander.yacl3.gui.YACLScreen;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.client.rendering.v1.FeatureRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.fabricmc.fabric.impl.client.rendering.PictureInPictureRendererRegistryImpl;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.config.ConfigManager;
-import tektonikal.customblockhighlight.config.screenrenderbullshit.EvilRenderState;
-import tektonikal.customblockhighlight.config.screenrenderbullshit.GuiOutlineRenderer;
-import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen;
 import tektonikal.customblockhighlight.util.Tweener;
+//? if >=26.2
+import net.fabricmc.fabric.api.client.rendering.v1.FeatureRendererRegistry;
+//? if >=1.21.8
+import tektonikal.customblockhighlight.config.screenrenderbullshit.GuiOutlineRenderer;
+//? if >=26.1
+import net.fabricmc.fabric.impl.client.rendering.PictureInPictureRendererRegistryImpl;
+//? if >=1.21.8 && <26.1
+//import net.fabricmc.fabric.api.client.rendering.v1.SpecialGuiElementRegistry;
 
 import static tektonikal.customblockhighlight.Renderer.mc;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.*;
@@ -25,6 +24,7 @@ public class CustomBlockHighlight implements ModInitializer {
 	public static float xAngle, yAngle;
 	public static final Tweener xAngleTweener = new Tweener(() -> xAngle, 20);
 	public static final Tweener yAngleTweener = new Tweener(() -> yAngle, 20);
+
 	@Override
 	public void onInitialize() {
 		BlockHighlightConfig.ACTIVE_INSTANCE = ConfigManager.load();
@@ -36,18 +36,19 @@ public class CustomBlockHighlight implements ModInitializer {
         BlockHighlightConfig.update(o_tshapeStyle, o_tshapeStyle.stateManager().get());
         BlockHighlightConfig.update(o_globalModToggle, false);
         BlockHighlightConfig.update(o_globalModToggle, o_globalModToggle.stateManager().get());
-		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((_, _) -> getActiveInstance().drawVanillaOutline);
+		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, hit) -> getActiveInstance().drawVanillaOutline);
 		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
+		//? if >=26.2
 		FeatureRendererRegistry.register(CBHFeatureRenderer.TYPE, CBHFeatureRenderer::new);
+		//? if >=26.2 {
 		//noinspection UnstableApiUsage
-		PictureInPictureRendererRegistryImpl.register(_ -> new GuiOutlineRenderer());
-		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-			if(screen instanceof YACLScreen yaclScreen && yaclScreen.config.title().equals(Component.translatable("cbh.config.title"))){
-				ScreenEvents.afterExtract(screen).register((screen1, graphics, mouseX, mouseY, tickProgress) -> {
-					graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(0, 0, xAngleTweener.getF(), yAngleTweener.getF(), PresetsScreen.Preset.CURRENT_CONFIG, 0, 0, scaledWidth, scaledHeight, 75, null));
-				});
-			}
-		});
+		PictureInPictureRendererRegistryImpl.register(ignored -> new GuiOutlineRenderer());
+		//?} elif >=26.1 {
+		/*//noinspection UnstableApiUsage
+		PictureInPictureRendererRegistryImpl.register(ctx -> new GuiOutlineRenderer(ctx.bufferSource()));
+		*///?} elif >=1.21.8 {
+		/*SpecialGuiElementRegistry.register(ctx -> new GuiOutlineRenderer(ctx.vertexConsumers()));
+		*///?}
 	}
 
 	public void clampTwoOptions(Option<Float> first, Option<Float> second) {

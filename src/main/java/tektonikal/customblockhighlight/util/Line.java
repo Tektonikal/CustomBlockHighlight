@@ -7,7 +7,6 @@ import net.minecraft.world.phys.Vec3;
 import tektonikal.customblockhighlight.Vertexer;
 
 import java.awt.*;
-import java.util.Objects;
 
 import static tektonikal.customblockhighlight.CustomBlockHighlight.ease;
 import static tektonikal.customblockhighlight.CustomBlockHighlight.easeF;

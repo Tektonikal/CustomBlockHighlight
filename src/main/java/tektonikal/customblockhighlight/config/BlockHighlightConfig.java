@@ -31,8 +31,12 @@ import static net.minecraft.util.Util.getMillis;
 
 @SuppressWarnings("NoTranslation") // temporary fix until fletching table finds a solution
 public class BlockHighlightConfig {
-    public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val -> Component.translatable(String.format("%.2f", val).replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
-    public static final ValueFormatter<Float> BLOCKS_FORMATTER_THREE_PLACES = val -> Component.translatable(String.format("%.3f", val).replace(".000", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
+    public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val ->
+            Component.translatable(String.format("%.2f", val)
+                    .replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
+    public static final ValueFormatter<Float> BLOCKS_FORMATTER_THREE_PLACES = val ->
+            Component.translatable(String.format("%.3f", val)
+                    .replace(".000", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
     @SuppressWarnings("UnusedAssignment") // required for clinit stuff
     public static BlockHighlightConfig ACTIVE_INSTANCE = new BlockHighlightConfig();
 
@@ -194,7 +198,7 @@ public class BlockHighlightConfig {
             .description(OptionDescription.of(Component.translatable("cbh.config.main_outline_toggle_desc")))
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.primary.enabled, newVal -> ACTIVE_INSTANCE.primary.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Color> o_lineCol = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.primary"))
@@ -216,7 +220,7 @@ public class BlockHighlightConfig {
             .name(Component.translatable("cbh.config.rainbow"))
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_lineRainbowSpeed = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.speed"))
@@ -271,7 +275,7 @@ public class BlockHighlightConfig {
             .description(OptionDescription.of(Component.translatable("cbh.enum.shape_style.description")))
             .stateManager(createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.primary.shapeStyle, newVal -> ACTIVE_INSTANCE.primary.shapeStyle = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
 
     public static void update(Option<ShapeStyle> option, @NotNull ShapeStyle shapeStyle) {
@@ -317,7 +321,7 @@ public class BlockHighlightConfig {
             .description(OptionDescription.of(Component.translatable("cbh.config.non_primary_layer_toggle_desc")))
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.secondary.enabled, newVal -> ACTIVE_INSTANCE.secondary.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Color> o_slineCol = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.primary"))
@@ -339,7 +343,7 @@ public class BlockHighlightConfig {
             .name(Component.translatable("cbh.config.rainbow"))
             .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_slineRainbowSpeed = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.speed"))
@@ -388,7 +392,7 @@ public class BlockHighlightConfig {
             .description(OptionDescription.of(Component.translatable("cbh.enum.shape_style.description")))
             .stateManager(createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.secondary.shapeStyle, newVal -> ACTIVE_INSTANCE.secondary.shapeStyle = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_scutFromCorner = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCorner"))
@@ -427,7 +431,7 @@ public class BlockHighlightConfig {
             .description(OptionDescription.of(Component.translatable("cbh.config.non_primary_layer_toggle_desc")))
             .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.tertiary.enabled, newVal -> ACTIVE_INSTANCE.tertiary.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Color> o_tlineCol = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.primary"))
@@ -449,7 +453,7 @@ public class BlockHighlightConfig {
             .name(Component.translatable("cbh.config.rainbow"))
             .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_tlineRainbowSpeed = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.speed"))
@@ -510,7 +514,7 @@ public class BlockHighlightConfig {
             .description(OptionDescription.of(Component.translatable("cbh.enum.shape_style.description")))
             .stateManager(createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.tertiary.shapeStyle, newVal -> ACTIVE_INSTANCE.tertiary.shapeStyle = newVal))
             .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_tcutFromCorner = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.cutFromCorner"))
@@ -537,7 +541,7 @@ public class BlockHighlightConfig {
             .name(Component.translatable("cbh.config.enabled"))
             .controller(TickBoxControllerBuilder::create)
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.fillEnabled, newVal -> ACTIVE_INSTANCE.fillEnabled = newVal))
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Color> o_fillCol = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.primary"))
@@ -559,7 +563,7 @@ public class BlockHighlightConfig {
             .name(Component.translatable("cbh.config.rainbow"))
             .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.enabled = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_fillRainbowSpeed = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.speed"))
@@ -616,7 +620,7 @@ public class BlockHighlightConfig {
             .description(OptionDescription.of(Component.translatable("cbh.config.easing.description")))
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.doEasing, newVal -> ACTIVE_INSTANCE.doEasing = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_easeSpeed = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.speed"))
@@ -633,7 +637,7 @@ public class BlockHighlightConfig {
             .name(Component.translatable("cbh.config.in"))
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.fadeIn, newVal -> ACTIVE_INSTANCE.fadeIn = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_fadeInSpeed = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.speed"))
@@ -644,7 +648,7 @@ public class BlockHighlightConfig {
             .name(Component.translatable("cbh.config.out"))
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.fadeOut, newVal -> ACTIVE_INSTANCE.fadeOut = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_fadeOutSpeed = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.speed"))
@@ -656,7 +660,7 @@ public class BlockHighlightConfig {
             .name(Component.translatable("cbh.config.enabled_in"))
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.scale, newVal -> ACTIVE_INSTANCE.scale = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_scaleSpeed = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.speed"))
@@ -668,7 +672,7 @@ public class BlockHighlightConfig {
             .name(Component.translatable("cbh.config.enabled_in"))
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.animateLineThickness, newVal -> ACTIVE_INSTANCE.animateLineThickness = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Float> o_lineThicknessSpeed = Option.<Float>createBuilder()
             .name(Component.translatable("cbh.config.speed"))
@@ -693,7 +697,7 @@ public class BlockHighlightConfig {
             .description(OptionDescription.of(Component.translatable("cbh.config.crystal_helper.description")))
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.crystalHelper, newVal -> ACTIVE_INSTANCE.crystalHelper = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Color> o_crystalHelperLineColor = Option.<Color>createBuilder()
             .name(Component.translatable("cbh.config.crystal_helper.fill_color"))
@@ -715,7 +719,7 @@ public class BlockHighlightConfig {
             .description(OptionDescription.of(Component.translatable("cbh.config.select_fluids.description")))
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.allowLiquids, newVal -> ACTIVE_INSTANCE.allowLiquids = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Boolean> o_whenHoldingAppropriate = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.holding_appropriate_item"))
@@ -732,7 +736,7 @@ public class BlockHighlightConfig {
             .name(Component.translatable("cbh.config.rotations"))
             .description(OptionDescription.of(Component.translatable("cbh.config.rotations.description")))
             .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.rotations, newVal -> ACTIVE_INSTANCE.rotations = newVal))
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .controller(TickBoxControllerBuilder::create)
             .build();
     public static Option<Float> o_rotationSpeed = Option.<Float>createBuilder()
@@ -755,7 +759,7 @@ public class BlockHighlightConfig {
             .name(Component.translatable("cbh.config.global_toggle"))
             .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.enableModRendering, newVal -> ACTIVE_INSTANCE.enableModRendering = newVal))
             .controller(TickBoxControllerBuilder::create)
-            .addListener((option, _) -> update(option, option.pendingValue()))
+            .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
     public static Option<Boolean> o_vanillaOutline = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.show_vanilla_outline"))
@@ -952,7 +956,7 @@ public class BlockHighlightConfig {
                                 .name(Component.translatable("cbh.config"))
                                 .option(ButtonOption.createBuilder()
                                         .name(Component.translatable("cbh.config.copy_to_clipboard"))
-                                        .action((_, _) -> {
+                                        .action((screen, option) -> {
                                             ConfigManager.save(); // technically unnecessary
                                             Minecraft.getInstance().keyboardHandler.setClipboard(ConfigManager.GSON.toJson(this));
                                         })
@@ -962,7 +966,7 @@ public class BlockHighlightConfig {
                                         .name(Component.translatable("cbh.config.load_from_clipboard"))
                                         .description(OptionDescription.of(Component.translatable("cbh.config.load_from_clipboard.description")))
                                         .text(Component.translatable("cbh.config.load"))
-                                        .action((_, _) -> {
+                                        .action((screen, option) -> {
                                             try {
                                                 BlockHighlightConfig yeah = ConfigManager.GSON.fromJson(Minecraft.getInstance().keyboardHandler.getClipboard(), BlockHighlightConfig.class);
                                                 if (yeah == null) {
@@ -975,7 +979,7 @@ public class BlockHighlightConfig {
                                         .build())
                                 .option(ButtonOption.createBuilder()
                                         .name(Component.translatable("cbh.config.presets"))
-                                        .action((screen, _) -> Minecraft.getInstance().setScreenAndShow(new PresetsScreen(false, screen)))
+                                        .action((screen, option) -> Minecraft.getInstance().setScreenAndShow(new PresetsScreen(false, screen)))
                                         .text(Component.translatable("cbh.config.open"))
                                         .build())
                                 .build())
@@ -1195,7 +1199,7 @@ public class BlockHighlightConfig {
                         Object correspondingValue = ((ProvidesBindingForDeprecation<Object>) stateManager).getBinding().getValue();
                         stateManager.set(correspondingValue);
                         stateManager.apply();
-                    } catch (IllegalAccessException _) {
+                    } catch (IllegalAccessException ignored) {
                     }
                 });
         return this;

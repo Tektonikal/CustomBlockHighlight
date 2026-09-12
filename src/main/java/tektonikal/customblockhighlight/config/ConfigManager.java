@@ -12,15 +12,19 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
-import static org.apache.commons.io.function.Erase.rethrow;
-
 public class ConfigManager {
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> RuntimeException rethrow(Throwable t) throws T {
+        throw (T) t;
+    }
+
     @SuppressWarnings("deprecation")
     public static Gson GSON = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.IDENTITY)
             .serializeNulls()
             .registerTypeHierarchyAdapter(Color.class, new GsonConfigInstance.ColorTypeAdapter())
-            .registerTypeAdapter(BlockHighlightConfig.class, (InstanceCreator<BlockHighlightConfig>) _ -> new BlockHighlightConfig())
+            .registerTypeAdapter(BlockHighlightConfig.class,
+                    (InstanceCreator<BlockHighlightConfig>) type -> new BlockHighlightConfig())
             .setPrettyPrinting()
             .create();
 

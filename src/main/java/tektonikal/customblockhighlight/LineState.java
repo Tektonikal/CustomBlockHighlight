@@ -9,10 +9,6 @@ public class LineState {
 	public float edgeAlpha = 0;
 	public final float[] lineFades = new float[6];
 
-	public LineState() {
-
-	}
-
 	public float getEdgeAlpha() {
 		return edgeAlpha;
 	}
