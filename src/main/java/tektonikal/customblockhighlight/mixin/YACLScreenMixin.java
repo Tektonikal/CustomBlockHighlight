@@ -61,6 +61,11 @@ public abstract class YACLScreenMixin extends Screen {
 		}
 		guiGraphics.nextStratum();
 		super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
+        if (PresetsScreen.shouldRender(PresetsScreen.Preset.CURRENT_CONFIG)) {
+            int centerX = (int) ((guiGraphics.guiWidth() / 6F) * 5F);
+            int centerY = guiGraphics.guiHeight() / 2;
+            guiGraphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(xAngleTweener.getF(), yAngleTweener.getF(), PresetsScreen.Preset.CURRENT_CONFIG, centerX - 100, centerY - 100, centerX + 100, centerY + 100, 75, null));
+        }
 		//?} else {
 		/*super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
 		if (PresetsScreen.shouldRender(PresetsScreen.Preset.CURRENT_CONFIG)) {

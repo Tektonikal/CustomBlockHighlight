@@ -9,7 +9,7 @@
       "main_outline_toggle_desc": "Completely toggle all line rendering.",
       "non_primary_layer_toggle_desc": "Enable another line layer. Each layer renders under the preceding ones.",
       "improved_easing":"  - Improved Easing",
-      "improved_easing.description":"Calculates animations based on frame timings rather than FPS for more consistent animations, especially during rapid changes in FPS. May cause animations to be slower. This feature automatically falls back to the old animation method when VSync is enabled.",
+      "improved_easing.description":"Calculates animations based on frame timings rather than FPS for more consistent animations, especially during rapid changes in FPS. Meant for people who play on uncapped FPS!",
       // layout
       "title": "Custom Block Highlight",
       "outline": "Outline",

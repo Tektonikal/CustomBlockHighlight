@@ -65,7 +65,11 @@ public class PresetsScreen extends Screen {
     }
 
     public void addButton(int y, Preset preset) {
-        addRenderableWidget(new Button(width / 32, y, width / 2, 18, preset.meow, button -> loadPreset(preset), value -> Component.empty()) {
+        addRenderableWidget(new Button(width / 32, y, width / 2, 18, preset.meow, button -> {
+            //TODO HELP I DONT KNOW WHY I NEED TO DO THIS IT BREAKS OTHERWISE
+            loadPreset(preset);
+            loadPreset(preset);
+        }, value -> Component.empty()) {
             //? if >=1.21.11 {
             @Override
             protected void extractContents(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
@@ -99,7 +103,20 @@ public class PresetsScreen extends Screen {
     @Override
     public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);
+        float centerX = (width / 6F) * 5F;
+        float centerY = height / 2F;
+        for (Preset preset : Preset.values()) {
+            if (preset != Preset.CURRENT_CONFIG) {
+                presetVals[preset.ordinal()] = (float) CustomBlockHighlight.ease(presetVals[preset.ordinal()], hoveredPreset == preset ? 0 : 1, 15);
+                //? if >=1.21.8 {
+                int previewCenterX = (int) (centerX - presetVals[preset.ordinal()] * 100);
+                int previewCenterY = (int) (centerY + (preset.ordinal() - tweener.getF()) * PREVIEW_SLOT_SWAP_DISTANCE);
+                graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(xAngleTweener.getF(), yAngleTweener.getF(), preset, previewCenterX - PREVIEW_HALF_SIZE, previewCenterY - PREVIEW_HALF_SIZE, previewCenterX + PREVIEW_HALF_SIZE, previewCenterY + PREVIEW_HALF_SIZE, 50F + (50 * (1 - presetVals[preset.ordinal()])), null));
+                //?}
+            }
+        }
         graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
+        graphics.centeredText(Minecraft.getInstance().font, "(Preview does not fully reflect preset settings.)", width / 2, (height / 8) + (int) (font.lineHeight * 1.5), 0x80808080);
     }
 
     @Override
@@ -114,8 +131,8 @@ public class PresetsScreen extends Screen {
         xAngle = (float) Math.atan((centerX - Minecraft.getInstance().mouseHandler.getScaledXPos(Minecraft.getInstance().getWindow())) / 40.0F);
         yAngle = (float) Math.atan((centerY - Minecraft.getInstance().mouseHandler.getScaledYPos(Minecraft.getInstance().getWindow())) / 40.0F);
 
-        super.extractBackground(graphics, mouseX, mouseY, a);
-        graphics.nextStratum();
+        graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
+        graphics.centeredText(Minecraft.getInstance().font, "(Preview does not fully reflect preset settings.)", width / 2, (height / 8) + (int) (font.lineHeight * 1.5), 0x80808080);
 
         for (Preset preset : Preset.values()) {
             if (preset != Preset.CURRENT_CONFIG) {
@@ -127,12 +144,15 @@ public class PresetsScreen extends Screen {
                 //?}
             }
         }
+        graphics.nextStratum();
+        super.extractBackground(graphics, mouseX, mouseY, a);
     }
     //?} else {
     /*@Override
     public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         super.render(graphics, mouseX, mouseY, a);
         graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
+        graphics.centeredText(Minecraft.getInstance().font, "(Preview does not fully reflect preset settings.)", width / 2, (int) (height / 8F + (font.lineHeight * 1.5F)), 0x808080);
     }
 
     @Override
@@ -209,9 +229,8 @@ public class PresetsScreen extends Screen {
             this.name = name;
             this.block = block;
             this.meow = Component.translatable("cbh.presets." + name);
-
-            BlockHighlightConfig cfg = name.equals("current") ? BlockHighlightConfig.getActiveInstance() : ConfigManager.getPreset(this);
             renderInfo = () -> {
+                BlockHighlightConfig cfg = name.equals("current") ? BlockHighlightConfig.getActiveInstance() : ConfigManager.getPreset(this);
                 float[] fillArr = new float[6];
                 Arrays.fill(fillArr, !cfg.fillEnabled ? 0 : cfg.fillCol.alpha);
                 CBHFillRenderInfo fillInfo = new CBHFillRenderInfo(cfg.fillCol.getColors(false, Color.WHITE), fillArr, cfg.fillDepthTest, cfg.fillExpandBlocks, cfg.fillExpandPercent);

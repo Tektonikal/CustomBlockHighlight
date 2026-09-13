@@ -1,10 +1,10 @@
 {
-  "disableModRendering": false,
+  "enableModRendering": true,
   "drawVanillaOutline": false,
   "primary": {
     "enabled": true,
     "color": {
-      "col1": -1,
+      "col1": -16777216,
       "col2": -16777216,
       "alpha": 255,
       "rainbowSettings": {
@@ -15,7 +15,7 @@
         "speed": 5.0
       }
     },
-    "lineWidth": 5.0,
+    "lineWidth": 2.5,
     "lineDepthTest": "ALWAYS_PASS",
     "lineExpandBlocks": 0.0,
     "lineExpandPercentage": 1.0,
@@ -27,16 +27,16 @@
     "outerThicknessMult": 1.0
   },
   "secondary": {
-    "enabled": true,
+    "enabled": false,
     "color": {
-      "col1": -1,
+      "col1": -16777216,
       "col2": -16777216,
       "alpha": 255,
       "rainbowSettings": {
         "enabled": false,
         "delay": 250,
         "saturation": 1.0,
-        "brightness": 1.0,
+        "brightness": 0.75,
         "speed": 5.0
       }
     },
@@ -44,18 +44,18 @@
     "lineDepthTest": "ALWAYS_PASS",
     "lineExpandBlocks": 0.0,
     "lineExpandPercentage": 1.0,
-    "outlineType": "AIR_EXPOSED",
-    "shapeStyle": "CLASSIC_BOX",
-    "cutFromCenter": 0.0,
+    "outlineType": "ALL",
+    "shapeStyle": "COLLISION_SHAPE",
+    "cutFromCenter": 0.5,
     "cutFromCorner": 0.0,
-    "innerThicknessMult": 1.0,
-    "outerThicknessMult": 1.0
+    "innerThicknessMult": 0.5,
+    "outerThicknessMult": 2.0
   },
   "tertiary": {
     "enabled": false,
     "color": {
-      "col1": -1,
-      "col2": -16777216,
+      "col1": -16777216,
+      "col2": -1,
       "alpha": 255,
       "rainbowSettings": {
         "enabled": false,
@@ -65,22 +65,22 @@
         "speed": 5.0
       }
     },
-    "lineWidth": 5.0,
+    "lineWidth": 2.5,
     "lineDepthTest": "ALWAYS_PASS",
     "lineExpandBlocks": 0.0,
     "lineExpandPercentage": 1.0,
-    "outlineType": "AIR_EXPOSED",
-    "shapeStyle": "CLASSIC_BOX",
-    "cutFromCenter": 0.0,
+    "outlineType": "ALL",
+    "shapeStyle": "COLLISION_SHAPE",
+    "cutFromCenter": 0.25,
     "cutFromCorner": 0.0,
     "innerThicknessMult": 1.0,
     "outerThicknessMult": 1.0
   },
-  "fillEnabled": false,
+  "fillEnabled": true,
   "fillCol": {
     "col1": -1,
     "col2": -16777216,
-    "alpha": 128,
+    "alpha": 129,
     "rainbowSettings": {
       "enabled": false,
       "delay": 250,
@@ -89,20 +89,20 @@
       "speed": 5.0
     }
   },
-  "fillType": "ALL",
+  "fillType": "AIR_EXPOSED",
   "fillExpandBlocks": 0.0,
   "fillExpandPercent": 1.0,
-  "fillDepthTest": "HIDDEN_ONLY",
-  "doEasing": false,
-  "easeSpeed": 20.0,
+  "fillDepthTest": "ALWAYS_PASS",
+  "doEasing": true,
+  "easeSpeed": 35.0,
   "improvedEasing": false,
-  "fadeIn": false,
+  "fadeIn": true,
   "fadeInSpeed": 15.0,
-  "fadeOut": false,
+  "fadeOut": true,
   "fadeOutSpeed": 15.0,
-  "scale": false,
+  "scale": true,
   "scaleSpeed": 15.0,
-  "animateLineThickness": false,
+  "animateLineThickness": true,
   "lineThicknessAnimationSpeed": 15.0,
   "crystalHelper": false,
   "crystalHelperLineColor": -65536,
@@ -110,9 +110,9 @@
   "connectedBlocks": true,
   "updateWhenUnfocused": false,
   "allowEntities": false,
-  "allowLiquids": false,
-  "onlyWhenHoldingAppropriate": false,
-  "onlySourceBlocks": false,
+  "allowLiquids": true,
+  "onlyWhenHoldingAppropriate": true,
+  "onlySourceBlocks": true,
   "rotations": false,
   "rotationSpeed": 20.0,
   "showWhenNoHud": false,
