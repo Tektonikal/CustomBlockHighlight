@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "tektonikal.customblockhighlight.mixin",
+  "compatibilityLevel": "${java}",
+  "mixins": [
+    //? if >=1.21.4 {
+    "VoxelShapeAccessor"
+    //?}
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "client": [
+    "GameRendererMixin"
+    //? if >=1.21.4
+    ,"InactivityFpsLimiterMixin"
+    ,"YACLScreenMixin"
+    //? if >=26.2 {
+    ,"ShapeOutlineFeatureRendererMixin"
+    //?}
+  ]
+}

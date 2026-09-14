@@ -1,5 +1,7 @@
 plugins {
     id("dev.kikugie.loom-back-compat")
+    id("dev.kikugie.fletching-table.fabric") version "0.2.0-alpha.9"
+    id("dev.kikugie.fletching-table.lang") version "0.2.0-alpha.9"
 }
 
 version = "${property("mod.version")}+${sc.current.version}"
@@ -19,11 +21,11 @@ repositories {
         forRepository { maven(url) { name = alias } }
         filter { groups.forEach(::includeGroup) }
     }
-    strictMaven("https://www.cursemaven.com", "CurseForge", "curse.maven")
     strictMaven("https://api.modrinth.com/maven", "Modrinth", "maven.modrinth")
-    strictMaven("https://maven.isxander.dev/releases", "Xander Releases", "dev.isxander")
+    maven("https://api.modrinth.com/maven") { name = "Modrinth (unscoped)" }
+    maven("https://maven.isxander.dev/releases") { name = "Xander Releases" }
+    maven("https://maven.isxander.dev/snapshots") { name = "Xander Snapshots" }
     strictMaven("https://maven.terraformersmc.com/releases", "TerraformersMC", "com.terraformersmc")
-    strictMaven("https://maven.quiltmc.org/repository/release", "QuiltMC", "org.quiltmc.parsers")
 }
 
 dependencies {
@@ -34,6 +36,10 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric_api")}")
     modImplementation("dev.isxander:yet-another-config-lib:${property("deps.yacl")}-fabric")
     modImplementation("com.terraformersmc:modmenu:${property("deps.modmenu")}")
+}
+
+fletchingTable {
+    lang.configure(sourceSets.main.get()) {}
 }
 
 loom {

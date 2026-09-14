@@ -1,0 +1,140 @@
+{
+  "cbh": {
+    // TODO: divide further by category.. don't have everything just in config
+    "config": {
+      ".": "Config",
+      "general": "General",
+      "global_toggle": " - Enable Mod Rendering",
+      "show_vanilla_outline": " - Show Vanilla Outline",
+      "main_outline_toggle_desc": "Completely toggle all line rendering.",
+      "non_primary_layer_toggle_desc": "Enable another line layer. Each layer renders under the preceding ones.",
+      "improved_easing":"  - Improved Easing",
+      "improved_easing.description":"Calculates animations based on frame timings rather than FPS for more consistent animations, especially during rapid changes in FPS. Meant for people who play on uncapped FPS!",
+      // layout
+      "title": "Custom Block Highlight",
+      "outline": "Outline",
+      "color": "Color",
+      "misc": "Miscellaneous",
+      "subdiv": "Subdivision",
+      "scaling": "Scaling",
+      "render_conditions": "Render Conditions",
+      "secondary_layer": "Secondary Layer",
+      "tertiary_layer": "Tertiary Layer",
+      "fill": "Fill",
+      "extras": "Extras",
+      "easing": "Easing",
+      "easing.description": "Controls how fast the outline moves between targets, as well as individual lines from the model. Disable to turn off all animation.",
+      "fade": "Fading Animations",
+      "scale": "Scaling Animation",
+      "line_thickness": "Line Thickness Animation",
+      "copy_to_clipboard": "- Copy To Clipboard",
+      "copy": "Copy",
+      "load_from_clipboard": "- Load From Clipboard",
+      "load_from_clipboard.description": "Loads settings from your clipboard if they're valid.",
+      "load": "Load",
+      "presets": "- Presets",
+      "open": "Open",
+      // other
+      "enabled": "Enabled",
+      "enabled_in": "- Enabled",
+      "primary": "- Primary",
+      "secondary": "- Secondary",
+      "opacity": "- Opacity",
+      // TODO: there are 2 keys here, one for with - and one without... problem should be
+      //  gone once we switch config libraries, but for now 2 keys are necessary
+      "rainbow_": "Rainbow",
+      "rainbow": "- Rainbow",
+      "mode": {
+        ".": "  - Face Mode",
+        "description.1": "Dictates what faces are visible when looking at a block. Only works with the Bounds mode.",
+        "description.2": "- Air Exposed",
+        "description.3": "- All",
+        "description.4": "- Concealed Faces",
+        "description.5": "- Looked At",
+      },
+      "depthTest": {
+        ".": "- Depth Test",
+        "description": "Dictates how this element will draw against other terrain. Beware of using this with layered lines, visual issues may occur!"
+      },
+      "expand_blocks": "- Adjust Size By (Blocks)",
+      "expand_percent": "- Adjust Size By (Percentage)",
+      "lineWidth": "- Line Width",
+      "cutFromCorner": "- Cut From Corner",
+      "cutFromCenter": "- Cut From Center",
+      "alphaMultiplier": "- Opacity Multiplier",
+      "outer_thickness_multiplier": "  - Outer Thickness Multiplier",
+      "inner_thickness_multiplier": "  - Inner Thickness Multiplier",
+      "speed": "  - Speed",
+      "in": "- In",
+      "out": "- Out",
+      "delay": {
+        ".": "  - Delay",
+        "description": "How much to delay the rainbow color used for the secondary part of the gradient."
+      },
+      "saturation": "  - Saturation",
+      "brightness": "  - Brightness",
+      "connected_outlines": {
+        ".": "- Connected Outlines",
+        "description": "Connects double blocks like chests. Applies to both the fill and outline."
+      },
+      "update_when_unfocused": {
+        ".": "- Update When Unfocused",
+        "description": "Continues moving the outline box toward its target even when it's not being rendered."
+      },
+      "crystal_helper": {
+        ".": "Crystal Helper",
+        "description": "Highlights the block in the color below when you are looking at an obsidian block that crystals cannot be placed on.",
+        "line_color": "  - Line Color",
+        "fill_color": "  - Fill Color"
+      },
+      "select_entities": "- Select Entities",
+      "select_fluids": {
+        ".": "- Select Fluids",
+        "description": "Makes fluid blocks valid targets."
+      },
+      "rotations": {
+        ".": "- Rotations (Beta)",
+        "description": "Rotates the outline based on what side of the block you're looking at. Not a finalized or stable feature, here be dragons!"
+      },
+      "show_when_no_hud": "- Show In Hidden HUD",
+      "show_when_no_interaction": "- Show When Unable To Interact",
+      "show_when_no_interaction.desc": "Stops rendering of the selection when in adventure or spectator mode.",
+      "only_source_blocks": "  - Only Source Blocks",
+      "holding_appropriate_item": "  - Only When Holding Appropriate Item",
+      "holding_appropriate_item_desc": "Boats, buckets, and lily pads."
+    },
+    "presets": {
+      "screenTitle": "CBH Presets Screen",
+      "vanilla": "Give it to me plain!",
+      "sweat": "PvP sweat",
+      "trans": "Beautiful women!",
+      "classic": "Classic CBH experience",
+      "fancy": "Gimme all the bells 'n whistles!"
+    },
+    "enum": {
+      "shape_style": {
+        ".": "- Shape Style",
+        "description": "Dictates how the outline shape will be computed.",
+        "classic": "Classic (Bounds)",
+        "collision": "Collision Shape",
+        "model": "Model Shape (Beta)"
+      },
+      "faceMode": {
+        "all": "All",
+        "airExposed": "Air Exposed Faces",
+        "concealed": "Concealed Faces",
+        "lookAt": "Looked At Face"
+      },
+      "depthTestMode": {
+        "normal":"Normal",
+        "alwaysPass":"Always Pass",
+        "hiddenOnly": "Only Concealed"
+      },
+      "outlineStyle": {
+        "classic": "Classic",
+        "flat": "Flat",
+        "screen": "Screen Space"
+      }
+    }
+  }
+}
