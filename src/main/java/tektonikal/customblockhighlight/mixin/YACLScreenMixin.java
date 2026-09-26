@@ -39,6 +39,7 @@ public abstract class YACLScreenMixin extends Screen {
 	void yeah(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, Operation<Void> original) {
 		if (!config.title().equals(Component.translatable("cbh.config.title"))) {
 			original.call(guiGraphics, mouseX, mouseY, partialTick);
+			return;
 		}
 		if (tabManager.getCurrentTab() instanceof TabExt tab) {
 			tab.renderBackground(guiGraphics);
