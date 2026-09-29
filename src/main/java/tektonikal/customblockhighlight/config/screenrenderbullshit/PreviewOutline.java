@@ -14,7 +14,7 @@ import tektonikal.customblockhighlight.util.DepthTestMode;
 import java.util.List;
 
 //? if >=1.21.5 {
-import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 
 import java.util.EnumMap;
 import java.util.Locale;
@@ -33,7 +33,7 @@ import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
 ^///?}
 
 public class PreviewOutline {

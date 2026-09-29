@@ -1,22 +1,22 @@
 package tektonikal.customblockhighlight;
 
 //? if >=26.2
-import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 //? if >=1.21.5 {
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import net.minecraft.client.renderer.RenderPipelines;
 //?}
 //? if >=26.1 {
-import com.mojang.blaze3d.pipeline.DepthStencilState;
-import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.renderpearl.api.pipeline.DepthStencilState;
+import com.mojang.renderpearl.api.pipeline.CompareOp;
 //?} elif >=1.21.5
 //import com.mojang.blaze3d.platform.DepthTestFunction;
 //? if >=26.2 {
 import net.minecraft.client.renderer.StagedVertexBuffer;
 //?} elif >=1.21.5 {
-/*import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.systems.CommandEncoder;
+/*import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.commands.CommandEncoder;
 import net.minecraft.client.renderer.MappableRingBuffer;
 import org.lwjgl.system.MemoryUtil;
 *///?} elif >=1.21.4 {
@@ -28,11 +28,12 @@ import org.lwjgl.opengl.GL11;
 *///?}
 //? if >=1.21.5 {
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderPass;
-import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 //?}
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
 // We use the one from fastutil because it makes the Java go faster. It's like putting flame stickers on your car
 import it.unimi.dsi.fastutil.Pair;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
@@ -53,7 +54,8 @@ import net.minecraft.client.resources.model.BakedModel;
 *///?}
 //? if >=26.2 {
 import net.minecraft.client.renderer.rendertype.LayeringTransform;
-import net.minecraft.client.renderer.rendertype.OutputTarget;
+//? if <26.3
+//import net.minecraft.client.renderer.rendertype.OutputTarget;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 //?}
@@ -192,12 +194,14 @@ public class Renderer {
 	public static final RenderType linesNoDepth = RenderType.create("lines_no_depth",
 			RenderSetup.builder(Renderer.LINE_NO_DEPTH)
 					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
-					.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
+					//? if <26.3
+					//.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
 					.createRenderSetup());
 	public static final RenderType linesConcealed = RenderType.create("lines_concealed",
 			RenderSetup.builder(Renderer.LINES_CONCEALED_ONLY)
 					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
-					.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
+					//? if <26.3
+					//.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
 					.createRenderSetup());
     public static final RenderType fillNoDepth = RenderType.create(
             "fill_no_depth", RenderSetup.builder(FILL_NO_DEPTH).sortOnUpload().createRenderSetup()
@@ -310,7 +314,10 @@ public class Renderer {
                 StagedVertexBuffer.ExecuteInfo info = stagedOutlineBuffer.getExecuteInfo(pending.draw());
                 if (info == null) continue;
                 try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
-                    renderPass.setPipeline(pending.pipeline());
+                    //? if >=26.3 {
+                    renderPass.setPipeline(RenderSystem.getCompiledPipeline(pending.pipeline()));
+                    //?} else
+                    //renderPass.setPipeline(pending.pipeline());
                     RenderSystem.bindDefaultUniforms(renderPass);
                     renderPass.setUniform("DynamicTransforms", dynamicTransforms);
                     renderPass.setVertexBuffer(0, info.vertexBuffer().slice());
