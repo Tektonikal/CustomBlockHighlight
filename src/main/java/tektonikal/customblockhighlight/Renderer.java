@@ -708,7 +708,7 @@ public class Renderer {
 				}
 			}
 			shape = shape.move(pos.getX(), pos.getY(), pos.getZ());
-		} else if (evilHitResult instanceof EntityHitResult entityHitResult && getActiveInstance().allowEntities) {
+		} else if (evilHitResult instanceof EntityHitResult entityHitResult && getActiveInstance().allowEntities && !entityHitResult.getEntity().isInvisible()) {
 			Entity entity = entityHitResult.getEntity();
 			//so, so sloppy. might also have the worst workaround of the century for hanging stuff
 			float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
@@ -814,7 +814,7 @@ public class Renderer {
 	private static void updateProgresses(HitResult evilHitResult) {
 		if (mc.level == null) return;
 		boolean miss = evilHitResult.getType() == HitResult.Type.MISS;
-		if (evilHitResult instanceof EntityHitResult) {
+		if (evilHitResult instanceof EntityHitResult ehr && !ehr.getEntity().isInvisible()) {
 			if (getActiveInstance().allowEntities) {
 				for (Direction dir : Direction.values()) {
 					sideFades[dir.ordinal()] = getActiveInstance().fadeIn ? easeF(sideFades[dir.ordinal()], getActiveInstance().fillCol.alpha, getActiveInstance().fadeInSpeed) : getActiveInstance().fillCol.alpha;
