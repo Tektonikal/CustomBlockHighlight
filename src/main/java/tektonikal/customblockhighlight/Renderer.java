@@ -1,5 +1,8 @@
 package tektonikal.customblockhighlight;
-
+//? if = 26.3{
+import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+import com.mojang.renderpearl.api.pipeline.BlendFunction;
+//?}
 //? if >=26.2
 import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 //? if >=1.21.5 {
@@ -143,6 +146,9 @@ public class Renderer {
 	private static RenderPipeline evilPipeline(RenderPipeline.Snippet snippet, String path, boolean alwaysPass) {
 		RenderPipeline.Builder builder = RenderPipeline.builder(snippet)
 				.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", path))
+				//? if 26.3{
+				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+				//?}
 				.withCull(false);
 		return RenderPipelines.register(withDepth(builder, alwaysPass).build());
 	}
@@ -151,6 +157,7 @@ public class Renderer {
 		return switch (mode) {
 			case ALWAYS_PASS -> lines ? LINE_NO_DEPTH : FILL_NO_DEPTH;
 			case HIDDEN_ONLY -> lines ? LINES_CONCEALED_ONLY : FILL_CONCEALED_ONLY;
+			//~ if 26.3 'LINES' -> 'LINES_TRANSLUCENT'
 			case NORMAL -> lines ? LINES : DEBUG_QUADS;
 		};
 	}
@@ -711,7 +718,7 @@ public class Renderer {
 				}
 			}
 			shape = shape.move(pos.getX(), pos.getY(), pos.getZ());
-		} else if (evilHitResult instanceof EntityHitResult entityHitResult && getActiveInstance().allowEntities) {
+		} else if (evilHitResult instanceof EntityHitResult entityHitResult && getActiveInstance().allowEntities && !entityHitResult.getEntity().isInvisible()) {
 			Entity entity = entityHitResult.getEntity();
 			//so, so sloppy. might also have the worst workaround of the century for hanging stuff
 			float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
@@ -817,7 +824,7 @@ public class Renderer {
 	private static void updateProgresses(HitResult evilHitResult) {
 		if (mc.level == null) return;
 		boolean miss = evilHitResult.getType() == HitResult.Type.MISS;
-		if (evilHitResult instanceof EntityHitResult) {
+		if (evilHitResult instanceof EntityHitResult entityHitResult && !entityHitResult.getEntity().isInvisible()) {
 			if (getActiveInstance().allowEntities) {
 				for (Direction dir : Direction.values()) {
 					sideFades[dir.ordinal()] = getActiveInstance().fadeIn ? easeF(sideFades[dir.ordinal()], getActiveInstance().fillCol.alpha, getActiveInstance().fadeInSpeed) : getActiveInstance().fillCol.alpha;
