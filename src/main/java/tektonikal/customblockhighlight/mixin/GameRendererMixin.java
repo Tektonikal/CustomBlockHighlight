@@ -16,19 +16,4 @@ import tektonikal.customblockhighlight.Renderer;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
-	//? if >=26.1 {
-	@Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;renderItemInHand(Lnet/minecraft/client/renderer/state/level/CameraRenderState;FLorg/joml/Matrix4fc;)V"))
-	private void oughhh(DeltaTracker deltaTracker, CallbackInfo ci, @Local(name = "projectionMatrix") Matrix4f projectionMatrix, @Local(name = "cameraState") CameraRenderState camState) {
-		Renderer.lastProjMat.set(projectionMatrix);
-		Renderer.lastModMat.set(RenderSystem.getModelViewMatrixCopy());
-		Renderer.lastWorldSpaceMatrix.set(camState.viewRotationMatrix);
-	}
-	//?} else {
-	
-	/*@Inject(method = "renderLevel", at = @At("HEAD"))
-	private void oughhh(DeltaTracker deltaTracker, CallbackInfo ci) {
-		Renderer.lastModMat.set(RenderSystem.getModelViewMatrixCopy());
-		Renderer.lastWorldSpaceMatrix.set(new Matrix4f().rotation(Renderer.camera.rotation()));
-	}
-	*///?}
 }
