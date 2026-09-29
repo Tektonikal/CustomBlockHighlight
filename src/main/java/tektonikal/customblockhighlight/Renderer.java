@@ -1,15 +1,12 @@
 package tektonikal.customblockhighlight;
 
 //? if >=26.2
-import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.renderpearl.api.pipeline.*;
 //? if >=1.21.5 {
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import net.minecraft.client.renderer.RenderPipelines;
 //?}
 //? if >=26.1 {
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
-import com.mojang.renderpearl.api.pipeline.CompareOp;
 //?} elif >=1.21.5
 //import com.mojang.blaze3d.platform.DepthTestFunction;
 //? if >=26.2 {
@@ -95,10 +92,9 @@ import java.util.List;
 import java.util.stream.Stream;
 
 //? if >=1.21.5 {
-import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
-import static net.minecraft.client.renderer.RenderPipelines.LINES;
 //?}
 //? if >=1.21.2
+import static net.minecraft.client.renderer.RenderPipelines.*;
 import static net.minecraft.util.profiling.Profiler.get;
 import static tektonikal.customblockhighlight.CustomBlockHighlight.ease;
 import static tektonikal.customblockhighlight.CustomBlockHighlight.easeF;
@@ -143,6 +139,7 @@ public class Renderer {
 	private static RenderPipeline evilPipeline(RenderPipeline.Snippet snippet, String path, boolean alwaysPass) {
 		RenderPipeline.Builder builder = RenderPipeline.builder(snippet)
 				.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", path))
+                .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 				.withCull(false);
 		return RenderPipelines.register(withDepth(builder, alwaysPass).build());
 	}
@@ -151,7 +148,7 @@ public class Renderer {
 		return switch (mode) {
 			case ALWAYS_PASS -> lines ? LINE_NO_DEPTH : FILL_NO_DEPTH;
 			case HIDDEN_ONLY -> lines ? LINES_CONCEALED_ONLY : FILL_CONCEALED_ONLY;
-			case NORMAL -> lines ? LINES : DEBUG_QUADS;
+			case NORMAL -> lines ? LINES_TRANSLUCENT : DEBUG_QUADS;
 		};
 	}
 	//?}
