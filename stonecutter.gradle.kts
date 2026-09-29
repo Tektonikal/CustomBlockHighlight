@@ -2,7 +2,7 @@ plugins {
     id("dev.kikugie.stonecutter")
 }
 
-stonecutter active "26.2.x"
+stonecutter active "26.3"
 
 stonecutter handlers {
     inherit("json5", "json")
@@ -67,6 +67,15 @@ stonecutter parameters {
             replace("gameRenderer.mainRenderTarget()", "getMainRenderTarget()")
             replace("gui.hud.isHidden()", "options.hideGui")
             replace("getInstance().gui.screen()", "getInstance().screen")
+        }
+        string(current.parsed >= "26.3") {
+            replace("com.mojang.blaze3d.opengl", "com.mojang.renderpearl.backend.opengl")
+            replace("com.mojang.blaze3d.vulkan", "com.mojang.renderpearl.backend.vulkan")
+            replace("com.mojang.blaze3d.textures", "com.mojang.renderpearl.api.textures")
+            replace("com.mojang.blaze3d.buffers", "com.mojang.renderpearl.api.buffers")
+            replace("com.mojang.blaze3d.GpuFormat", "com.mojang.renderpearl.api.GpuFormat")
+            replace("com.mojang.blaze3d.systems.RenderPass", "com.mojang.renderpearl.api.commands.RenderPass")
+            replace("com.mojang.blaze3d.PrimitiveTopology", "com.mojang.renderpearl.api.pipeline.PrimitiveTopology")
         }
     }
 }

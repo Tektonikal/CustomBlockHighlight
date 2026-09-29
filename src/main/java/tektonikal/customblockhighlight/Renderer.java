@@ -286,26 +286,44 @@ public class Renderer {
 		return stagedOutlineBuffer.getVertexBuilder(currentDraw);
 	}
 
-	private static void finishDraw(boolean lines, DepthTestMode mode) {
-		stagedOutlineBuffer.upload();
-		StagedVertexBuffer.ExecuteInfo info = stagedOutlineBuffer.getExecuteInfo(currentDraw);
-		if (info == null) return;
+    private record PendingDraw(StagedVertexBuffer.Draw draw, RenderPipeline pipeline) {
+    }
 
-		GpuBufferSlice dynamicTransforms = transformUniform();
-		RenderTarget mainTarget = mc.gameRenderer.mainRenderTarget();
-		GpuTextureView colorTexture = mainTarget.getColorTextureView();
-		if (colorTexture == null) return;
-		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
-			renderPass.setPipeline(getPipeline(lines ? mode : getActiveInstance().fillDepthTest, lines));
-			RenderSystem.bindDefaultUniforms(renderPass);
-			renderPass.setUniform("DynamicTransforms", dynamicTransforms);
-			renderPass.setVertexBuffer(0, info.vertexBuffer().slice());
-			renderPass.setIndexBuffer(info.indexBuffer(), info.indexType());
-			renderPass.drawIndexed(info.indexCount(), 1, info.firstIndex(), info.baseVertex(), 0);
-		}
-		stagedOutlineBuffer.endFrame();
-	}
-	//?} elif >=1.21.5 {
+    private static final List<PendingDraw> pendingDraws = new ArrayList<>();
+
+    // Only queues the draw. StagedVertexBuffer is meant to be uploaded and endFrame'd once per frame:
+    // endFrame destroys every pooled buffer not reused, and each pool rounds allocations up to 256KB, so
+    // uploading once per layer re-created GPU buffers every frame (~30% of the render thread with a few layers).
+    private static void finishDraw(boolean lines, DepthTestMode mode) {
+        pendingDraws.add(new PendingDraw(currentDraw, getPipeline(lines ? mode : getActiveInstance().fillDepthTest, lines)));
+    }
+
+    private static void flushDraws() {
+        if (pendingDraws.isEmpty()) return;
+        try {
+            stagedOutlineBuffer.upload();
+            RenderTarget mainTarget = mc.gameRenderer.mainRenderTarget();
+            GpuTextureView colorTexture = mainTarget.getColorTextureView();
+            if (colorTexture == null) return;
+            GpuBufferSlice dynamicTransforms = transformUniform();
+            for (PendingDraw pending : pendingDraws) {
+                StagedVertexBuffer.ExecuteInfo info = stagedOutlineBuffer.getExecuteInfo(pending.draw());
+                if (info == null) continue;
+                try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
+                    renderPass.setPipeline(pending.pipeline());
+                    RenderSystem.bindDefaultUniforms(renderPass);
+                    renderPass.setUniform("DynamicTransforms", dynamicTransforms);
+                    renderPass.setVertexBuffer(0, info.vertexBuffer().slice());
+                    renderPass.setIndexBuffer(info.indexBuffer(), info.indexType());
+                    renderPass.drawIndexed(info.indexCount(), 1, info.firstIndex(), info.baseVertex(), 0);
+                }
+            }
+        } finally {
+            pendingDraws.clear();
+            stagedOutlineBuffer.endFrame();
+        }
+    }
+    //?} elif >=1.21.5 {
 	/*public static VertexConsumer startDrawing(boolean lines) {
 		currentDraw = new BufferBuilder(allocator, lines ? VertexFormat.Mode.LINES : VertexFormat.Mode.QUADS, lines ? lineFormat() : DefaultVertexFormat.POSITION_COLOR);
 		return currentDraw;
@@ -636,17 +654,19 @@ public class Renderer {
 		return new Color(Math.clamp(Mth.lerpInt(percent, c1.getRed(), c2.getRed()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getGreen(), c2.getGreen()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getBlue(), c2.getBlue()), 0, 255));
 	}
 
-	public static void mainLoop(LevelRenderContext c) {
-		if (mc.player == null || mc.player.gameMode() == null || !getActiveInstance().enableModRendering) return;
-		if ((!mc.gui.hud.isHidden() || getActiveInstance().showWhenNoHud) && (!mc.player.gameMode().isBlockPlacingRestricted() || getActiveInstance().showWhenNoInteraction)) {
-			get().push("Custom block outline pre");
-			HitResult evilHitResult = getHitResult();
-			easeBoxAndEdges(evilHitResult, getVoxelShape(evilHitResult));
-			get().popPush("Custom block outline render");
-			renderEverything(c, evilHitResult);
-			get().pop();
-		}
-	}
+    public static void mainLoop(LevelRenderContext c) {
+        if (mc.player == null || mc.player.gameMode() == null || !getActiveInstance().enableModRendering) return;
+        if ((!mc.gui.hud.isHidden() || getActiveInstance().showWhenNoHud) && (!mc.player.gameMode().isBlockPlacingRestricted() || getActiveInstance().showWhenNoInteraction)) {
+            get().push("Custom block outline pre");
+            HitResult evilHitResult = getHitResult();
+            easeBoxAndEdges(evilHitResult, getVoxelShape(evilHitResult));
+            get().popPush("Custom block outline render");
+            renderEverything(c, evilHitResult);
+            //? if >=26.2
+            flushDraws();
+            get().pop();
+        }
+    }
 
 	public static HitResult getHitResult() {
 		if (mc.level == null || mc.player == null || mc.getCameraEntity() == null) return null;

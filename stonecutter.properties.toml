@@ -62,3 +62,11 @@ mod.mc_releases = ["26.2"]
 deps.fabric_api = "0.160.0+26.2"
 deps.yacl = "3.9.6+26.2"
 deps.modmenu = "20.0.2"
+
+["26.3"]
+mod.mc_compat = "26.3"
+mod.mc_releases = ["26.3"]
+
+deps.fabric_api = "0.161.0+26.3"
+deps.yacl = "3.9.7+26.3"
+deps.modmenu = "21.0.0"
