@@ -2,17 +2,35 @@ package tektonikal.customblockhighlight.config.screenrenderbullshit;
 
 import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.client.Minecraft;
+//? if >1.8.9 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+//?}
 import net.minecraft.network.chat.Component;
+//? if >1.8.9 {
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+//?} else {
+/*import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.render.model.block.BakedModel;
+import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.platform.Lighting;
+import net.minecraft.client.render.texture.TextureAtlas;
+import net.minecraft.item.ItemStack;
+import org.joml.AxisAngle4f;
+import org.joml.Quaternionf;
+import tektonikal.customblockhighlight.Renderer;
+*///?}
 import net.minecraft.world.phys.shapes.Shapes;
 //? if >=1.21.11 {
 import org.jspecify.annotations.NonNull;
 //?}
-//? if <1.21.8 {
+//? if <1.21.8 && >1.8.9 {
 /*import com.mojang.blaze3d.platform.Lighting;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -46,6 +64,7 @@ public class PresetsScreen extends Screen {
     private final Tweener yAngleTweener = new Tweener(() -> yAngle, 20);
 
     public PresetsScreen(boolean firstTime, Screen parent) {
+        //? if >1.8.9
         super(Component.translatable("cbh.presets.screenTitle"));
         this.firstTime = firstTime;
         this.parent = parent;
@@ -53,10 +72,15 @@ public class PresetsScreen extends Screen {
 
     public static void loadPreset(Preset preset) {
         BlockHighlightConfig.ACTIVE_INSTANCE = ConfigManager.loadPreset(preset.name);
+        //? if =1.8.9
+        //ConfigManager.save(); // OneConfig only saves after its own properties change
     }
 
     @Override
+    //? if >1.8.9 {
     protected void init() {
+    //?} else
+    //public void init() {
         for (Preset preset : Preset.values()) {
             if (preset != Preset.CURRENT_CONFIG) {
                 addButton(height / 4 + (height / 8) * preset.ordinal(), preset);
@@ -64,6 +88,7 @@ public class PresetsScreen extends Screen {
         }
     }
 
+    //? if >1.8.9 {
     public void addButton(int y, Preset preset) {
         addRenderableWidget(new Button(width / 32, y, width / 2, 18, preset.meow, button -> {
             //TODO HELP I DONT KNOW WHY I NEED TO DO THIS IT BREAKS OTHERWISE
@@ -98,6 +123,48 @@ public class PresetsScreen extends Screen {
     public void onClose() {
         Minecraft.getInstance().setScreenAndShow(parent);
     }
+    //?} else {
+    /*public void addButton(int y, Preset preset) {
+        buttons.add(new PresetButton(preset, width / 32, y, width / 2, 18));
+    }
+
+    private class PresetButton extends ButtonWidget {
+        private final Preset preset;
+
+        PresetButton(Preset preset, int x, int y, int width, int height) {
+            super(preset.ordinal(), x, y, width, height, preset.meow.getString());
+            this.preset = preset;
+        }
+
+        @Override
+        public void render(Minecraft minecraft, int mouseX, int mouseY) {
+            if (!visible) return;
+            hovered = mouseX >= x && mouseY >= y && mouseX < x + width && mouseY < y + height;
+            fill(x, y, x + width, y + height, hovered ? 0x66FFFFFF : 0x66000000);
+            centeredText(minecraft.textRenderer, message, x + width / 2, y + (height - 8) / 2, 0xFFFFFFFF);
+            if (hovered) {
+                hoveredPreset = preset;
+            }
+        }
+    }
+
+    @Override
+    protected void buttonClicked(ButtonWidget button) {
+        if (button instanceof PresetButton presetButton) {
+            loadPreset(presetButton.preset);
+        }
+    }
+
+    @Override
+    protected void keyPressed(char chr, int key) {
+        // escape
+        if (key == 1) {
+            minecraft.openScreen(parent);
+            return;
+        }
+        super.keyPressed(chr, key);
+    }
+    *///?}
 
     //? if >=26.1 {
     @Override
@@ -147,7 +214,7 @@ public class PresetsScreen extends Screen {
         graphics.nextStratum();
         super.extractBackground(graphics, mouseX, mouseY, a);
     }
-    //?} else {
+    //?} elif >1.8.9 {
     /*@Override
     public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         super.render(graphics, mouseX, mouseY, a);
@@ -182,9 +249,31 @@ public class PresetsScreen extends Screen {
             }
         }
     }
+    *///?} else {
+    /*@Override
+    public void render(int mouseX, int mouseY, float tickDelta) {
+        tweener.update();
+        xAngleTweener.update();
+        yAngleTweener.update();
+        xAngle = (float) Math.atan((((width / 6F) * 5F) - mouseX) / 40.0F);
+        yAngle = (float) Math.atan(((height / 2F) - mouseY) / 40.0F);
+        renderBackground();
+        for (Preset preset : Preset.values()) {
+            if (preset != Preset.CURRENT_CONFIG) {
+                presetVals[preset.ordinal()] = (float) CustomBlockHighlight.ease(presetVals[preset.ordinal()], hoveredPreset == preset ? 0 : 1, 15);
+                int previewCenterX = (int) (((width / 6F) * 5F) - presetVals[preset.ordinal()] * 100);
+                int previewCenterY = (int) ((height / 2F) + (preset.ordinal() - tweener.getF()) * PREVIEW_SLOT_SWAP_DISTANCE);
+                renderLegacyPreviewCube(preset, previewCenterX, previewCenterY, 50F + (50 * (1 - presetVals[preset.ordinal()])), xAngleTweener.getF(), yAngleTweener.getF());
+            }
+        }
+        GlStateManager.clear(256);
+        super.render(mouseX, mouseY, tickDelta);
+        centeredText(textRenderer, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
+        centeredText(textRenderer, "(Preview does not fully reflect preset settings.)", width / 2, (int) (height / 8F + (textRenderer.fontHeight * 1.5F)), 0x808080);
+    }
     *///?}
 
-    //? if <1.21.8 {
+    //? if <1.21.8 && >1.8.9 {
     /*public static void renderLegacyPreviewCube(GuiGraphicsExtractor graphics, Preset preset, float translateX, float translateY, float scale, float xAngle, float yAngle) {
         if (!shouldRender(preset)) return;
         graphics.pose().pushPose();
@@ -209,23 +298,84 @@ public class PresetsScreen extends Screen {
         Lighting.setupForFlatItems();
         graphics.pose().popPose();
     }
+    *///?} elif =1.8.9 {
+    /*public static void renderLegacyPreviewCube(Preset preset, float translateX, float translateY, float scale, float xAngle, float yAngle) {
+        if (!shouldRender(preset)) return;
+        Minecraft minecraft = Minecraft.getInstance();
+        GlStateManager.pushMatrix();
+        // light directions are transformed by the current matrix, set them up before rotating like vanilla screens do
+        Lighting.turnOnGui();
+        GlStateManager.translatef(translateX, translateY, 200);
+        GlStateManager.scalef(scale, scale, -scale);
+        Quaternionf rotation = new Quaternionf().rotateZ((float) Math.PI);
+        Quaternionf xRotation = new Quaternionf().rotateX(yAngle * 30.0F * (float) (Math.PI / 180.0));
+        xRotation.rotateLocalY(-xAngle * 30.0F * (float) (Math.PI / 180.0));
+        rotation.mul(xRotation);
+        AxisAngle4f axisAngle = new AxisAngle4f(rotation);
+        GlStateManager.rotatef((float) Math.toDegrees(axisAngle.angle), axisAngle.x, axisAngle.y, axisAngle.z);
+
+        GlStateManager.enableDepthTest();
+        GlStateManager.clear(256);
+
+        ItemStack stack = new ItemStack(preset.block, 1, preset.metadata);
+        BakedModel model = minecraft.getItemRenderer().getModelShaper().getModel(stack);
+        minecraft.getTextureManager().bind(TextureAtlas.BLOCKS_LOCATION);
+        GlStateManager.enableRescaleNormal();
+        GlStateManager.enableAlphaTest();
+        GlStateManager.alphaFunc(516, 0.1F);
+        GlStateManager.enableBlend();
+        GlStateManager.blendFunc(770, 771);
+        GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+        GlStateManager.enableLighting();
+        GlStateManager.pushMatrix();
+        // renderItem draws blocks at half size around the origin
+        GlStateManager.scalef(2.0F, 2.0F, 2.0F);
+        minecraft.getItemRenderer().renderItem(stack, model);
+        GlStateManager.popMatrix();
+        GlStateManager.disableAlphaTest();
+        GlStateManager.disableRescaleNormal();
+        GlStateManager.disableLighting();
+        Lighting.turnOff();
+
+        PreviewOutline.draw(new PoseStack(), Renderer.legacyBuffer, preset);
+
+        GlStateManager.popMatrix();
+    }
     *///?}
 
     public enum Preset {
+        //? if >1.8.9 {
         VANILLA("vanilla", Blocks.COBBLESTONE),
         SWEAT("sweat", Blocks.SMITHING_TABLE),
         TRANS("trans", Blocks.AMETHYST_BLOCK),
         CLASSIC("classic", Blocks.OAK_PLANKS),
         FANCY("fancy", Blocks.DARK_OAK_LOG),
         CURRENT_CONFIG("current", Blocks.GRASS_BLOCK),
+        //?} else {
+        /*VANILLA("vanilla", Blocks.COBBLESTONE, 0),
+        SWEAT("sweat", Blocks.CRAFTING_TABLE, 0),
+        // purple stained clay
+        TRANS("trans", Blocks.STAINED_HARDENED_CLAY, 10),
+        CLASSIC("classic", Blocks.PLANKS, 0),
+        // dark oak log
+        FANCY("fancy", Blocks.LOG2, 1),
+        CURRENT_CONFIG("current", Blocks.GRASS, 0),
+        *///?}
         ;
 
         public final String name;
         public final Component meow;
         public final Block block;
+        //? if =1.8.9
+        //public final int metadata;
         public final Supplier<Pair<List<CBHLineRenderInfo>, CBHFillRenderInfo>> renderInfo;
 
+        //? if >1.8.9 {
         Preset(String name, Block block) {
+        //?} else {
+        /*Preset(String name, Block block, int metadata) {
+            this.metadata = metadata;
+        *///?}
             this.name = name;
             this.block = block;
             this.meow = Component.translatable("cbh.presets." + name);

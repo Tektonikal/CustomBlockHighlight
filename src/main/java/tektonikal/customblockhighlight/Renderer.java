@@ -26,7 +26,7 @@ import org.lwjgl.system.MemoryUtil;
 *///?} elif >=1.21.4 {
 /*import net.minecraft.client.renderer.CoreShaders;
 import org.lwjgl.opengl.GL11;
-*///?} else {
+*///?} elif >1.8.9 {
 /*import net.minecraft.client.renderer.GameRenderer;
 import org.lwjgl.opengl.GL11;
 *///?}
@@ -35,12 +35,21 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.renderpearl.api.commands.RenderPass;
 import com.mojang.renderpearl.api.textures.GpuTextureView;
 //?}
+//? if >1.8.9 {
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.renderpearl.api.vertex.VertexFormat;
+//?} else {
+/*import tektonikal.customblockhighlight.legacy.LegacyClient;
+import tektonikal.customblockhighlight.legacy.LegacyWorld;
+import tektonikal.customblockhighlight.legacy.vertex.*;
+*///?}
 // We use the one from fastutil because it makes the Java go faster. It's like putting flame stickers on your car
 import it.unimi.dsi.fastutil.Pair;
+//? if >1.8.9 {
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+//?} else
+//import tektonikal.customblockhighlight.legacy.LevelRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 //? if >=26.1 {
@@ -51,10 +60,13 @@ import net.minecraft.client.resources.model.SimpleModelWrapper;
 import net.minecraft.client.renderer.block.model.BlockModelPart;
 import net.minecraft.client.renderer.block.model.BlockStateModel;
 import net.minecraft.client.renderer.block.model.BakedQuad;
-*///?} else {
+*///?} elif >1.8.9 {
 /*import net.minecraft.client.renderer.block.BlockModelShaper;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
+*///?} else {
+/*import net.minecraft.client.render.model.block.BakedModel;
+import net.minecraft.client.render.model.block.BakedQuad;
 *///?}
 //? if >=26.2 {
 import net.minecraft.client.renderer.rendertype.LayeringTransform;
@@ -65,6 +77,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 //?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+//? if >1.8.9
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -72,15 +85,18 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.item.BoatItem;
 import net.minecraft.world.item.Items;
+//? if >1.8.9
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.piston.PistonHeadBlock;
 import net.minecraft.world.level.block.state.BlockState;
+//? if >1.8.9 {
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+//?}
 import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import org.joml.*;
@@ -113,7 +129,10 @@ import static tektonikal.customblockhighlight.config.BlockHighlightConfig.*;
 
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
+	//? if >1.8.9 {
 	public static final Camera camera = mc.gameRenderer.mainCamera();
+	//?} else
+	//public static final Camera camera = Camera.MAIN;
 
 	//? if >=1.21.4
 	private static boolean isCubeLike(VoxelShape shape) { return ((VoxelShapeAccessor) shape).invokeIsCubeLike(); }
@@ -132,7 +151,10 @@ public class Renderer {
 	/*private static Vec3 unitVec3(Direction dir) {
 		return new Vec3(dir.getNormal().getX(), dir.getNormal().getY(), dir.getNormal().getZ());
 	}
+	//? if >1.8.9 {
 	private static net.minecraft.util.profiling.ProfilerFiller get() { return mc.getProfiler(); }
+	//?} else
+	//private static net.minecraft.util.profiler.Profiler get() { return mc.profiler; }
 	*///?}
 
 	public static final float[] sideFades = new float[6];
@@ -171,7 +193,7 @@ public class Renderer {
 	/*public static void setDrawShader(boolean lines) {
 		RenderSystem.setShader(lines ? CoreShaders.RENDERTYPE_LINES : CoreShaders.POSITION_COLOR);
 	}
-	*///?} elif <1.21.4 {
+	*///?} elif <1.21.4 && >1.8.9 {
 	/*public static void setDrawShader(boolean lines) {
 		RenderSystem.setShader(lines ? GameRenderer::getRendertypeLinesShader : GameRenderer::getPositionColorShader);
 	}
@@ -185,7 +207,7 @@ public class Renderer {
 	/*private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, boolean alwaysPass) {
 		return builder.withDepthTestFunction(alwaysPass ? DepthTestFunction.NO_DEPTH_TEST : DepthTestFunction.GREATER_DEPTH_TEST).withDepthWrite(true);
 	}
-	*///?} else {
+	*///?} elif >1.8.9 {
 	/*public static void applyDepth(DepthTestMode mode) {
 		switch (mode) {
 			case ALWAYS_PASS -> RenderSystem.disableDepthTest();
@@ -263,19 +285,23 @@ public class Renderer {
 	private static final ByteBufferBuilder allocator = new ByteBufferBuilder(786432);
 
 	private static BufferBuilder currentDraw;
-	*///?} else {
+	*///?} elif >1.8.9 {
 	/*private static BufferBuilder currentDraw;
+	*///?} else {
+	/*public static final LegacyVertexBuffer legacyBuffer = new LegacyVertexBuffer();
 	*///?}
 
 	//? if <26.2
 	//private static float currentLineWidth = 1F;
 
+	//? if >1.8.9 {
 	private static VertexFormat lineFormat() {
 		//? if >=1.21.11 {
 		return DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH;
 		//?} else
 		//return DefaultVertexFormat.POSITION_COLOR_NORMAL;
 	}
+	//?}
 
 	//? if >=26.2 {
 	private static GpuBufferSlice transformUniform() {
@@ -411,7 +437,7 @@ public class Renderer {
 		vertexBuffer.rotate();
 		return result;
 	}
-	*///?} else {
+	*///?} elif >1.8.9 {
 	/*public static VertexConsumer startDrawing(boolean lines, DepthTestMode mode) {
 		currentDraw = Tesselator.getInstance().begin(lines ? VertexFormat.Mode.LINES : VertexFormat.Mode.QUADS, lines ? lineFormat() : DefaultVertexFormat.POSITION_COLOR);
 		return currentDraw;
@@ -433,6 +459,14 @@ public class Renderer {
 		RenderSystem.enableCull();
 		RenderSystem.disableBlend();
 		RenderSystem.lineWidth(1F);
+	}
+	*///?} else {
+	/*public static VertexConsumer startDrawing(boolean lines, DepthTestMode mode) {
+		return legacyBuffer.begin(lines);
+	}
+
+	private static void finishDraw(boolean lines, DepthTestMode mode) {
+		legacyBuffer.draw(lines ? mode : getActiveInstance().fillDepthTest);
 	}
 	*///?}
 
@@ -525,10 +559,22 @@ public class Renderer {
 			}
 		}
 	}
-	*///?} else {
+	*///?} elif >1.8.9 {
 	/*private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
 		BakedModel model = mc.getModelManager().getBlockModelShaper().getBlockModel(state);
 		for (BakedQuad quad : model.getQuads(state, null, randomSource)) {
+			addRawQuadLines(quad, offset, newLines);
+		}
+	}
+	*///?} else {
+	/*private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
+		BakedModel model = mc.getBlockRenderDispatcher().getModelShaper().getModel(state);
+		for (Direction face : Direction.values()) {
+			for (BakedQuad quad : model.getQuads(face)) {
+				addRawQuadLines(quad, offset, newLines);
+			}
+		}
+		for (BakedQuad quad : model.getQuads()) {
 			addRawQuadLines(quad, offset, newLines);
 		}
 	}
@@ -547,12 +593,26 @@ public class Renderer {
 		newLines.add(new Line(corners[2], corners[3]));
 		newLines.add(new Line(corners[3], corners[0]));
 	}
-	*///?} elif <1.21.5 {
+	*///?} elif <1.21.5 && >1.8.9 {
 	/*private static void addRawQuadLines(BakedQuad quad, Vec3 offset, ArrayList<Line> newLines) {
 		int[] v = quad.getVertices();
 		Vec3[] corners = new Vec3[4];
 		for (int i = 0; i < 4; i++) {
 			int base = i * 8;
+			corners[i] = new Vec3(Float.intBitsToFloat(v[base]), Float.intBitsToFloat(v[base + 1]), Float.intBitsToFloat(v[base + 2])).add(offset);
+		}
+		newLines.add(new Line(corners[0], corners[1]));
+		newLines.add(new Line(corners[1], corners[2]));
+		newLines.add(new Line(corners[2], corners[3]));
+		newLines.add(new Line(corners[3], corners[0]));
+	}
+	*///?} elif =1.8.9 {
+	/*// 1.8.9 quads are 7 ints per vertex (position, color, uv, lightmap)
+	private static void addRawQuadLines(BakedQuad quad, Vec3 offset, ArrayList<Line> newLines) {
+		int[] v = quad.getVertices();
+		Vec3[] corners = new Vec3[4];
+		for (int i = 0; i < 4; i++) {
+			int base = i * 7;
 			corners[i] = new Vec3(Float.intBitsToFloat(v[base]), Float.intBitsToFloat(v[base + 1]), Float.intBitsToFloat(v[base + 2])).add(offset);
 		}
 		newLines.add(new Line(corners[0], corners[1]));
@@ -600,21 +660,33 @@ public class Renderer {
 					}
 				} catch (Exception ignored) {
 				}
+				//? if >1.8.9 {
 				addModelLines(mc.level.getBlockState(pos.relative(dir)), randomSource, offset, newLines);
+				//?} else
+				//addModelLines(LegacyWorld.getActualState(pos.relative(dir)), randomSource, offset, newLines);
 			}
 			Vec3 offset = Vec3.ZERO;
 			try {
 //				offset = mc.level.getBlockState(pos).getShape(mc.level, pos).bounds().getMinPosition().reverse();
 				if (dir != null) {
 					if (dir.getAxisDirection() == Direction.AxisDirection.NEGATIVE) {
+						//? if >1.8.9 {
 						offset = unitVec3(dir.getOpposite()).subtract(mc.level.getBlockState(pos).getOffset(pos));
+						//?} else
+						//offset = unitVec3(dir.getOpposite()).subtract(LegacyWorld.getOffset(pos));
 					}
 				} else {
+					//? if >1.8.9 {
 					offset = mc.level.getBlockState(pos).getShape(mc.level, pos).bounds().getMinPosition().reverse().subtract(mc.level.getBlockState(pos).getOffset(pos).reverse());
+					//?} else
+					//offset = LegacyWorld.getShape(pos).bounds().getMinPosition().reverse().subtract(LegacyWorld.getOffset(pos).reverse());
 				}
 			} catch (Exception ignored) {
 			}
+			//? if >1.8.9 {
 			addModelLines(mc.level.getBlockState(pos), randomSource, offset, newLines);
+			//?} else
+			//addModelLines(LegacyWorld.getActualState(pos), randomSource, offset, newLines);
 		}
 		return newLines;
 	}
@@ -691,12 +763,15 @@ public class Renderer {
 	public static boolean isBlockEmpty(BlockPos pos) {
 		if (mc.level == null) throw new IllegalStateException("level == null");
 		//TODO: fix this
+		//? if >1.8.9 {
 		BlockState state = mc.level.getBlockState(pos);
 		if (state.hasProperty(BlockStateProperties.WATERLOGGED) && !state.getValue(BlockStateProperties.WATERLOGGED) && !mc.level.getFluidState(pos).isEmpty()) {
 			//ignore liquids
 			return true;
 		}
 		return state.isAir(); // == Level.isEmptyBlock(pos)
+		//?} else
+		//return mc.level.isEmptyBlock(pos);
 	}
 
 	public static EnumSet<Direction> getConcealedFaces(BlockPos pos) {
@@ -770,8 +845,14 @@ public class Renderer {
     //?}
 
     private static HitResult tick() {
+        //? if >1.8.9 {
         if (mc.player == null || mc.player.gameMode() == null || !getActiveInstance().enableModRendering) return null;
-        if (!((!mc.gui.hud.isHidden() || getActiveInstance().showWhenNoHud) && (!mc.player.gameMode().isBlockPlacingRestricted() || getActiveInstance().showWhenNoInteraction))) return null;
+        boolean canInteract = !mc.player.gameMode().isBlockPlacingRestricted();
+        //?} else {
+        /*if (mc.player == null || mc.interactionManager == null || !getActiveInstance().enableModRendering) return null;
+        boolean canInteract = mc.player.abilities.canModifyWorld;
+        *///?}
+        if (!((!mc.gui.hud.isHidden() || getActiveInstance().showWhenNoHud) && (canInteract || getActiveInstance().showWhenNoInteraction))) return null;
         get().push("Custom block outline pre");
         HitResult evilHitResult = getHitResult();
         if (evilHitResult != null) {
@@ -806,6 +887,7 @@ public class Renderer {
         return lc.enabled && lc.shapeStyle == ShapeStyle.CLASSIC_BOX;
     }
 
+	//? if >1.8.9 {
 	public static HitResult getHitResult() {
 		if (mc.level == null || mc.player == null || mc.getCameraEntity() == null) return null;
 		if (mc.hitResult instanceof EntityHitResult) return mc.hitResult;
@@ -825,6 +907,30 @@ public class Renderer {
 			return true;
 		}
 	}
+	//?} else {
+	/*public static HitResult getHitResult() {
+		if (mc.level == null || mc.player == null || mc.getCameraEntity() == null) return null;
+		HitResult crosshair = HitResult.of(mc.crosshairTarget);
+		if (crosshair instanceof EntityHitResult) return crosshair;
+		if (getActiveInstance().allowLiquids && isHoldingValidItem()) {
+			HitResult yeah = pick(mc.getCameraEntity(), mc.interactionManager.getReach(), LegacyClient.tickDelta());
+			if (yeah instanceof BlockHitResult) {
+				return yeah;
+			}
+		}
+		return crosshair;
+	}
+
+	public static boolean isHoldingValidItem() {
+		if (getActiveInstance().onlyWhenHoldingAppropriate) {
+			net.minecraft.item.ItemStack stack = mc.player.getItemInHand();
+			if (stack == null || stack.getItem() == null) return false;
+			return stack.getItem() == Items.BUCKET || stack.getItem() instanceof net.minecraft.item.LilyPadItem || stack.getItem() instanceof BoatItem;
+		} else {
+			return true;
+		}
+	}
+	*///?}
 
 	private static VoxelShape cachedShape;
 	private static BlockPos shapeKeyPos;
@@ -839,16 +945,24 @@ public class Renderer {
 		if (mc.level == null || mc.getCameraEntity() == null) return Shapes.block();
 		if (evilHitResult instanceof BlockHitResult block) {
 			BlockPos pos = block.getBlockPos();
+			//? if >1.8.9 {
 			BlockState state = mc.level.getBlockState(pos);
 			var fluid = mc.level.getFluidState(pos);
 			VoxelShape raw = fluid.isEmpty() ? state.getShape(mc.level, pos) : fluid.getShape(mc.level, pos);
+			//?} else {
+			/*BlockState state = mc.level.getBlockState(pos);
+			VoxelShape raw = LegacyWorld.getShape(pos);
+			*///?}
 			Direction connected = null;
 			VoxelShape neighbor = null;
 			//get connected blocks
 			if (getActiveInstance().connectedBlocks) {
 				connected = joinConnected(pos);
 				if (connected != null) {
+					//? if >1.8.9 {
 					neighbor = mc.level.getBlockState(pos.relative(connected)).getShape(mc.level, pos.relative(connected), CollisionContext.of(mc.getCameraEntity()));
+					//?} else
+					//neighbor = LegacyWorld.getShape(pos.relative(connected));
 				}
 			}
 			if (cachedShape != null && pos.equals(shapeKeyPos) && state == shapeKeyState && raw == shapeKeyRaw && connected == shapeKeyDir && neighbor == shapeKeyNeighbor) {
@@ -868,9 +982,16 @@ public class Renderer {
 		} else if (evilHitResult instanceof EntityHitResult entityHitResult && getActiveInstance().allowEntities && !entityHitResult.getEntity().isInvisible()) {
 			Entity entity = entityHitResult.getEntity();
 			//so, so sloppy. might also have the worst workaround of the century for hanging stuff
+			//? if >1.8.9 {
 			float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
 			AABB boundingBox = moveToZero(entity.getBoundingBox());
 			AABB box = boundingBox.move(entity.getPosition(delta).subtract(boundingBox.getCenter()).add(0, entity instanceof HangingEntity ? 0 : boundingBox.maxY / 2F, 0));
+			//?} else {
+			/*float delta = LegacyClient.tickDelta();
+			AABB boundingBox = moveToZero(AABB.of(entity.getShape()));
+			Vec3 position = new Vec3(Mth.lerp(delta, entity.prevX, entity.x), Mth.lerp(delta, entity.prevY, entity.y), Mth.lerp(delta, entity.prevZ, entity.z));
+			AABB box = boundingBox.move(position.subtract(boundingBox.getCenter()).add(0, entity instanceof DecorationEntity ? 0 : boundingBox.maxY / 2F, 0));
+			*///?}
 			if (cachedShape != null && box.equals(shapeKeyEntityBox)) {
 				return cachedShape;
 			}
@@ -927,6 +1048,7 @@ public class Renderer {
 	}
 
 	private static boolean isCrystalObstructed(HitResult evilHitResult) {
+		//? if >1.8.9 {
 		if (mc.level == null) throw new IllegalStateException("level == null");
 		if (!(evilHitResult instanceof BlockHitResult block)) return false;
 		BlockState state = mc.level.getBlockState(block.getBlockPos());
@@ -943,6 +1065,8 @@ public class Renderer {
 		} else {
 			return false;
 		}
+		//?} else
+		//return false;
 	}
 
 	private static void drawFill(PoseStack stack, boolean isCrystalObstructed) {
@@ -998,7 +1122,10 @@ public class Renderer {
 				exitFades();
 			}
 			if (cfg.rotations) {
+				//? if >1.8.9 {
 				rotation.nlerp(new Quaternionf(), (float) (1 - Math.exp((mc.options.enableVsync().get() || !getActiveInstance().improvedEasing ? -(1.0F / mc.getFps()) : -((double) mc.getFrameTimeNs() / 1000000000)) * cfg.rotationSpeed)));
+				//?} else
+				//rotation.nlerp(new Quaternionf(), (float) easeFactor(cfg.rotationSpeed));
 			}
 		} else if (evilHitResult instanceof BlockHitResult block) {
 			if (mc.level.isEmptyBlock(block.getBlockPos()) || miss) {
@@ -1037,19 +1164,31 @@ public class Renderer {
 			}
 			if (cfg.rotations) {
 				Direction d = block.getDirection();
+				//? if >1.8.9 {
 				Quaternionf target = d.getRotation();
+				//?} else
+				//Quaternionf target = LegacyWorld.rotation(d);
 
 				if (d != Direction.UP && d != Direction.DOWN) {
 					lastHorizontalDirection = d;
 				} else {
 					float pitch = (float) ((d == Direction.UP) ? (-Math.PI / 2F) : (Math.PI / 2F));
+					//? if >1.8.9 {
 					target = new Quaternionf(lastHorizontalDirection.getRotation()).rotateX(pitch);
+					//?} else
+					//target = LegacyWorld.rotation(lastHorizontalDirection).rotateX(pitch);
 				}
+				//? if >1.8.9 {
 				if (!isCubeLike(mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos()))) {
+				//?} else
+				//if (!isCubeLike(LegacyWorld.getShape(block.getBlockPos()))) {
 					target = new Quaternionf();
 				}
 
+				//? if >1.8.9 {
 				rotation.nlerp(target, (float) (1 - Math.exp((mc.options.enableVsync().get() || !getActiveInstance().improvedEasing ? -(1.0F / mc.getFps()) : -((double) mc.getFrameTimeNs() / 1000000000)) * cfg.rotationSpeed)));
+				//?} else
+				//rotation.nlerp(target, (float) easeFactor(cfg.rotationSpeed));
 			}
 		}
 		//I didn't add in/out because it would BREAKKK. TODO THIS
@@ -1073,6 +1212,7 @@ public class Renderer {
 		}
 	}
 
+	//? if >1.8.9 {
 	public static HitResult pick(Entity e, final double range, final float a) {
 		if (mc.level == null) return null;
 		Vec3 from = e.getEyePosition(a);
@@ -1080,7 +1220,22 @@ public class Renderer {
 		Vec3 to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
 		return mc.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, getActiveInstance().onlySourceBlocks ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.ANY, e));
 	}
+	//?} else {
+	/*public static HitResult pick(Entity e, final double range, final float a) {
+		if (mc.level == null) return null;
+		net.minecraft.util.math.Vec3d from = e.getEyePosition(a);
+		net.minecraft.util.math.Vec3d viewVector = e.getRotationVector(a);
+		net.minecraft.util.math.Vec3d to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
+		LegacyWorld.pickAnyFluid = !getActiveInstance().onlySourceBlocks;
+		try {
+			return HitResult.of(mc.level.rayTrace(from, to, true, false, true));
+		} finally {
+			LegacyWorld.pickAnyFluid = false;
+		}
+	}
+	*///?}
 
+	//? if >1.8.9 {
 	private static Direction joinConnected(BlockPos pos) {
 		if (mc.level == null) return null;
 		BlockState connectedState;
@@ -1137,4 +1292,59 @@ public class Renderer {
 		}
 		return null;
 	}
+	//?} else {
+	/*private static Direction joinConnected(BlockPos pos) {
+		if (mc.level == null) return null;
+		BlockState state = mc.level.getBlockState(pos);
+		Block block = state.getBlock();
+		if (block instanceof DoorBlock) {
+			Direction d = state.get(DoorBlock.HALF) == DoorBlock.Half.LOWER ? Direction.UP : Direction.DOWN;
+			BlockState connectedState = mc.level.getBlockState(pos.relative(d));
+			if (connectedState.getBlock() == block && connectedState.get(DoorBlock.HALF) != state.get(DoorBlock.HALF)) {
+				return d;
+			}
+		}
+		if (block instanceof DoublePlantBlock) {
+			Direction d = state.get(DoublePlantBlock.HALF) == DoublePlantBlock.Half.LOWER ? Direction.UP : Direction.DOWN;
+			BlockState connectedState = mc.level.getBlockState(pos.relative(d));
+			if (connectedState.getBlock() == block && connectedState.get(DoublePlantBlock.HALF) != state.get(DoublePlantBlock.HALF)) {
+				return d;
+			}
+		}
+		if (block instanceof ChestBlock) {
+			for (Direction dir : Direction.Plane.HORIZONTAL) {
+				if (mc.level.getBlockState(pos.relative(dir)).getBlock() == block) {
+					return dir;
+				}
+			}
+		}
+		if (block instanceof BedBlock) {
+			BedBlock.Part part = state.get(BedBlock.PART);
+			Direction dir = state.get(BedBlock.FACING);
+			if (part == BedBlock.Part.HEAD) {
+				dir = dir.getOpposite();
+			}
+			BlockState connectedState = mc.level.getBlockState(pos.relative(dir));
+			if (connectedState.getBlock() instanceof BedBlock && connectedState.get(BedBlock.PART) != part) {
+				return dir;
+			}
+		}
+		if (block instanceof PistonHeadBlock) {
+			Direction dir = state.get(PistonHeadBlock.FACING);
+			Direction oppDir = dir.getOpposite();
+			BlockState connectedState = mc.level.getBlockState(pos.relative(oppDir));
+			if (connectedState.getBlock() instanceof PistonBaseBlock && connectedState.get(PistonBaseBlock.FACING) == dir) {
+				return oppDir;
+			}
+		}
+		if (block instanceof PistonBaseBlock && state.get(PistonBaseBlock.EXTENDED)) {
+			Direction dir = state.get(PistonBaseBlock.FACING);
+			BlockState connectedState = mc.level.getBlockState(pos.relative(dir));
+			if (connectedState.getBlock() instanceof PistonHeadBlock && connectedState.get(PistonHeadBlock.FACING) == dir) {
+				return dir;
+			}
+		}
+		return null;
+	}
+	*///?}
 }

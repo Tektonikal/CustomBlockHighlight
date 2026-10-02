@@ -95,6 +95,7 @@ public class Vertexer {
 		vertexLine(pose, builder, x1, y2, z2, x2, y2, z2, x1y2z2, x2y2z2, Math.round(Math.max(alpha[3], alpha[1])), 1, 0, 0, width, cutFromCenter, cutFromCorner, outerMult, innerMult);
 	}
 
+	//? if >1.8.9 {
 	public static Vec3 screenSpaceToWorldSpace(double x, double y, double d) {
 		Camera camera = Renderer.mc.getEntityRenderDispatcher().camera;
 		int displayHeight = Renderer.mc.getWindow().getGuiScaledHeight();
@@ -144,6 +145,7 @@ public class Vertexer {
 		return new Vec3(target.x / Renderer.mc.getWindow().getGuiScale(),
 				(displayHeight - target.y) / Renderer.mc.getWindow().getGuiScale(), target.z);
 	}
+	//?}
 
 	public static void vertexLine(PoseStack.Pose pose, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, float nx, float ny, float nz, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult) {
 		vertexLine(pose, builder, x1, y1, z1, x2, y2, z2, cols.getRGB() & 0xFFFFFF, col2.getRGB() & 0xFFFFFF, alpha, nx, ny, nz, width, cutFromCenter, cutFromCorner, outerMult, innerMult);
@@ -194,7 +196,7 @@ public class Vertexer {
 	}
 
 	private static void lineWidth(VertexConsumer builder, float width) {
-		//? if >= 1.21.11
+		//? if >= 1.21.11 || =1.8.9
 		builder.setLineWidth(width);
 	}
 }
