@@ -34,6 +34,7 @@ public class Vertexer {
 	}
 
 	public static void vertexQuad(PoseStack.Pose pose, VertexConsumer builder, Pair<Color, Color> cols, int alpha, Vec3 minPos, float normaliser, Vec3... vecs) {
+		if(alpha < 1) return;
 		Color[] colors = new Color[vecs.length];
 		for(int i = 0; i < vecs.length; i++){
 			colors[i] = getLerpedColor(cols.first(), cols.second(), (float) (minPos.distanceTo(vecs[i]) / normaliser));
