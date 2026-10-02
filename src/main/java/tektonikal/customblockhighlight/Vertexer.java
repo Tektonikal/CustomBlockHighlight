@@ -146,10 +146,16 @@ public class Vertexer {
 	}
 
 	public static void vertexLine(PoseStack.Pose pose, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, Color cols, Color col2, int alpha, float nx, float ny, float nz, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult) {
+		vertexLine(pose, builder, x1, y1, z1, x2, y2, z2, cols.getRGB() & 0xFFFFFF, col2.getRGB() & 0xFFFFFF, alpha, nx, ny, nz, width, cutFromCenter, cutFromCorner, outerMult, innerMult);
+	}
+
+	public static void vertexLine(PoseStack.Pose pose, VertexConsumer builder, float x1, float y1, float z1, float x2, float y2, float z2, int rgb1, int rgb2, int alpha, float nx, float ny, float nz, float width, float cutFromCenter, float cutFromCorner, float outerMult, float innerMult) {
 		if(alpha < 1) return;
+		int r1 = rgb1 >> 16 & 0xFF, g1 = rgb1 >> 8 & 0xFF, b1 = rgb1 & 0xFF;
+		int r2 = rgb2 >> 16 & 0xFF, g2 = rgb2 >> 8 & 0xFF, b2 = rgb2 & 0xFF;
 		if (cutFromCenter == 0 && cutFromCorner == 0) {
-			lineWidth(builder.addVertex(pose, x1, y1, z1).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(pose, nx, ny, nz), width);
-			lineWidth(builder.addVertex(pose, x2, y2, z2).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(pose, nx, ny, nz), width);
+			lineWidth(builder.addVertex(pose, x1, y1, z1).setColor(r1, g1, b1, alpha).setNormal(pose, nx, ny, nz), width);
+			lineWidth(builder.addVertex(pose, x2, y2, z2).setColor(r2, g2, b2, alpha).setNormal(pose, nx, ny, nz), width);
 			return;
 		}
 		/*
@@ -167,8 +173,8 @@ public class Vertexer {
 		v2.lerp(v1, cutFromCorner / 2, maxOuter);
 		if (cutFromCenter == 0 && (outerMult == 0 && innerMult == 0)) {
 			//draw only one line
-			lineWidth(builder.addVertex(pose, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(pose, nx, ny, nz), width * outerMult);
-			lineWidth(builder.addVertex(pose, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(pose, nx, ny, nz), width * outerMult);
+			lineWidth(builder.addVertex(pose, minOuter.x, minOuter.y, minOuter.z).setColor(r1, g1, b1, alpha).setNormal(pose, nx, ny, nz), width * outerMult);
+			lineWidth(builder.addVertex(pose, maxOuter.x, maxOuter.y, maxOuter.z).setColor(r2, g2, b2, alpha).setNormal(pose, nx, ny, nz), width * outerMult);
 		} else {
 			Vector3f center = new Vector3f();
 			v1.lerp(v2, 0.5F, center);
@@ -178,14 +184,12 @@ public class Vertexer {
 			center.lerp(v2, cutFromCenter, maxInner);
 
 			float yeah = Math.clamp(minInner.distance(minOuter) / minOuter.distance(maxOuter), 0, 1);
-			Color minInnerCol = new Color((int) Mth.lerp(yeah, cols.getRed(), col2.getRed()), (int) Mth.lerp(yeah, cols.getGreen(), col2.getGreen()), (int) Mth.lerp(yeah, cols.getBlue(), col2.getBlue()));
-			Color maxInnerCol = new Color((int) Mth.lerp(1 - yeah, cols.getRed(), col2.getRed()), (int) Mth.lerp(1 - yeah, cols.getGreen(), col2.getGreen()), (int) Mth.lerp(1 - yeah, cols.getBlue(), col2.getBlue()));
 
-			lineWidth(builder.addVertex(pose, minOuter.x, minOuter.y, minOuter.z).setColor(cols.getRed(), cols.getGreen(), cols.getBlue(), alpha).setNormal(pose, nx, ny, nz), width * outerMult);
-			lineWidth(builder.addVertex(pose, minInner.x, minInner.y, minInner.z).setColor(minInnerCol.getRed(), minInnerCol.getGreen(), minInnerCol.getBlue(), alpha).setNormal(pose, nx, ny, nz), width * innerMult);
+			lineWidth(builder.addVertex(pose, minOuter.x, minOuter.y, minOuter.z).setColor(r1, g1, b1, alpha).setNormal(pose, nx, ny, nz), width * outerMult);
+			lineWidth(builder.addVertex(pose, minInner.x, minInner.y, minInner.z).setColor((int) Mth.lerp(yeah, r1, r2), (int) Mth.lerp(yeah, g1, g2), (int) Mth.lerp(yeah, b1, b2), alpha).setNormal(pose, nx, ny, nz), width * innerMult);
 
-			lineWidth(builder.addVertex(pose, maxInner.x, maxInner.y, maxInner.z).setColor(maxInnerCol.getRed(), maxInnerCol.getGreen(), maxInnerCol.getBlue(), alpha).setNormal(pose, nx, ny, nz), width * innerMult);
-			lineWidth(builder.addVertex(pose, maxOuter.x, maxOuter.y, maxOuter.z).setColor(col2.getRed(), col2.getGreen(), col2.getBlue(), alpha).setNormal(pose, nx, ny, nz), width * outerMult);
+			lineWidth(builder.addVertex(pose, maxInner.x, maxInner.y, maxInner.z).setColor((int) Mth.lerp(1 - yeah, r1, r2), (int) Mth.lerp(1 - yeah, g1, g2), (int) Mth.lerp(1 - yeah, b1, b2), alpha).setNormal(pose, nx, ny, nz), width * innerMult);
+			lineWidth(builder.addVertex(pose, maxOuter.x, maxOuter.y, maxOuter.z).setColor(r2, g2, b2, alpha).setNormal(pose, nx, ny, nz), width * outerMult);
 		}
 	}
 

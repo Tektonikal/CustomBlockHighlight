@@ -26,6 +26,10 @@ public class CBHFeatureRenderer extends RenderTypeFeatureRenderer<CBHFeatureRend
 	@Override
 	protected void buildGroup(FeatureFrameContext context, List<Submit> submits) {
 		for (Submit submit : submits) {
+			if (submit == WORLD) { // in-world highlight, state lives in Renderer
+				Renderer.drawWorld(this::getVertexBuilder);
+				continue;
+			}
             //fill
 			VertexConsumer blegh = switch (submit.fillInfo.mode()){
                 case NORMAL -> this.getVertexBuilder(RenderTypes.debugQuads());
@@ -58,6 +62,8 @@ public class CBHFeatureRenderer extends RenderTypeFeatureRenderer<CBHFeatureRend
 		pose.scale((float) (scaled.getXsize() / box.getXsize()), (float) (scaled.getYsize() / box.getYsize()), (float) (scaled.getZsize() / box.getZsize()));
 		pose.scale(scalePercent, scalePercent, scalePercent);
 	}
+
+	public static final Submit WORLD = new Submit(List.of(), null, null);
 
 	public record Submit(List<CBHLineRenderInfo> info, PoseStack.Pose pose, CBHFillRenderInfo fillInfo) implements SubmitNode {
 		@Override

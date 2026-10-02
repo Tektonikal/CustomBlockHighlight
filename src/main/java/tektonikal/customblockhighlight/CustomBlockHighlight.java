@@ -37,6 +37,8 @@ public class CustomBlockHighlight implements ModInitializer {
         BlockHighlightConfig.update(o_globalModToggle, false);
         BlockHighlightConfig.update(o_globalModToggle, o_globalModToggle.stateManager().get());
 		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, hit) -> getActiveInstance().drawVanillaOutline);
+		//? if >=26.2
+		LevelRenderEvents.COLLECT_SUBMITS.register(Renderer::collectSubmits);
 		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
 		//? if >=26.2
 		FeatureRendererRegistry.register(CBHFeatureRenderer.TYPE, CBHFeatureRenderer::new);
@@ -67,11 +69,15 @@ public class CustomBlockHighlight implements ModInitializer {
 	}
 
 	public static double ease(double start, double end, float speed) {
+		return start + (end - start) * easeFactor(speed);
+	}
+
+	public static double easeFactor(float speed) {
 		//TODO: vsync lied to me
 		if (mc.options.enableVsync().get() || !getActiveInstance().improvedEasing) {
-			return (start + (end - start) * (1 - Math.exp(-(1.0F / mc.getFps()) * speed)));
+			return 1 - Math.exp(-(1.0F / mc.getFps()) * speed);
 		}
-		return (start + (end - start) * (1 - Math.exp(-((double) mc.getFrameTimeNs() / 1000000000) * speed)));
+		return 1 - Math.exp(-((double) mc.getFrameTimeNs() / 1000000000) * speed);
 	}
 
 	public static float easeF(double start, double end, float speed) {
