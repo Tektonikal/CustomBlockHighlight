@@ -36,6 +36,7 @@ public class CustomBlockHighlight implements ModInitializer {
         BlockHighlightConfig.update(o_tshapeStyle, o_tshapeStyle.stateManager().get());
         BlockHighlightConfig.update(o_globalModToggle, false);
         BlockHighlightConfig.update(o_globalModToggle, o_globalModToggle.stateManager().get());
+		BlockHighlightConfig.getActiveInstance().applyValuesToOptionInstances();
 		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, hit) -> getActiveInstance().drawVanillaOutline);
 		//? if >=26.2
 		LevelRenderEvents.COLLECT_SUBMITS.register(Renderer::collectSubmits);

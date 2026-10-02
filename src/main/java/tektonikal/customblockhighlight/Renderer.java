@@ -998,7 +998,7 @@ public class Renderer {
 				exitFades();
 			}
 			if (cfg.rotations) {
-				rotation.nlerp(new Quaternionf(), (float) (1 - Math.exp(-((double) mc.getFrameTimeNs() / 1000000000) * cfg.rotationSpeed)));
+				rotation.nlerp(new Quaternionf(), (float) (1 - Math.exp((mc.options.enableVsync().get() || !getActiveInstance().improvedEasing ? -(1.0F / mc.getFps()) : -((double) mc.getFrameTimeNs() / 1000000000)) * cfg.rotationSpeed)));
 			}
 		} else if (evilHitResult instanceof BlockHitResult block) {
 			if (mc.level.isEmptyBlock(block.getBlockPos()) || miss) {
@@ -1049,7 +1049,7 @@ public class Renderer {
 					target = new Quaternionf();
 				}
 
-				rotation.nlerp(target, (float) (1 - Math.exp(-((double) mc.getFrameTimeNs() / 1000000000) * cfg.rotationSpeed)));
+				rotation.nlerp(target, (float) (1 - Math.exp((mc.options.enableVsync().get() || !getActiveInstance().improvedEasing ? -(1.0F / mc.getFps()) : -((double) mc.getFrameTimeNs() / 1000000000)) * cfg.rotationSpeed)));
 			}
 		}
 		//I didn't add in/out because it would BREAKKK. TODO THIS
