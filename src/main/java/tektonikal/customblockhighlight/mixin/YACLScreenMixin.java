@@ -1,5 +1,6 @@
 package tektonikal.customblockhighlight.mixin;
 
+//? if >1.8.9 {
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
@@ -75,3 +76,4 @@ public abstract class YACLScreenMixin extends Screen {
 		*///?}
 	}
 }
+//?}

@@ -1,10 +1,15 @@
 package tektonikal.customblockhighlight;
 
+//? if >1.8.9 {
 import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionEventListener;
-import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.util.Mth;
+//?} else {
+/*import tektonikal.customblockhighlight.config.CBHOneConfig;
+import tektonikal.customblockhighlight.legacy.LegacyClient;
+*///?}
+import net.fabricmc.api.ModInitializer;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 import tektonikal.customblockhighlight.config.ConfigManager;
 import tektonikal.customblockhighlight.util.Tweener;
@@ -28,6 +33,9 @@ public class CustomBlockHighlight implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		BlockHighlightConfig.ACTIVE_INSTANCE = ConfigManager.load();
+		//? if =1.8.9 {
+		/*CBHOneConfig.init();
+		*///?} else {
 		clampTwoOptions(o_cutFromCorner, o_cutFromCenter);
 		clampTwoOptions(o_scutFromCenter, o_scutFromCorner);
 		clampTwoOptions(o_tcutFromCenter, o_tcutFromCenter);
@@ -36,7 +44,10 @@ public class CustomBlockHighlight implements ModInitializer {
         BlockHighlightConfig.update(o_tshapeStyle, o_tshapeStyle.stateManager().get());
         BlockHighlightConfig.update(o_globalModToggle, false);
         BlockHighlightConfig.update(o_globalModToggle, o_globalModToggle.stateManager().get());
+		BlockHighlightConfig.getActiveInstance().applyValuesToOptionInstances();
 		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, hit) -> getActiveInstance().drawVanillaOutline);
+		//? if >=26.2
+		LevelRenderEvents.COLLECT_SUBMITS.register(Renderer::collectSubmits);
 		LevelRenderEvents.END_MAIN.register(Renderer::mainLoop);
 		//? if >=26.2
 		FeatureRendererRegistry.register(CBHFeatureRenderer.TYPE, CBHFeatureRenderer::new);
@@ -49,8 +60,10 @@ public class CustomBlockHighlight implements ModInitializer {
 		*///?} elif >=1.21.8 {
 		/*SpecialGuiElementRegistry.register(ctx -> new GuiOutlineRenderer(ctx.vertexConsumers()));
 		*///?}
+		//?}
 	}
 
+	//? if >1.8.9 {
 	public void clampTwoOptions(Option<Float> first, Option<Float> second) {
 		yah(second, first);
 		yah(first, second);
@@ -65,13 +78,24 @@ public class CustomBlockHighlight implements ModInitializer {
 			}
 		});
 	}
+	//?}
 
 	public static double ease(double start, double end, float speed) {
+		return start + (end - start) * easeFactor(speed);
+	}
+
+	public static double easeFactor(float speed) {
 		//TODO: vsync lied to me
+		//? if >1.8.9 {
 		if (mc.options.enableVsync().get() || !getActiveInstance().improvedEasing) {
-			return (start + (end - start) * (1 - Math.exp(-(1.0F / mc.getFps()) * speed)));
+		//?} else
+		//if (mc.options.vsync || !getActiveInstance().improvedEasing) {
+			return 1 - Math.exp(-(1.0F / mc.getFps()) * speed);
 		}
-		return (start + (end - start) * (1 - Math.exp(-((double) mc.getFrameTimeNs() / 1000000000) * speed)));
+		//? if >1.8.9 {
+		return 1 - Math.exp(-((double) mc.getFrameTimeNs() / 1000000000) * speed);
+		//?} else
+		//return 1 - Math.exp(-((double) LegacyClient.frameTimeNs() / 1000000000) * speed);
 	}
 
 	public static float easeF(double start, double end, float speed) {
