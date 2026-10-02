@@ -2,7 +2,7 @@ mod.id = "custom-block-highlight"
 mod.name = "Custom Block Highlight"
 mod.archives_name = "blockhighlight"
 mod.group = "tektonikal"
-mod.version = "2.91"
+mod.version = "2.92"
 
 deps.fabric_loader = "0.19.5"
 loomx.loom_version = "1.17-SNAPSHOT"
