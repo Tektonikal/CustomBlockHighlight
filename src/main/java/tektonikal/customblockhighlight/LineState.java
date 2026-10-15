@@ -1,6 +1,6 @@
 package tektonikal.customblockhighlight;
 
-import net.minecraft.core.Direction;
+import net.minecraft.util.math.Direction;
 
 import static tektonikal.customblockhighlight.CustomBlockHighlight.easeF;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;

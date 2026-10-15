@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.config;
 
 import com.google.gson.*;
-import dev.isxander.yacl3.config.GsonConfigInstance;
+import tektonikal.customblockhighlight.legacy.GsonConfigInstance;
 import net.fabricmc.loader.api.FabricLoader;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen;
 

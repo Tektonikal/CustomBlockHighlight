@@ -1,6 +1,6 @@
 package tektonikal.customblockhighlight.config.screenrenderbullshit;
 
-import it.unimi.dsi.fastutil.Pair;
+import tektonikal.customblockhighlight.legacy.Pair;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 
 import java.awt.*;

@@ -1,9 +1,9 @@
 package tektonikal.customblockhighlight.util;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.util.Mth;
-import net.minecraft.world.phys.Vec3;
+import tektonikal.customblockhighlight.legacy.vertex.PoseStack;
+import tektonikal.customblockhighlight.legacy.vertex.VertexConsumer;
+import tektonikal.customblockhighlight.legacy.Mth;
+import tektonikal.customblockhighlight.legacy.phys.Vec3;
 import tektonikal.customblockhighlight.Vertexer;
 
 import static tektonikal.customblockhighlight.CustomBlockHighlight.easeFactor;

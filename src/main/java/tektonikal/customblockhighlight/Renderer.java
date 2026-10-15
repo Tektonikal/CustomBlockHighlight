@@ -1,26 +1,26 @@
 package tektonikal.customblockhighlight;
 //? if = 26.3{
-import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+/*import com.mojang.renderpearl.api.pipeline.ColorTargetState;
 import com.mojang.renderpearl.api.pipeline.BlendFunction;
-//?}
+*///?}
 //? if >=26.2
-import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+//import com.mojang.blaze3d.PrimitiveTopology;
 //? if >=1.21.5 {
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+/*import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import net.minecraft.client.renderer.RenderPipelines;
-//?}
+*///?}
 //? if >=26.1 {
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
-import com.mojang.renderpearl.api.pipeline.CompareOp;
-//?} elif >=1.21.5
+/*import com.mojang.blaze3d.pipeline.DepthStencilState;
+import com.mojang.blaze3d.platform.CompareOp;
+*///?} elif >=1.21.5
 //import com.mojang.blaze3d.platform.DepthTestFunction;
 //? if >=26.2 {
-import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
+/*import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
 import net.minecraft.client.renderer.StagedVertexBuffer;
-//?} elif >=1.21.5 {
-/*import com.mojang.renderpearl.api.buffers.GpuBuffer;
-import com.mojang.renderpearl.api.commands.CommandEncoder;
+*///?} elif >=1.21.5 {
+/*import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.systems.CommandEncoder;
 import net.minecraft.client.renderer.MappableRingBuffer;
 import org.lwjgl.system.MemoryUtil;
 *///?} elif >=1.21.4 {
@@ -31,31 +31,31 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL11;
 *///?}
 //? if >=1.21.5 {
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.renderpearl.api.commands.RenderPass;
-import com.mojang.renderpearl.api.textures.GpuTextureView;
-//?}
+/*import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.textures.GpuTextureView;
+*///?}
 //? if >1.8.9 {
-import com.mojang.blaze3d.systems.RenderSystem;
+/*import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import com.mojang.renderpearl.api.vertex.VertexFormat;
-//?} else {
-/*import tektonikal.customblockhighlight.legacy.LegacyClient;
+import com.mojang.blaze3d.vertex.VertexFormat;
+*///?} else {
+import tektonikal.customblockhighlight.legacy.LegacyClient;
 import tektonikal.customblockhighlight.legacy.LegacyWorld;
 import tektonikal.customblockhighlight.legacy.vertex.*;
-*///?}
+//?}
 // We use the one from fastutil because it makes the Java go faster. It's like putting flame stickers on your car
-import it.unimi.dsi.fastutil.Pair;
+import tektonikal.customblockhighlight.legacy.Pair;
 //? if >1.8.9 {
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
-//?} else
-//import tektonikal.customblockhighlight.legacy.LevelRenderContext;
-import net.minecraft.client.Camera;
+/*import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+*///?} else
+import tektonikal.customblockhighlight.legacy.LevelRenderContext;
+import tektonikal.customblockhighlight.legacy.Camera;
 import net.minecraft.client.Minecraft;
 //? if >=26.1 {
-import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
+/*import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
 import net.minecraft.client.resources.model.SimpleModelWrapper;
-//?} elif >=1.21.5 {
+*///?} elif >=1.21.5 {
 /*import net.minecraft.client.renderer.block.BlockModelShaper;
 import net.minecraft.client.renderer.block.model.BlockModelPart;
 import net.minecraft.client.renderer.block.model.BlockStateModel;
@@ -65,47 +65,47 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
 *///?} else {
-/*import net.minecraft.client.render.model.block.BakedModel;
+import net.minecraft.client.render.model.block.BakedModel;
 import net.minecraft.client.render.model.block.BakedQuad;
-*///?}
+//?}
 //? if >=26.2 {
-import net.minecraft.client.renderer.rendertype.LayeringTransform;
+/*import net.minecraft.client.renderer.rendertype.LayeringTransform;
 //? if <26.3
-//import net.minecraft.client.renderer.rendertype.OutputTarget;
+import net.minecraft.client.renderer.rendertype.OutputTarget;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
-//?}
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+*///?}
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 //? if >1.8.9
-import net.minecraft.resources.Identifier;
-import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.decoration.HangingEntity;
-import net.minecraft.world.item.BoatItem;
-import net.minecraft.world.item.Items;
+//import net.minecraft.resources.Identifier;
+import tektonikal.customblockhighlight.legacy.Mth;
+import tektonikal.customblockhighlight.legacy.RandomSource;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.decoration.DecorationEntity;
+import net.minecraft.item.BoatItem;
+import net.minecraft.item.Items;
 //? if >1.8.9
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.block.*;
-import net.minecraft.world.level.block.piston.PistonBaseBlock;
-import net.minecraft.world.level.block.piston.PistonHeadBlock;
-import net.minecraft.world.level.block.state.BlockState;
+//import net.minecraft.world.level.ClipContext;
+import net.minecraft.block.*;
+import net.minecraft.block.PistonBaseBlock;
+import net.minecraft.block.PistonHeadBlock;
+import net.minecraft.block.state.BlockState;
 //? if >1.8.9 {
-import net.minecraft.world.level.block.state.properties.BedPart;
+/*import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
-//?}
-import net.minecraft.world.phys.*;
-import net.minecraft.world.phys.shapes.*;
+*///?}
+import tektonikal.customblockhighlight.legacy.phys.*;
+import tektonikal.customblockhighlight.legacy.phys.shapes.*;
 import org.joml.*;
 //? if >=1.21.11 {
-import org.jspecify.annotations.NonNull;
-//?}
+/*import org.jspecify.annotations.NonNull;
+*///?}
 import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 //? if >=1.21.4
-import tektonikal.customblockhighlight.mixin.VoxelShapeAccessor;
+//import tektonikal.customblockhighlight.mixin.VoxelShapeAccessor;
 import tektonikal.customblockhighlight.util.*;
 
 import java.awt.*;
@@ -113,15 +113,15 @@ import java.lang.Math;
 import java.util.*;
 import java.util.List;
 //? if >=26.2
-import java.util.function.Function;
+//import java.util.function.Function;
 import java.util.stream.Stream;
 
 //? if >=1.21.5 {
-import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
+/*import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
 import static net.minecraft.client.renderer.RenderPipelines.LINES;
-//?}
+*///?}
 //? if >=1.21.2
-import static net.minecraft.util.profiling.Profiler.get;
+//import static net.minecraft.util.profiling.Profiler.get;
 import static tektonikal.customblockhighlight.CustomBlockHighlight.ease;
 import static tektonikal.customblockhighlight.CustomBlockHighlight.easeFactor;
 import static tektonikal.customblockhighlight.CustomBlockHighlight.easeF;
@@ -130,32 +130,32 @@ import static tektonikal.customblockhighlight.config.BlockHighlightConfig.*;
 public class Renderer {
 	public static final Minecraft mc = Minecraft.getInstance();
 	//? if >1.8.9 {
-	public static final Camera camera = mc.gameRenderer.mainCamera();
-	//?} else
-	//public static final Camera camera = Camera.MAIN;
+	/*public static final Camera camera = mc.gameRenderer.mainCamera();
+	*///?} else
+	public static final Camera camera = Camera.MAIN;
 
 	//? if >=1.21.4
-	private static boolean isCubeLike(VoxelShape shape) { return ((VoxelShapeAccessor) shape).invokeIsCubeLike(); }
+	//private static boolean isCubeLike(VoxelShape shape) { return ((VoxelShapeAccessor) shape).invokeIsCubeLike(); }
 	//? if <1.21.4 {
 	
-	/*private static boolean isCubeLike(VoxelShape shape) {
+	private static boolean isCubeLike(VoxelShape shape) {
 		if (shape.isEmpty()) return false;
 		AABB bounds = shape.bounds();
 		return bounds.minX <= 0 && bounds.minY <= 0 && bounds.minZ <= 0 && bounds.maxX >= 1 && bounds.maxY >= 1 && bounds.maxZ >= 1;
 	}
-	*///?}
+	//?}
 
 	//? if >=1.21.2
-	private static Vec3 unitVec3(Direction dir) { return dir.getUnitVec3(); }
+	//private static Vec3 unitVec3(Direction dir) { return dir.getUnitVec3(); }
 	//? if <1.21.2 {
-	/*private static Vec3 unitVec3(Direction dir) {
+	private static Vec3 unitVec3(Direction dir) {
 		return new Vec3(dir.getNormal().getX(), dir.getNormal().getY(), dir.getNormal().getZ());
 	}
 	//? if >1.8.9 {
-	private static net.minecraft.util.profiling.ProfilerFiller get() { return mc.getProfiler(); }
-	//?} else
-	//private static net.minecraft.util.profiler.Profiler get() { return mc.profiler; }
-	*///?}
+	/*private static net.minecraft.util.profiling.ProfilerFiller get() { return mc.getProfiler(); }
+	*///?} else
+	private static net.minecraft.util.profiler.Profiler get() { return mc.profiler; }
+	//?}
 
 	public static final float[] sideFades = new float[6];
 	public static List<Line> lines = new ArrayList<>();
@@ -164,7 +164,7 @@ public class Renderer {
 
 
 	//? if >=1.21.5 {
-	public static final RenderPipeline LINE_NO_DEPTH = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/evil-lines", true);
+	/*public static final RenderPipeline LINE_NO_DEPTH = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/evil-lines", true);
 	public static final RenderPipeline FILL_NO_DEPTH = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/evil-fill", true);
 	public static final RenderPipeline LINES_CONCEALED_ONLY = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/eviler-lines", false);
 	public static final RenderPipeline FILL_CONCEALED_ONLY = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/eviler-fill", false);
@@ -173,8 +173,8 @@ public class Renderer {
 		RenderPipeline.Builder builder = RenderPipeline.builder(snippet)
 				.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", path))
 				//? if 26.3{
-				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-				//?}
+				/^.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+				^///?}
 				.withCull(false);
 		return RenderPipelines.register(withDepth(builder, alwaysPass).build());
 	}
@@ -187,7 +187,7 @@ public class Renderer {
 			case NORMAL -> lines ? LINES : DEBUG_QUADS;
 		};
 	}
-	//?}
+	*///?}
 
 	//? if >=1.21.4 && <1.21.5 {
 	/*public static void setDrawShader(boolean lines) {
@@ -200,10 +200,10 @@ public class Renderer {
 	*///?}
 
 	//? if >=26.1 {
-	private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, boolean alwaysPass) {
+	/*private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, boolean alwaysPass) {
 		return builder.withDepthStencilState(new DepthStencilState(alwaysPass ? CompareOp.ALWAYS_PASS : CompareOp.LESS_THAN, true));
 	}
-	//?} elif >=1.21.5 {
+	*///?} elif >=1.21.5 {
 	/*private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, boolean alwaysPass) {
 		return builder.withDepthTestFunction(alwaysPass ? DepthTestFunction.NO_DEPTH_TEST : DepthTestFunction.GREATER_DEPTH_TEST).withDepthWrite(true);
 	}
@@ -224,17 +224,17 @@ public class Renderer {
 	*///?}
 
 	//? if >=26.2 {
-	public static final RenderType linesNoDepth = RenderType.create("lines_no_depth",
+	/*public static final RenderType linesNoDepth = RenderType.create("lines_no_depth",
 			RenderSetup.builder(Renderer.LINE_NO_DEPTH)
 					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
 					//? if <26.3
-					//.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
+					.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
 					.createRenderSetup());
 	public static final RenderType linesConcealed = RenderType.create("lines_concealed",
 			RenderSetup.builder(Renderer.LINES_CONCEALED_ONLY)
 					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
 					//? if <26.3
-					//.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
+					.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
 					.createRenderSetup());
     public static final RenderType fillNoDepth = RenderType.create(
             "fill_no_depth", RenderSetup.builder(FILL_NO_DEPTH).sortOnUpload().createRenderSetup()
@@ -242,11 +242,11 @@ public class Renderer {
     public static final RenderType fillConcealed = RenderType.create(
             "fill_concealed", RenderSetup.builder(FILL_CONCEALED_ONLY).sortOnUpload().createRenderSetup()
     );
-	//?}
+	*///?}
 
 	//? if >=26.2 {
-	public static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
-	//?}
+	/*public static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
+	*///?}
 
 	public static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
 
@@ -279,8 +279,8 @@ public class Renderer {
 	 */
     //TODO: batching layers together means that identical layers that do not have always pass will always z fight
 	//? if >=26.2 {
-	private static StagedVertexBuffer.Draw currentDraw;
-	//?} elif >=1.21.5 {
+	/*private static StagedVertexBuffer.Draw currentDraw;
+	*///?} elif >=1.21.5 {
 	/*private static MappableRingBuffer vertexBuffer;
 	private static final ByteBufferBuilder allocator = new ByteBufferBuilder(786432);
 
@@ -288,26 +288,26 @@ public class Renderer {
 	*///?} elif >1.8.9 {
 	/*private static BufferBuilder currentDraw;
 	*///?} else {
-	/*public static final LegacyVertexBuffer legacyBuffer = new LegacyVertexBuffer();
-	*///?}
-
-	//? if <26.2
-	//private static float currentLineWidth = 1F;
-
-	//? if >1.8.9 {
-	private static VertexFormat lineFormat() {
-		//? if >=1.21.11 {
-		return DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH;
-		//?} else
-		//return DefaultVertexFormat.POSITION_COLOR_NORMAL;
-	}
+	public static final LegacyVertexBuffer legacyBuffer = new LegacyVertexBuffer();
 	//?}
 
+	//? if <26.2
+	private static float currentLineWidth = 1F;
+
+	//? if >1.8.9 {
+	/*private static VertexFormat lineFormat() {
+		//? if >=1.21.11 {
+		/^return DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH;
+		^///?} else
+		return DefaultVertexFormat.POSITION_COLOR_NORMAL;
+	}
+	*///?}
+
 	//? if >=26.2 {
-	private static GpuBufferSlice transformUniform() {
+	/*private static GpuBufferSlice transformUniform() {
 		return RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
 	}
-	//?} elif >=1.21.11 {
+	*///?} elif >=1.21.11 {
 	/*private static GpuBufferSlice transformUniform(float width) {
 		return RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
 	}
@@ -318,7 +318,7 @@ public class Renderer {
 	*///?}
 
 	//? if >=26.2 {
-	private static Function<RenderType, VertexConsumer> featureSink;
+	/*private static Function<RenderType, VertexConsumer> featureSink;
 	private static final RenderType[] worldRenderTypes = new RenderType[DepthTestMode.values().length * 2];
 
 	private static RenderType worldRenderType(DepthTestMode mode, boolean lines) {
@@ -368,9 +368,9 @@ public class Renderer {
                 if (info == null) continue;
                 try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
                     //? if >=26.3 {
-                    renderPass.setPipeline(RenderSystem.getCompiledPipeline(pending.pipeline()));
-                    //?} else
-                    //renderPass.setPipeline(pending.pipeline());
+                    /^renderPass.setPipeline(RenderSystem.getCompiledPipeline(pending.pipeline()));
+                    ^///?} else
+                    renderPass.setPipeline(pending.pipeline());
                     RenderSystem.bindDefaultUniforms(renderPass);
                     renderPass.setUniform("DynamicTransforms", dynamicTransforms);
                     renderPass.setVertexBuffer(0, info.vertexBuffer().slice());
@@ -383,7 +383,7 @@ public class Renderer {
             stagedOutlineBuffer.endFrame();
         }
     }
-    //?} elif >=1.21.5 {
+    *///?} elif >=1.21.5 {
 	/*public static VertexConsumer startDrawing(boolean lines, DepthTestMode mode) {
 		currentDraw = new BufferBuilder(allocator, lines ? VertexFormat.Mode.LINES : VertexFormat.Mode.QUADS, lines ? lineFormat() : DefaultVertexFormat.POSITION_COLOR);
 		return currentDraw;
@@ -461,14 +461,14 @@ public class Renderer {
 		RenderSystem.lineWidth(1F);
 	}
 	*///?} else {
-	/*public static VertexConsumer startDrawing(boolean lines, DepthTestMode mode) {
+	public static VertexConsumer startDrawing(boolean lines, DepthTestMode mode) {
 		return legacyBuffer.begin(lines);
 	}
 
 	private static void finishDraw(boolean lines, DepthTestMode mode) {
 		legacyBuffer.draw(lines ? mode : getActiveInstance().fillDepthTest);
 	}
-	*///?}
+	//?}
 
 	public static void drawBoxFill(PoseStack stack, AABB box, Pair<Color, Color> cols, float[] alpha) {
 		doEvilMatrixPreparations(stack, box, getActiveInstance().fillExpandBlocks, getActiveInstance().fillExpandPercent);
@@ -496,7 +496,7 @@ public class Renderer {
 
 	public static void drawLineLayer(PoseStack stack, BlockHighlightConfig.LineConfig cfg, boolean obstructed, int layer, VertexConsumer buffer) {
 		//? if <26.2
-		//currentLineWidth = cfg.lineWidth;
+		currentLineWidth = cfg.lineWidth;
 		doEvilMatrixPreparations(stack, easeBox, cfg.lineExpandBlocks, cfg.lineExpandPercentage);
 		AABB zeroed = moveToZero(easeBox);
 		Pair<Color, Color> cols = cfg.color.getColors(obstructed, getActiveInstance().crystalHelperLineColor);
@@ -528,7 +528,7 @@ public class Renderer {
 	}
 
 	//? if >=26.1 {
-	private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
+	/*private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
 		List<BlockStateModelPart> parts = new ArrayList<>();
 		mc.getModelManager().getBlockStateModelSet().get(state).collectParts(randomSource, parts);
 		parts.forEach(part -> ((SimpleModelWrapper) part).quads().getAll().forEach(quad -> {
@@ -538,7 +538,7 @@ public class Renderer {
 			newLines.add(new Line(new Vec3(quad.position3()).add(offset), new Vec3(quad.position0()).add(offset)));
 		}));
 	}
-	//?} elif >=1.21.11 {
+	*///?} elif >=1.21.11 {
 	/*private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
 		BlockStateModel model = mc.getModelManager().getBlockModelShaper().getBlockModel(state);
 		for (BlockModelPart part : model.collectParts(randomSource)) {
@@ -567,7 +567,7 @@ public class Renderer {
 		}
 	}
 	*///?} else {
-	/*private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
+	private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
 		BakedModel model = mc.getBlockRenderDispatcher().getModelShaper().getModel(state);
 		for (Direction face : Direction.values()) {
 			for (BakedQuad quad : model.getQuads(face)) {
@@ -578,7 +578,7 @@ public class Renderer {
 			addRawQuadLines(quad, offset, newLines);
 		}
 	}
-	*///?}
+	//?}
 
 	//? if >=1.21.5 && <1.21.11 {
 	/*private static void addRawQuadLines(BakedQuad quad, Vec3 offset, ArrayList<Line> newLines) {
@@ -607,7 +607,7 @@ public class Renderer {
 		newLines.add(new Line(corners[3], corners[0]));
 	}
 	*///?} elif =1.8.9 {
-	/*// 1.8.9 quads are 7 ints per vertex (position, color, uv, lightmap)
+	// 1.8.9 quads are 7 ints per vertex (position, color, uv, lightmap)
 	private static void addRawQuadLines(BakedQuad quad, Vec3 offset, ArrayList<Line> newLines) {
 		int[] v = quad.getVertices();
 		Vec3[] corners = new Vec3[4];
@@ -620,7 +620,7 @@ public class Renderer {
 		newLines.add(new Line(corners[2], corners[3]));
 		newLines.add(new Line(corners[3], corners[0]));
 	}
-	*///?}
+	//?}
 
 	private static VoxelShape clKey, mlKey;
 	private static Direction mlKeyDir;
@@ -661,9 +661,9 @@ public class Renderer {
 				} catch (Exception ignored) {
 				}
 				//? if >1.8.9 {
-				addModelLines(mc.level.getBlockState(pos.relative(dir)), randomSource, offset, newLines);
-				//?} else
-				//addModelLines(LegacyWorld.getActualState(pos.relative(dir)), randomSource, offset, newLines);
+				/*addModelLines(mc.level.getBlockState(pos.relative(dir)), randomSource, offset, newLines);
+				*///?} else
+				addModelLines(LegacyWorld.getActualState(pos.relative(dir)), randomSource, offset, newLines);
 			}
 			Vec3 offset = Vec3.ZERO;
 			try {
@@ -671,22 +671,22 @@ public class Renderer {
 				if (dir != null) {
 					if (dir.getAxisDirection() == Direction.AxisDirection.NEGATIVE) {
 						//? if >1.8.9 {
-						offset = unitVec3(dir.getOpposite()).subtract(mc.level.getBlockState(pos).getOffset(pos));
-						//?} else
-						//offset = unitVec3(dir.getOpposite()).subtract(LegacyWorld.getOffset(pos));
+						/*offset = unitVec3(dir.getOpposite()).subtract(mc.level.getBlockState(pos).getOffset(pos));
+						*///?} else
+						offset = unitVec3(dir.getOpposite()).subtract(LegacyWorld.getOffset(pos));
 					}
 				} else {
 					//? if >1.8.9 {
-					offset = mc.level.getBlockState(pos).getShape(mc.level, pos).bounds().getMinPosition().reverse().subtract(mc.level.getBlockState(pos).getOffset(pos).reverse());
-					//?} else
-					//offset = LegacyWorld.getShape(pos).bounds().getMinPosition().reverse().subtract(LegacyWorld.getOffset(pos).reverse());
+					/*offset = mc.level.getBlockState(pos).getShape(mc.level, pos).bounds().getMinPosition().reverse().subtract(mc.level.getBlockState(pos).getOffset(pos).reverse());
+					*///?} else
+					offset = LegacyWorld.getShape(pos).bounds().getMinPosition().reverse().subtract(LegacyWorld.getOffset(pos).reverse());
 				}
 			} catch (Exception ignored) {
 			}
 			//? if >1.8.9 {
-			addModelLines(mc.level.getBlockState(pos), randomSource, offset, newLines);
-			//?} else
-			//addModelLines(LegacyWorld.getActualState(pos), randomSource, offset, newLines);
+			/*addModelLines(mc.level.getBlockState(pos), randomSource, offset, newLines);
+			*///?} else
+			addModelLines(LegacyWorld.getActualState(pos), randomSource, offset, newLines);
 		}
 		return newLines;
 	}
@@ -723,7 +723,7 @@ public class Renderer {
 		toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
 	}
 
-	public static @NonNull Vec3 getCenter() {
+	public static /*nn*/Vec3 getCenter() {
 		return moveToZero(easeBox).getCenter();
 	}
 
@@ -764,14 +764,14 @@ public class Renderer {
 		if (mc.level == null) throw new IllegalStateException("level == null");
 		//TODO: fix this
 		//? if >1.8.9 {
-		BlockState state = mc.level.getBlockState(pos);
+		/*BlockState state = mc.level.getBlockState(pos);
 		if (state.hasProperty(BlockStateProperties.WATERLOGGED) && !state.getValue(BlockStateProperties.WATERLOGGED) && !mc.level.getFluidState(pos).isEmpty()) {
 			//ignore liquids
 			return true;
 		}
 		return state.isAir(); // == Level.isEmptyBlock(pos)
-		//?} else
-		//return mc.level.isEmptyBlock(pos);
+		*///?} else
+		return mc.level.isEmptyBlock(pos);
 	}
 
 	public static EnumSet<Direction> getConcealedFaces(BlockPos pos) {
@@ -803,28 +803,28 @@ public class Renderer {
 
     public static void mainLoop(LevelRenderContext c) {
         //? if >=26.2 {
-        if (featureFrame) { // already advanced + submitted through the feature pipeline this frame
+        /*if (featureFrame) { // already advanced + submitted through the feature pipeline this frame
             featureFrame = false;
             return;
         }
-        //?}
+        *///?}
         HitResult evilHitResult = tick();
         if (evilHitResult == null || !isAnythingVisible()) return;
         get().push("Custom block outline render");
         draw(c.poseStack(), isCrystalObstructed(evilHitResult));
         //? if >=26.2
-        flushDraws();
+        //flushDraws();
         get().pop();
     }
 
     //? if >=26.2 {
-    private static boolean featureFrame;
+    /*private static boolean featureFrame;
     private static boolean featureObstructed;
     private static final PoseStack featurePoseStack = new PoseStack();
 
     public static void collectSubmits(LevelRenderContext c) {
         //? if >=26.3
-        if (mc.gameRenderer.useImprovedTransparency()) return; // AFTER_TERRAIN becomes the OIT phase; keep the END_MAIN pass
+        //if (mc.gameRenderer.useImprovedTransparency()) return; // AFTER_TERRAIN becomes the OIT phase; keep the END_MAIN pass
         featureFrame = true;
         HitResult evilHitResult = tick();
         if (evilHitResult == null || !isAnythingVisible()) return;
@@ -842,17 +842,17 @@ public class Renderer {
             get().pop();
         }
     }
-    //?}
+    *///?}
 
     private static HitResult tick() {
         //? if >1.8.9 {
-        if (mc.player == null || mc.player.gameMode() == null || !getActiveInstance().enableModRendering) return null;
+        /*if (mc.player == null || mc.player.gameMode() == null || !getActiveInstance().enableModRendering) return null;
         boolean canInteract = !mc.player.gameMode().isBlockPlacingRestricted();
-        //?} else {
-        /*if (mc.player == null || mc.interactionManager == null || !getActiveInstance().enableModRendering) return null;
+        *///?} else {
+        if (mc.player == null || mc.interactionManager == null || !getActiveInstance().enableModRendering) return null;
         boolean canInteract = mc.player.abilities.canModifyWorld;
-        *///?}
-        if (!((!mc.gui.hud.isHidden() || getActiveInstance().showWhenNoHud) && (canInteract || getActiveInstance().showWhenNoInteraction))) return null;
+        //?}
+        if (!((!mc.options.hideGui || getActiveInstance().showWhenNoHud) && (canInteract || getActiveInstance().showWhenNoInteraction))) return null;
         get().push("Custom block outline pre");
         HitResult evilHitResult = getHitResult();
         if (evilHitResult != null) {
@@ -888,7 +888,7 @@ public class Renderer {
     }
 
 	//? if >1.8.9 {
-	public static HitResult getHitResult() {
+	/*public static HitResult getHitResult() {
 		if (mc.level == null || mc.player == null || mc.getCameraEntity() == null) return null;
 		if (mc.hitResult instanceof EntityHitResult) return mc.hitResult;
 		if (getActiveInstance().allowLiquids && isHoldingValidItem()) {
@@ -907,8 +907,8 @@ public class Renderer {
 			return true;
 		}
 	}
-	//?} else {
-	/*public static HitResult getHitResult() {
+	*///?} else {
+	public static HitResult getHitResult() {
 		if (mc.level == null || mc.player == null || mc.getCameraEntity() == null) return null;
 		HitResult crosshair = HitResult.of(mc.crosshairTarget);
 		if (crosshair instanceof EntityHitResult) return crosshair;
@@ -930,7 +930,7 @@ public class Renderer {
 			return true;
 		}
 	}
-	*///?}
+	//?}
 
 	private static VoxelShape cachedShape;
 	private static BlockPos shapeKeyPos;
@@ -941,18 +941,18 @@ public class Renderer {
 	private static VoxelShape boundsKey;
 	private static AABB boundsValue;
 
-	public static @NonNull VoxelShape getVoxelShape(HitResult evilHitResult) {
+	public static /*nn*/VoxelShape getVoxelShape(HitResult evilHitResult) {
 		if (mc.level == null || mc.getCameraEntity() == null) return Shapes.block();
 		if (evilHitResult instanceof BlockHitResult block) {
 			BlockPos pos = block.getBlockPos();
 			//? if >1.8.9 {
-			BlockState state = mc.level.getBlockState(pos);
+			/*BlockState state = mc.level.getBlockState(pos);
 			var fluid = mc.level.getFluidState(pos);
 			VoxelShape raw = fluid.isEmpty() ? state.getShape(mc.level, pos) : fluid.getShape(mc.level, pos);
-			//?} else {
-			/*BlockState state = mc.level.getBlockState(pos);
+			*///?} else {
+			BlockState state = mc.level.getBlockState(pos);
 			VoxelShape raw = LegacyWorld.getShape(pos);
-			*///?}
+			//?}
 			Direction connected = null;
 			VoxelShape neighbor = null;
 			//get connected blocks
@@ -960,9 +960,9 @@ public class Renderer {
 				connected = joinConnected(pos);
 				if (connected != null) {
 					//? if >1.8.9 {
-					neighbor = mc.level.getBlockState(pos.relative(connected)).getShape(mc.level, pos.relative(connected), CollisionContext.of(mc.getCameraEntity()));
-					//?} else
-					//neighbor = LegacyWorld.getShape(pos.relative(connected));
+					/*neighbor = mc.level.getBlockState(pos.relative(connected)).getShape(mc.level, pos.relative(connected), CollisionContext.of(mc.getCameraEntity()));
+					*///?} else
+					neighbor = LegacyWorld.getShape(pos.relative(connected));
 				}
 			}
 			if (cachedShape != null && pos.equals(shapeKeyPos) && state == shapeKeyState && raw == shapeKeyRaw && connected == shapeKeyDir && neighbor == shapeKeyNeighbor) {
@@ -983,15 +983,15 @@ public class Renderer {
 			Entity entity = entityHitResult.getEntity();
 			//so, so sloppy. might also have the worst workaround of the century for hanging stuff
 			//? if >1.8.9 {
-			float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+			/*float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
 			AABB boundingBox = moveToZero(entity.getBoundingBox());
 			AABB box = boundingBox.move(entity.getPosition(delta).subtract(boundingBox.getCenter()).add(0, entity instanceof HangingEntity ? 0 : boundingBox.maxY / 2F, 0));
-			//?} else {
-			/*float delta = LegacyClient.tickDelta();
+			*///?} else {
+			float delta = LegacyClient.tickDelta();
 			AABB boundingBox = moveToZero(AABB.of(entity.getShape()));
 			Vec3 position = new Vec3(Mth.lerp(delta, entity.prevX, entity.x), Mth.lerp(delta, entity.prevY, entity.y), Mth.lerp(delta, entity.prevZ, entity.z));
 			AABB box = boundingBox.move(position.subtract(boundingBox.getCenter()).add(0, entity instanceof DecorationEntity ? 0 : boundingBox.maxY / 2F, 0));
-			*///?}
+			//?}
 			if (cachedShape != null && box.equals(shapeKeyEntityBox)) {
 				return cachedShape;
 			}
@@ -1049,7 +1049,7 @@ public class Renderer {
 
 	private static boolean isCrystalObstructed(HitResult evilHitResult) {
 		//? if >1.8.9 {
-		if (mc.level == null) throw new IllegalStateException("level == null");
+		/*if (mc.level == null) throw new IllegalStateException("level == null");
 		if (!(evilHitResult instanceof BlockHitResult block)) return false;
 		BlockState state = mc.level.getBlockState(block.getBlockPos());
 
@@ -1065,8 +1065,8 @@ public class Renderer {
 		} else {
 			return false;
 		}
-		//?} else
-		//return false;
+		*///?} else
+		return false;
 	}
 
 	private static void drawFill(PoseStack stack, boolean isCrystalObstructed) {
@@ -1123,9 +1123,9 @@ public class Renderer {
 			}
 			if (cfg.rotations) {
 				//? if >1.8.9 {
-				rotation.nlerp(new Quaternionf(), (float) (1 - Math.exp((mc.options.enableVsync().get() || !getActiveInstance().improvedEasing ? -(1.0F / mc.getFps()) : -((double) mc.getFrameTimeNs() / 1000000000)) * cfg.rotationSpeed)));
-				//?} else
-				//rotation.nlerp(new Quaternionf(), (float) easeFactor(cfg.rotationSpeed));
+				/*rotation.nlerp(new Quaternionf(), (float) (1 - Math.exp((mc.options.enableVsync().get() || !getActiveInstance().improvedEasing ? -(1.0F / mc.getFps()) : -((double) mc.getFrameTimeNs() / 1000000000)) * cfg.rotationSpeed)));
+				*///?} else
+				rotation.nlerp(new Quaternionf(), (float) easeFactor(cfg.rotationSpeed));
 			}
 		} else if (evilHitResult instanceof BlockHitResult block) {
 			if (mc.level.isEmptyBlock(block.getBlockPos()) || miss) {
@@ -1165,30 +1165,30 @@ public class Renderer {
 			if (cfg.rotations) {
 				Direction d = block.getDirection();
 				//? if >1.8.9 {
-				Quaternionf target = d.getRotation();
-				//?} else
-				//Quaternionf target = LegacyWorld.rotation(d);
+				/*Quaternionf target = d.getRotation();
+				*///?} else
+				Quaternionf target = LegacyWorld.rotation(d);
 
 				if (d != Direction.UP && d != Direction.DOWN) {
 					lastHorizontalDirection = d;
 				} else {
 					float pitch = (float) ((d == Direction.UP) ? (-Math.PI / 2F) : (Math.PI / 2F));
 					//? if >1.8.9 {
-					target = new Quaternionf(lastHorizontalDirection.getRotation()).rotateX(pitch);
-					//?} else
-					//target = LegacyWorld.rotation(lastHorizontalDirection).rotateX(pitch);
+					/*target = new Quaternionf(lastHorizontalDirection.getRotation()).rotateX(pitch);
+					*///?} else
+					target = LegacyWorld.rotation(lastHorizontalDirection).rotateX(pitch);
 				}
 				//? if >1.8.9 {
-				if (!isCubeLike(mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos()))) {
-				//?} else
-				//if (!isCubeLike(LegacyWorld.getShape(block.getBlockPos()))) {
+				/*if (!isCubeLike(mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos()))) {
+				*///?} else
+				if (!isCubeLike(LegacyWorld.getShape(block.getBlockPos()))) {
 					target = new Quaternionf();
 				}
 
 				//? if >1.8.9 {
-				rotation.nlerp(target, (float) (1 - Math.exp((mc.options.enableVsync().get() || !getActiveInstance().improvedEasing ? -(1.0F / mc.getFps()) : -((double) mc.getFrameTimeNs() / 1000000000)) * cfg.rotationSpeed)));
-				//?} else
-				//rotation.nlerp(target, (float) easeFactor(cfg.rotationSpeed));
+				/*rotation.nlerp(target, (float) (1 - Math.exp((mc.options.enableVsync().get() || !getActiveInstance().improvedEasing ? -(1.0F / mc.getFps()) : -((double) mc.getFrameTimeNs() / 1000000000)) * cfg.rotationSpeed)));
+				*///?} else
+				rotation.nlerp(target, (float) easeFactor(cfg.rotationSpeed));
 			}
 		}
 		//I didn't add in/out because it would BREAKKK. TODO THIS
@@ -1213,15 +1213,15 @@ public class Renderer {
 	}
 
 	//? if >1.8.9 {
-	public static HitResult pick(Entity e, final double range, final float a) {
+	/*public static HitResult pick(Entity e, final double range, final float a) {
 		if (mc.level == null) return null;
 		Vec3 from = e.getEyePosition(a);
 		Vec3 viewVector = e.getViewVector(a);
 		Vec3 to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
 		return mc.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, getActiveInstance().onlySourceBlocks ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.ANY, e));
 	}
-	//?} else {
-	/*public static HitResult pick(Entity e, final double range, final float a) {
+	*///?} else {
+	public static HitResult pick(Entity e, final double range, final float a) {
 		if (mc.level == null) return null;
 		net.minecraft.util.math.Vec3d from = e.getEyePosition(a);
 		net.minecraft.util.math.Vec3d viewVector = e.getRotationVector(a);
@@ -1233,10 +1233,10 @@ public class Renderer {
 			LegacyWorld.pickAnyFluid = false;
 		}
 	}
-	*///?}
+	//?}
 
 	//? if >1.8.9 {
-	private static Direction joinConnected(BlockPos pos) {
+	/*private static Direction joinConnected(BlockPos pos) {
 		if (mc.level == null) return null;
 		BlockState connectedState;
 		Direction dir;
@@ -1292,8 +1292,8 @@ public class Renderer {
 		}
 		return null;
 	}
-	//?} else {
-	/*private static Direction joinConnected(BlockPos pos) {
+	*///?} else {
+	private static Direction joinConnected(BlockPos pos) {
 		if (mc.level == null) return null;
 		BlockState state = mc.level.getBlockState(pos);
 		Block block = state.getBlock();
@@ -1346,5 +1346,5 @@ public class Renderer {
 		}
 		return null;
 	}
-	*///?}
+	//?}
 }

@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy;
 
 //? if =1.8.9 {
-/*public final class LegacyClient {
+public final class LegacyClient {
 	private static float tickDelta;
 	private static long lastFrameNs = System.nanoTime();
 	private static long frameTimeNs = 16_666_666L;
@@ -24,4 +24,4 @@ package tektonikal.customblockhighlight.legacy;
 		return frameTimeNs;
 	}
 }
-*///?}
+//?}

@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy.vertex;
 
 //? if =1.8.9 {
-/*import org.joml.Vector3f;
+import org.joml.Vector3f;
 
 public interface VertexConsumer {
 	VertexConsumer addVertex(float x, float y, float z);
@@ -24,4 +24,4 @@ public interface VertexConsumer {
 		return this;
 	}
 }
-*///?}
+//?}

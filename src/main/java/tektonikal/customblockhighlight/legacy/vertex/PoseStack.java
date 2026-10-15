@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy.vertex;
 
 //? if =1.8.9 {
-/*import org.joml.Matrix4f;
+import org.joml.Matrix4f;
 import org.joml.Quaternionfc;
 
 import java.util.ArrayDeque;
@@ -46,4 +46,4 @@ public class PoseStack {
 	public record Pose(Matrix4f pose) {
 	}
 }
-*///?}
+//?}

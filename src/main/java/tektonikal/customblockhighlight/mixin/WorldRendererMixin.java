@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.mixin;
 
 //? if =1.8.9 {
-/*import net.minecraft.client.render.world.WorldRenderer;
+import net.minecraft.client.render.world.WorldRenderer;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.world.HitResult;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,4 +17,4 @@ public class WorldRendererMixin {
 		if (!BlockHighlightConfig.getActiveInstance().drawVanillaOutline) ci.cancel();
 	}
 }
-*///?}
+//?}

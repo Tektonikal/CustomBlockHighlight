@@ -5,8 +5,8 @@
   "compatibilityLevel": "${java}",
   "mixins": [
     //? if >=1.21.4 {
-    "VoxelShapeAccessor"
-    //?}
+    /*"VoxelShapeAccessor"
+    *///?}
   ],
   "injectors": {
     "defaultRequire": 1
@@ -14,15 +14,15 @@
   "client": [
     "GameRendererMixin"
     //? if >=1.21.4
-    ,"InactivityFpsLimiterMixin"
+    //,"InactivityFpsLimiterMixin"
     //? if >1.8.9
-    ,"YACLScreenMixin"
+    //,"YACLScreenMixin"
     //? if =1.8.9 {
-    /*,"LiquidBlockMixin"
+    ,"LiquidBlockMixin"
     ,"WorldRendererMixin"
-    *///?}
-    //? if >=26.2 {
-    ,"ShapeOutlineFeatureRendererMixin"
     //?}
+    //? if >=26.2 {
+    /*,"ShapeOutlineFeatureRendererMixin"
+    *///?}
   ]
 }

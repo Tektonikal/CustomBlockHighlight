@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.util;
 
-import dev.isxander.yacl3.api.NameableEnum;
-import net.minecraft.network.chat.Component;
+import tektonikal.customblockhighlight.legacy.NameableEnum;
+import tektonikal.customblockhighlight.legacy.Component;
 
 public enum DepthTestMode implements NameableEnum {
 	//GREATER_THAN_OR_EQUAL

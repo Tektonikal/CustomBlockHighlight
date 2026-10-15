@@ -1,18 +1,18 @@
 package tektonikal.customblockhighlight.config.screenrenderbullshit;
 
-import it.unimi.dsi.fastutil.Pair;
+import tektonikal.customblockhighlight.legacy.Pair;
 import net.minecraft.client.Minecraft;
 //? if >1.8.9 {
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+/*import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-//?}
-import net.minecraft.network.chat.Component;
+*///?}
+import tektonikal.customblockhighlight.legacy.Component;
 //? if >1.8.9 {
-import net.minecraft.world.level.block.Block;
+/*import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-//?} else {
-/*import com.mojang.blaze3d.vertex.PoseStack;
+*///?} else {
+import tektonikal.customblockhighlight.legacy.vertex.PoseStack;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.gui.screen.Screen;
@@ -25,11 +25,11 @@ import net.minecraft.item.ItemStack;
 import org.joml.AxisAngle4f;
 import org.joml.Quaternionf;
 import tektonikal.customblockhighlight.Renderer;
-*///?}
-import net.minecraft.world.phys.shapes.Shapes;
-//? if >=1.21.11 {
-import org.jspecify.annotations.NonNull;
 //?}
+import tektonikal.customblockhighlight.legacy.phys.shapes.Shapes;
+//? if >=1.21.11 {
+/*import org.jspecify.annotations.NonNull;
+*///?}
 //? if <1.21.8 && >1.8.9 {
 /*import com.mojang.blaze3d.platform.Lighting;
 import net.minecraft.client.renderer.LightTexture;
@@ -65,7 +65,7 @@ public class PresetsScreen extends Screen {
 
     public PresetsScreen(boolean firstTime, Screen parent) {
         //? if >1.8.9
-        super(Component.translatable("cbh.presets.screenTitle"));
+        //super(Component.translatable("cbh.presets.screenTitle"));
         this.firstTime = firstTime;
         this.parent = parent;
     }
@@ -73,14 +73,14 @@ public class PresetsScreen extends Screen {
     public static void loadPreset(Preset preset) {
         BlockHighlightConfig.ACTIVE_INSTANCE = ConfigManager.loadPreset(preset.name);
         //? if =1.8.9
-        //ConfigManager.save(); // OneConfig only saves after its own properties change
+        ConfigManager.save(); // OneConfig only saves after its own properties change
     }
 
     @Override
     //? if >1.8.9 {
-    protected void init() {
-    //?} else
-    //public void init() {
+    /*protected void init() {
+    *///?} else
+    public void init() {
         for (Preset preset : Preset.values()) {
             if (preset != Preset.CURRENT_CONFIG) {
                 addButton(height / 4 + (height / 8) * preset.ordinal(), preset);
@@ -89,33 +89,33 @@ public class PresetsScreen extends Screen {
     }
 
     //? if >1.8.9 {
-    public void addButton(int y, Preset preset) {
+    /*public void addButton(int y, Preset preset) {
         addRenderableWidget(new Button(width / 32, y, width / 2, 18, preset.meow, button -> {
             //TODO HELP I DONT KNOW WHY I NEED TO DO THIS IT BREAKS OTHERWISE
             loadPreset(preset);
             loadPreset(preset);
         }, value -> Component.empty()) {
             //? if >=1.21.11 {
-            @Override
-            protected void extractContents(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+            /^@Override
+            protected void extractContents(/^¹nn¹^/GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
                 extractDefaultSprite(graphics);
                 extractDefaultLabel(graphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE));
                 if (isMouseOver(mouseX, mouseY)) {
                     hoveredPreset = preset;
                 }
             }
-            //?} else {
+            ^///?} else {
             
-            /*@Override
+            @Override
             protected void renderWidget(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
                 boolean hovered = isMouseOver(mouseX, mouseY);
                 graphics.fill(getX(), getY(), getX() + width, getY() + height, hovered ? 0x66FFFFFF : 0x66000000);
-                graphics.centeredText(Minecraft.getInstance().font, getMessage(), getX() + width / 2, getY() + (height - 8) / 2, 0xFFFFFFFF);
+                graphics.drawCenteredString(Minecraft.getInstance().font, getMessage(), getX() + width / 2, getY() + (height - 8) / 2, 0xFFFFFFFF);
                 if (hovered) {
                     hoveredPreset = preset;
                 }
             }
-            *///?}
+            //?}
         });
     }
 
@@ -123,8 +123,8 @@ public class PresetsScreen extends Screen {
     public void onClose() {
         Minecraft.getInstance().setScreenAndShow(parent);
     }
-    //?} else {
-    /*public void addButton(int y, Preset preset) {
+    *///?} else {
+    public void addButton(int y, Preset preset) {
         buttons.add(new PresetButton(preset, width / 32, y, width / 2, 18));
     }
 
@@ -141,7 +141,7 @@ public class PresetsScreen extends Screen {
             if (!visible) return;
             hovered = mouseX >= x && mouseY >= y && mouseX < x + width && mouseY < y + height;
             fill(x, y, x + width, y + height, hovered ? 0x66FFFFFF : 0x66000000);
-            centeredText(minecraft.textRenderer, message, x + width / 2, y + (height - 8) / 2, 0xFFFFFFFF);
+            drawCenteredString(minecraft.textRenderer, message, x + width / 2, y + (height - 8) / 2, 0xFFFFFFFF);
             if (hovered) {
                 hoveredPreset = preset;
             }
@@ -164,11 +164,11 @@ public class PresetsScreen extends Screen {
         }
         super.keyPressed(chr, key);
     }
-    *///?}
+    //?}
 
     //? if >=26.1 {
-    @Override
-    public void extractRenderState(@NonNull GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
+    /*@Override
+    public void extractRenderState(/^nn^/GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);
         float centerX = (width / 6F) * 5F;
         float centerY = height / 2F;
@@ -176,14 +176,14 @@ public class PresetsScreen extends Screen {
             if (preset != Preset.CURRENT_CONFIG) {
                 presetVals[preset.ordinal()] = (float) CustomBlockHighlight.ease(presetVals[preset.ordinal()], hoveredPreset == preset ? 0 : 1, 15);
                 //? if >=1.21.8 {
-                int previewCenterX = (int) (centerX - presetVals[preset.ordinal()] * 100);
+                /^int previewCenterX = (int) (centerX - presetVals[preset.ordinal()] * 100);
                 int previewCenterY = (int) (centerY + (preset.ordinal() - tweener.getF()) * PREVIEW_SLOT_SWAP_DISTANCE);
                 graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(xAngleTweener.getF(), yAngleTweener.getF(), preset, previewCenterX - PREVIEW_HALF_SIZE, previewCenterY - PREVIEW_HALF_SIZE, previewCenterX + PREVIEW_HALF_SIZE, previewCenterY + PREVIEW_HALF_SIZE, 50F + (50 * (1 - presetVals[preset.ordinal()])), null));
-                //?}
+                ^///?}
             }
         }
-        graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
-        graphics.centeredText(Minecraft.getInstance().font, "(Preview does not fully reflect preset settings.)", width / 2, (height / 8) + (int) (font.lineHeight * 1.5), 0x80808080);
+        graphics.drawCenteredString(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
+        graphics.drawCenteredString(Minecraft.getInstance().font, "(Preview does not fully reflect preset settings.)", width / 2, (height / 8) + (int) (font.lineHeight * 1.5), 0x80808080);
     }
 
     @Override
@@ -198,28 +198,28 @@ public class PresetsScreen extends Screen {
         xAngle = (float) Math.atan((centerX - Minecraft.getInstance().mouseHandler.getScaledXPos(Minecraft.getInstance().getWindow())) / 40.0F);
         yAngle = (float) Math.atan((centerY - Minecraft.getInstance().mouseHandler.getScaledYPos(Minecraft.getInstance().getWindow())) / 40.0F);
 
-        graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
-        graphics.centeredText(Minecraft.getInstance().font, "(Preview does not fully reflect preset settings.)", width / 2, (height / 8) + (int) (font.lineHeight * 1.5), 0x80808080);
+        graphics.drawCenteredString(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
+        graphics.drawCenteredString(Minecraft.getInstance().font, "(Preview does not fully reflect preset settings.)", width / 2, (height / 8) + (int) (font.lineHeight * 1.5), 0x80808080);
 
         for (Preset preset : Preset.values()) {
             if (preset != Preset.CURRENT_CONFIG) {
                 presetVals[preset.ordinal()] = (float) CustomBlockHighlight.ease(presetVals[preset.ordinal()], hoveredPreset == preset ? 0 : 1, 15);
                 //? if >=1.21.8 {
-                int previewCenterX = (int) (centerX - presetVals[preset.ordinal()] * 100);
+                /^int previewCenterX = (int) (centerX - presetVals[preset.ordinal()] * 100);
                 int previewCenterY = (int) (centerY + (preset.ordinal() - tweener.getF()) * PREVIEW_SLOT_SWAP_DISTANCE);
                 graphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(xAngleTweener.getF(), yAngleTweener.getF(), preset, previewCenterX - PREVIEW_HALF_SIZE, previewCenterY - PREVIEW_HALF_SIZE, previewCenterX + PREVIEW_HALF_SIZE, previewCenterY + PREVIEW_HALF_SIZE, 50F + (50 * (1 - presetVals[preset.ordinal()])), null));
-                //?}
+                ^///?}
             }
         }
         graphics.nextStratum();
         super.extractBackground(graphics, mouseX, mouseY, a);
     }
-    //?} elif >1.8.9 {
+    *///?} elif >1.8.9 {
     /*@Override
     public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         super.render(graphics, mouseX, mouseY, a);
-        graphics.centeredText(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
-        graphics.centeredText(Minecraft.getInstance().font, "(Preview does not fully reflect preset settings.)", width / 2, (int) (height / 8F + (font.lineHeight * 1.5F)), 0x808080);
+        graphics.drawCenteredString(Minecraft.getInstance().font, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
+        graphics.drawCenteredString(Minecraft.getInstance().font, "(Preview does not fully reflect preset settings.)", width / 2, (int) (height / 8F + (font.lineHeight * 1.5F)), 0x808080);
     }
 
     @Override
@@ -250,7 +250,7 @@ public class PresetsScreen extends Screen {
         }
     }
     *///?} else {
-    /*@Override
+    @Override
     public void render(int mouseX, int mouseY, float tickDelta) {
         tweener.update();
         xAngleTweener.update();
@@ -268,10 +268,10 @@ public class PresetsScreen extends Screen {
         }
         GlStateManager.clear(256);
         super.render(mouseX, mouseY, tickDelta);
-        centeredText(textRenderer, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
-        centeredText(textRenderer, "(Preview does not fully reflect preset settings.)", width / 2, (int) (height / 8F + (textRenderer.fontHeight * 1.5F)), 0x808080);
+        drawCenteredString(textRenderer, firstTime ? "Welcome to the CBH config! Would you like to try a preset to get started?" : "Presets", width / 2, height / 8, 0xFFFFFFFF);
+        drawCenteredString(textRenderer, "(Preview does not fully reflect preset settings.)", width / 2, (int) (height / 8F + (textRenderer.fontHeight * 1.5F)), 0x808080);
     }
-    *///?}
+    //?}
 
     //? if <1.21.8 && >1.8.9 {
     /*public static void renderLegacyPreviewCube(GuiGraphicsExtractor graphics, Preset preset, float translateX, float translateY, float scale, float xAngle, float yAngle) {
@@ -299,7 +299,7 @@ public class PresetsScreen extends Screen {
         graphics.pose().popPose();
     }
     *///?} elif =1.8.9 {
-    /*public static void renderLegacyPreviewCube(Preset preset, float translateX, float translateY, float scale, float xAngle, float yAngle) {
+    public static void renderLegacyPreviewCube(Preset preset, float translateX, float translateY, float scale, float xAngle, float yAngle) {
         if (!shouldRender(preset)) return;
         Minecraft minecraft = Minecraft.getInstance();
         GlStateManager.pushMatrix();
@@ -341,18 +341,18 @@ public class PresetsScreen extends Screen {
 
         GlStateManager.popMatrix();
     }
-    *///?}
+    //?}
 
     public enum Preset {
         //? if >1.8.9 {
-        VANILLA("vanilla", Blocks.COBBLESTONE),
+        /*VANILLA("vanilla", Blocks.COBBLESTONE),
         SWEAT("sweat", Blocks.SMITHING_TABLE),
         TRANS("trans", Blocks.AMETHYST_BLOCK),
         CLASSIC("classic", Blocks.OAK_PLANKS),
         FANCY("fancy", Blocks.DARK_OAK_LOG),
         CURRENT_CONFIG("current", Blocks.GRASS_BLOCK),
-        //?} else {
-        /*VANILLA("vanilla", Blocks.COBBLESTONE, 0),
+        *///?} else {
+        VANILLA("vanilla", Blocks.COBBLESTONE, 0),
         SWEAT("sweat", Blocks.CRAFTING_TABLE, 0),
         // purple stained clay
         TRANS("trans", Blocks.STAINED_HARDENED_CLAY, 10),
@@ -360,22 +360,22 @@ public class PresetsScreen extends Screen {
         // dark oak log
         FANCY("fancy", Blocks.LOG2, 1),
         CURRENT_CONFIG("current", Blocks.GRASS, 0),
-        *///?}
+        //?}
         ;
 
         public final String name;
         public final Component meow;
         public final Block block;
         //? if =1.8.9
-        //public final int metadata;
+        public final int metadata;
         public final Supplier<Pair<List<CBHLineRenderInfo>, CBHFillRenderInfo>> renderInfo;
 
         //? if >1.8.9 {
-        Preset(String name, Block block) {
-        //?} else {
-        /*Preset(String name, Block block, int metadata) {
+        /*Preset(String name, Block block) {
+        *///?} else {
+        Preset(String name, Block block, int metadata) {
             this.metadata = metadata;
-        *///?}
+        //?}
             this.name = name;
             this.block = block;
             this.meow = Component.translatable("cbh.presets." + name);

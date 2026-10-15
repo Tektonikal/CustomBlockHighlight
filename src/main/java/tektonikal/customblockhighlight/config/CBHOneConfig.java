@@ -1,9 +1,10 @@
 package tektonikal.customblockhighlight.config;
 
 //? if =1.8.9 {
-/*import com.google.gson.JsonSyntaxException;
+import com.google.gson.JsonSyntaxException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
+import org.polyfrost.compose.render.PolyColor;
 import org.polyfrost.oneconfig.api.config.v1.Config;
 import org.polyfrost.oneconfig.api.config.v1.Properties;
 import org.polyfrost.oneconfig.api.config.v1.Property;
@@ -11,6 +12,7 @@ import org.polyfrost.oneconfig.api.config.v1.Tree;
 import org.polyfrost.oneconfig.api.config.v1.Visualizer;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig.ColorSetting;
 import tektonikal.customblockhighlight.config.BlockHighlightConfig.LineConfig;
+import tektonikal.customblockhighlight.config.BlockHighlightConfig.RainbowSettings;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.FaceMode;
@@ -166,33 +168,65 @@ public class CBHOneConfig extends Config {
 		slider(prefix + "lineExpand", "Adjust Size By (Blocks)", null, c -> layer.apply(c).lineExpandBlocks, (c, v) -> layer.apply(c).lineExpandBlocks = v, -2F, 1F, 0.0625F, enabled);
 		slider(prefix + "lineExpandPercent", "Adjust Size By (Percentage)", null, c -> layer.apply(c).lineExpandPercentage, (c, v) -> layer.apply(c).lineExpandPercentage = v, 0F, 2F, 0.01F, enabled);
 
-		beginAccordion(prefix + "lineSubdivisionGroup", "Subdivision");
-		slider(prefix + "cutFromCorner", "Cut From Corner", null, c -> layer.apply(c).cutFromCorner, (c, v) -> {
-			LineConfig line = layer.apply(c);
-			line.cutFromCorner = v;
-			if (v + line.cutFromCenter >= 0.95F) line.cutFromCenter = Math.clamp(0.95F - v, 0F, 1F);
-		}, 0F, maxCut, 0.01F, enabled);
-		slider(prefix + "outerThicknessMult", "Outer Thickness Multiplier", null, c -> layer.apply(c).outerThicknessMult, (c, v) -> layer.apply(c).outerThicknessMult = v, 0F, 2F, 0.05F, enabled);
-		slider(prefix + "cutFromCenter", "Cut From Center", null, c -> layer.apply(c).cutFromCenter, (c, v) -> {
-			LineConfig line = layer.apply(c);
-			line.cutFromCenter = v;
-			if (v + line.cutFromCorner >= 0.95F) line.cutFromCorner = Math.clamp(0.95F - v, 0F, 1F);
-		}, 0F, maxCut, 0.01F, enabled);
-		slider(prefix + "innerThicknessMult", "Inner Thickness Multiplier", null, c -> layer.apply(c).innerThicknessMult, (c, v) -> layer.apply(c).innerThicknessMult = v, 0F, 2F, 0.05F, enabled);
-		endAccordion();
+//		beginAccordion(prefix + "lineSubdivisionGroup", "Subdivision");
+//		slider(prefix + "cutFromCorner", "Cut From Corner", null, c -> layer.apply(c).cutFromCorner, (c, v) -> {
+//			LineConfig line = layer.apply(c);
+//			line.cutFromCorner = v;
+//			if (v + line.cutFromCenter >= 0.95F) line.cutFromCenter = Math.clamp(0.95F - v, 0F, 1F);
+//		}, 0F, maxCut, 0.01F, enabled);
+//		slider(prefix + "outerThicknessMult", "Outer Thickness Multiplier", null, c -> layer.apply(c).outerThicknessMult, (c, v) -> layer.apply(c).outerThicknessMult = v, 0F, 2F, 0.05F, enabled);
+//		slider(prefix + "cutFromCenter", "Cut From Center", null, c -> layer.apply(c).cutFromCenter, (c, v) -> {
+//			LineConfig line = layer.apply(c);
+//			line.cutFromCenter = v;
+//			if (v + line.cutFromCorner >= 0.95F) line.cutFromCorner = Math.clamp(0.95F - v, 0F, 1F);
+//		}, 0F, maxCut, 0.01F, enabled);
+//		slider(prefix + "innerThicknessMult", "Inner Thickness Multiplier", null, c -> layer.apply(c).innerThicknessMult, (c, v) -> layer.apply(c).innerThicknessMult = v, 0F, 2F, 0.05F, enabled);
+//		endAccordion();
 	}
 
 	private void colorSetting(String prefix, Function<BlockHighlightConfig, ColorSetting> setting, BooleanSupplier enabled, int minAlpha) {
-		BooleanSupplier rainbow = () -> enabled.getAsBoolean() && setting.apply(getActiveInstance()).rainbowSettings.enabled;
-		BooleanSupplier staticColors = () -> enabled.getAsBoolean() && !setting.apply(getActiveInstance()).rainbowSettings.enabled;
-		color(prefix + "Col", "Primary", c -> setting.apply(c).col1, (c, v) -> setting.apply(c).col1 = v, staticColors);
-		color(prefix + "Col2", "Secondary", c -> setting.apply(c).col2, (c, v) -> setting.apply(c).col2 = v, staticColors);
-		intSlider(prefix + "Alpha", "Opacity", null, c -> setting.apply(c).alpha, (c, v) -> setting.apply(c).alpha = v, minAlpha, 255, enabled);
-		toggle(prefix + "Rainbow", "Rainbow", null, c -> setting.apply(c).rainbowSettings.enabled, (c, v) -> setting.apply(c).rainbowSettings.enabled = v, enabled);
-		slider(prefix + "RainbowSpeed", "Speed", null, c -> setting.apply(c).rainbowSettings.speed, (c, v) -> setting.apply(c).rainbowSettings.speed = v, 1F, 10F, 0.1F, rainbow);
-		intSlider(prefix + "RainbowDelay", "Delay", "How much to delay the rainbow color used for the secondary part of the gradient.", c -> setting.apply(c).rainbowSettings.delay, (c, v) -> setting.apply(c).rainbowSettings.delay = v, -1000, 1000, rainbow);
+		BooleanSupplier rainbow = () -> {
+			RainbowSettings settings = setting.apply(getActiveInstance()).rainbowSettings;
+			return enabled.getAsBoolean() && (settings.enabled || settings.isSecondaryEnabled());
+		};
+		// delay only offsets the secondary rainbow from the primary one
+		BooleanSupplier bothRainbow = () -> {
+			RainbowSettings settings = setting.apply(getActiveInstance()).rainbowSettings;
+			return enabled.getAsBoolean() && settings.enabled && settings.isSecondaryEnabled();
+		};
+		// opacity, per-color rainbow toggles and rainbow speed live inside the PolyColor picker (alpha, chroma and chroma speed)
+		color(prefix + "Col", "Primary", setting, true, minAlpha, enabled);
+		color(prefix + "Col2", "Secondary", setting, false, minAlpha, enabled);
+		intSlider(prefix + "RainbowDelay", "Delay", "How much to delay the rainbow color used for the secondary part of the gradient.", c -> setting.apply(c).rainbowSettings.delay, (c, v) -> setting.apply(c).rainbowSettings.delay = v, -1000, 1000, bothRainbow);
 		slider(prefix + "Saturation", "Saturation", null, c -> setting.apply(c).rainbowSettings.saturation, (c, v) -> setting.apply(c).rainbowSettings.saturation = v, 0F, 1F, 0.01F, rainbow);
 		slider(prefix + "Brightness", "Brightness", null, c -> setting.apply(c).rainbowSettings.brightness, (c, v) -> setting.apply(c).rainbowSettings.brightness = v, 0F, 1F, 0.01F, rainbow);
+	}
+
+	// PolyColor chroma speed is in cycles per 10 seconds, rainbow speed is in steps of 20 degrees per second
+	private static final float CHROMA_SPEED_SCALE = 1.8F;
+
+	// alpha and rainbow speed are shared between both colors of a setting, so editing either picker updates both
+	private static PolyColor toPolyColor(ColorSetting setting, boolean primary) {
+		Color col = primary ? setting.col1 : setting.col2;
+		boolean chroma = primary ? setting.rainbowSettings.enabled : setting.rainbowSettings.isSecondaryEnabled();
+		return new PolyColor((setting.alpha << 24) | (col.getRGB() & 0xFFFFFF), chroma, setting.rainbowSettings.speed / CHROMA_SPEED_SCALE);
+	}
+
+	private static void fromPolyColor(ColorSetting setting, boolean primary, PolyColor value, int minAlpha) {
+		int argb = value.getRawArgb();
+		Color col = new Color(argb & 0xFFFFFF);
+		RainbowSettings rainbow = setting.rainbowSettings;
+		if (primary) {
+			setting.col1 = col;
+			// pin the secondary flag before changing the primary one so it doesn't follow along
+			rainbow.secondaryEnabled = rainbow.isSecondaryEnabled();
+			rainbow.enabled = value.getChroma();
+		} else {
+			setting.col2 = col;
+			rainbow.secondaryEnabled = value.getChroma();
+		}
+		setting.alpha = Math.clamp(argb >>> 24, minAlpha, 255);
+		rainbow.speed = Math.clamp(value.getChromaSpeed() * CHROMA_SPEED_SCALE, 1F, 10F);
 	}
 
 	private static final String FACE_MODE_DESCRIPTION = "Dictates what faces are visible when looking at a block. Only works with the Bounds mode.";
@@ -201,6 +235,7 @@ public class CBHOneConfig extends Config {
 	private void group(String category, String subcategory) {
 		this.category = category;
 		this.subcategory = subcategory;
+		endAccordion();
 	}
 
 	private void beginAccordion(String id, String title) {
@@ -237,10 +272,9 @@ public class CBHOneConfig extends Config {
 		property.addMetadata("step", 1F);
 	}
 
-	private void color(String id, String title, Function<BlockHighlightConfig, Color> getter, BiConsumer<BlockHighlightConfig, Color> setter, BooleanSupplier enabled) {
-		Property<Color> property = property(id, title, null, getter, setter, Color.class, enabled);
+	private void color(String id, String title, Function<BlockHighlightConfig, ColorSetting> setting, boolean primary, int minAlpha, BooleanSupplier enabled) {
+		Property<PolyColor> property = property(id, title, null, c -> toPolyColor(setting.apply(c), primary), (c, v) -> fromPolyColor(setting.apply(c), primary, v, minAlpha), PolyColor.class, enabled);
 		property.addMetadata("visualizer", Visualizer.ColorVisualizer.class);
-		property.addMetadata("noAlpha", true);
 	}
 
 	private <E extends Enum<E>> void dropdown(String id, String title, String description, Class<E> type, Function<BlockHighlightConfig, E> getter, BiConsumer<BlockHighlightConfig, E> setter, BooleanSupplier enabled) {
@@ -307,4 +341,4 @@ public class CBHOneConfig extends Config {
 		return value.name();
 	}
 }
-*///?}
+//?}

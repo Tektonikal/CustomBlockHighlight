@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.config.screenrenderbullshit;
 
-import it.unimi.dsi.fastutil.Pair;
-import net.minecraft.world.phys.shapes.VoxelShape;
+import tektonikal.customblockhighlight.legacy.Pair;
+import tektonikal.customblockhighlight.legacy.phys.shapes.VoxelShape;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 
 import java.awt.*;

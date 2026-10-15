@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy;
 
 //? if =1.8.9 {
-/*import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.resource.language.I18n;
 
 public final class Component {
 	private final String key;
@@ -23,4 +23,4 @@ public final class Component {
 		return getString();
 	}
 }
-*///?}
+//?}
