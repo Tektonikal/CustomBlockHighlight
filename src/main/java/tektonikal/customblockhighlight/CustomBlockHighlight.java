@@ -30,7 +30,7 @@ public class CustomBlockHighlight implements ModInitializer {
 		BlockHighlightConfig.ACTIVE_INSTANCE = ConfigManager.load();
 		clampTwoOptions(o_cutFromCorner, o_cutFromCenter);
 		clampTwoOptions(o_scutFromCenter, o_scutFromCorner);
-		clampTwoOptions(o_tcutFromCenter, o_tcutFromCenter);
+		clampTwoOptions(o_tcutFromCenter, o_tcutFromCorner);
         BlockHighlightConfig.update(o_shapeStyle, o_shapeStyle.stateManager().get());
         BlockHighlightConfig.update(o_sshapeStyle, o_sshapeStyle.stateManager().get());
         BlockHighlightConfig.update(o_tshapeStyle, o_tshapeStyle.stateManager().get());
