@@ -181,6 +181,8 @@ public class Renderer {
 
 	//? if >=26.1 {
 	private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, boolean alwaysPass, boolean writeDepth) {
+		// "concealed" = farther than what's there; 26.2+ uses reversed depth (near = 1), 26.1 doesn't
+		//~ if <26.2 'LESS_THAN' -> 'GREATER_THAN'
 		return builder.withDepthStencilState(new DepthStencilState(alwaysPass ? CompareOp.ALWAYS_PASS : CompareOp.LESS_THAN, writeDepth));
 	}
 	//?} elif >=1.21.5 {
