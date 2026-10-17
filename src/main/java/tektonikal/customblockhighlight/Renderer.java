@@ -445,9 +445,22 @@ public class Renderer {
 	public static void drawBoxFill(PoseStack stack, AABB box, Pair<Color, Color> cols, float[] alpha) {
 		doEvilMatrixPreparations(stack, box, getActiveInstance().fillExpandBlocks, getActiveInstance().fillExpandPercent);
 		VertexConsumer buffer = startDrawing(false, getActiveInstance().fillDepthTest);
-		Vertexer.vertexBoxQuads(stack.last(), buffer, moveToZero(box), cols, alpha);
+		Vertexer.vertexBoxQuads(stack.last(), buffer, moveToZero(box), cols, rotateFaceFades(alpha));
 		finishDraw(false, getActiveInstance().fillDepthTest);
 		stack.popPose();
+	}
+
+	private static final float[] rotatedFaceFades = new float[6];
+
+	private static float[] rotateFaceFades(float[] fades) {
+		if (!getActiveInstance().rotations) return fades;
+		Vector3f v = new Vector3f();
+		for (Direction face : Direction.values()) {
+			rotation.transform(v.set(face.getStepX(), face.getStepY(), face.getStepZ()));
+			//~ if <1.21.2 'getApproximateNearest' -> 'getNearest'
+			rotatedFaceFades[face.ordinal()] = fades[Direction.getApproximateNearest(v.x, v.y, v.z).ordinal()];
+		}
+		return rotatedFaceFades;
 	}
 
 	private static void doEvilMatrixPreparations(PoseStack stack, AABB box, float scaleBlocks, float scalePercentage) {
@@ -485,7 +498,7 @@ public class Renderer {
 				for (int i = 0; i < toRemove.size(); i++) renderLine(toRemove.get(i), pose, buffer, c1, c2, zeroMin, normalised, alpha, cfg);
 			}
 		} else {
-			Vertexer.vertexBoxLines(stack.last(), buffer, zeroed, cols, lineStates.get(layer).getLineFades(), cfg.lineWidth * lineProg, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
+			Vertexer.vertexBoxLines(stack.last(), buffer, zeroed, cols, rotateFaceFades(lineStates.get(layer).getLineFades()), cfg.lineWidth * lineProg, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
 		}
 		stack.popPose();
 	}
@@ -683,7 +696,6 @@ public class Renderer {
 		return shape.move(-min.x, -min.y, -min.z);
 	}
 
-	//TODO: make this adjust based on rotation
 	private static EnumSet<Direction> getSides(FaceMode type, BlockPos pos, HitResult evilHitResult) {
 		return switch (type) {
 			case LOOKAT ->
