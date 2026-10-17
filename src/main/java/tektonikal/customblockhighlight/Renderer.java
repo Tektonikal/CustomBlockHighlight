@@ -708,10 +708,9 @@ public class Renderer {
 
 	public static boolean isBlockEmpty(BlockPos pos) {
 		if (mc.level == null) throw new IllegalStateException("level == null");
-		//TODO: fix this
 		BlockState state = mc.level.getBlockState(pos);
-		if (state.hasProperty(BlockStateProperties.WATERLOGGED) && !state.getValue(BlockStateProperties.WATERLOGGED) && !mc.level.getFluidState(pos).isEmpty()) {
-			//ignore liquids
+		if (!state.hasProperty(BlockStateProperties.WATERLOGGED) && !mc.level.getFluidState(pos).isEmpty()) {
+			//ignore liquids, but not waterlogged blocks
 			return true;
 		}
 		return state.isAir(); // == Level.isEmptyBlock(pos)
