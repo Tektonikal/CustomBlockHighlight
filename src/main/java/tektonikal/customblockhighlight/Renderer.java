@@ -775,7 +775,7 @@ public class Renderer {
         get().push("Custom block outline pre");
         HitResult evilHitResult = getHitResult();
         if (evilHitResult != null) {
-            easeBoxAndEdges(evilHitResult, getVoxelShape(evilHitResult));
+            if (!isIgnoredEntity(evilHitResult)) easeBoxAndEdges(evilHitResult, getVoxelShape(evilHitResult));
             updateProgresses(evilHitResult);
         }
         get().pop();
@@ -800,6 +800,10 @@ public class Renderer {
             }
         }
         return false;
+    }
+
+    private static boolean isIgnoredEntity(HitResult hitResult) {
+        return hitResult instanceof EntityHitResult entityHitResult && (!getActiveInstance().allowEntities || entityHitResult.getEntity().isInvisible());
     }
 
     private static boolean usesLineFades(LineConfig lc) {
@@ -975,27 +979,25 @@ public class Renderer {
 		if (mc.level == null) return;
 		BlockHighlightConfig cfg = getActiveInstance();
 		boolean miss = evilHitResult.getType() == HitResult.Type.MISS;
-		if (evilHitResult instanceof EntityHitResult entityHitResult && !entityHitResult.getEntity().isInvisible()) {
-			if (cfg.allowEntities) {
-				if (cfg.fillEnabled) {
+		if (isIgnoredEntity(evilHitResult)) {
+			miss = true;
+			exitFades();
+		} else if (evilHitResult instanceof EntityHitResult) {
+			if (cfg.fillEnabled) {
+				for (int d = 0; d < 6; d++) {
+					sideFades[d] = cfg.fadeIn ? easeF(sideFades[d], cfg.fillCol.alpha, cfg.fadeInSpeed) : cfg.fillCol.alpha;
+				}
+			}
+			for (int i = 0; i < lineStates.size(); i++) {
+				LineState lineState = lineStates.get(i);
+				LineConfig lc = cfg.getLineConfig(i);
+				int targetAlpha = lc.color.alpha;
+				if (usesLineFades(lc)) {
 					for (int d = 0; d < 6; d++) {
-						sideFades[d] = cfg.fadeIn ? easeF(sideFades[d], cfg.fillCol.alpha, cfg.fadeInSpeed) : cfg.fillCol.alpha;
+						lineState.lineFades[d] = cfg.fadeIn ? easeF(lineState.lineFades[d], targetAlpha, cfg.fadeInSpeed) : targetAlpha;
 					}
 				}
-				for (int i = 0; i < lineStates.size(); i++) {
-					LineState lineState = lineStates.get(i);
-					LineConfig lc = cfg.getLineConfig(i);
-					int targetAlpha = lc.color.alpha;
-					if (usesLineFades(lc)) {
-						for (int d = 0; d < 6; d++) {
-							lineState.lineFades[d] = cfg.fadeIn ? easeF(lineState.lineFades[d], targetAlpha, cfg.fadeInSpeed) : targetAlpha;
-						}
-					}
-					lineState.edgeAlpha = cfg.fadeIn ? easeF(lineState.edgeAlpha, targetAlpha, cfg.fadeInSpeed) : targetAlpha;
-				}
-			} else {
-				miss = true;
-				exitFades();
+				lineState.edgeAlpha = cfg.fadeIn ? easeF(lineState.edgeAlpha, targetAlpha, cfg.fadeInSpeed) : targetAlpha;
 			}
 			if (cfg.rotations) {
 				rotation.nlerp(new Quaternionf(), (float) (1 - Math.exp((mc.options.enableVsync().get() || !getActiveInstance().improvedEasing ? -(1.0F / mc.getFps()) : -((double) mc.getFrameTimeNs() / 1000000000)) * cfg.rotationSpeed)));
