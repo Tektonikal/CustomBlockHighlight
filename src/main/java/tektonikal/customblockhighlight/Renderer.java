@@ -598,44 +598,29 @@ public class Renderer {
 			mlKey = shape;
 			mlKeyDir = keyDir;
 			mlKeyNeighbor = keyNeighbor;
-			mlTargets = buildModelLines(evilHitResult);
+			mlTargets = buildModelLines(shape, evilHitResult);
 			mlCenter = moveToZero(shape).bounds().getCenter();
 		}
 		modelLines = syncLines(modelLines, mlTargets, mlCenter);
 	}
 
-	private static List<Line> buildModelLines(HitResult evilHitResult) {
+	private static List<Line> buildModelLines(VoxelShape shape, HitResult evilHitResult) {
 		ArrayList<Line> newLines = new ArrayList<>();
 		if (evilHitResult instanceof BlockHitResult bhr) {
 			RandomSource randomSource = RandomSource.create(0);
 			BlockPos pos = bhr.getBlockPos();
+			Vec3 min = shape.bounds().getMinPosition().subtract(Vec3.atLowerCornerOf(pos));
 			Direction dir = getActiveInstance().connectedBlocks ? joinConnected(pos) : null;
 			if (dir != null) {
-				Vec3 offset = Vec3.ZERO;
-				try {
-//					offset = mc.level.getBlockState(pos).getShape(mc.level, pos.relative(dir)).bounds().getMinPosition().reverse();
-					if (dir.getAxisDirection() != Direction.AxisDirection.NEGATIVE) {
-						offset = unitVec3(dir);
-					}
-				} catch (Exception ignored) {
-				}
-				addModelLines(mc.level.getBlockState(pos.relative(dir)), randomSource, offset, newLines);
+				addModelLines(mc.level.getBlockState(pos.relative(dir)), randomSource, unitVec3(dir).add(modelOffset(pos.relative(dir))).subtract(min), newLines);
 			}
-			Vec3 offset = Vec3.ZERO;
-			try {
-//				offset = mc.level.getBlockState(pos).getShape(mc.level, pos).bounds().getMinPosition().reverse();
-				if (dir != null) {
-					if (dir.getAxisDirection() == Direction.AxisDirection.NEGATIVE) {
-						offset = unitVec3(dir.getOpposite()).subtract(mc.level.getBlockState(pos).getOffset(pos));
-					}
-				} else {
-					offset = mc.level.getBlockState(pos).getShape(mc.level, pos).bounds().getMinPosition().reverse().subtract(mc.level.getBlockState(pos).getOffset(pos).reverse());
-				}
-			} catch (Exception ignored) {
-			}
-			addModelLines(mc.level.getBlockState(pos), randomSource, offset, newLines);
+			addModelLines(mc.level.getBlockState(pos), randomSource, modelOffset(pos).subtract(min), newLines);
 		}
 		return newLines;
+	}
+
+	private static Vec3 modelOffset(BlockPos pos) {
+		return mc.level.getBlockState(pos).getOffset(pos);
 	}
 
 	private static List<Line> syncLines(List<Line> current, List<Line> targets, Vec3 center) {
