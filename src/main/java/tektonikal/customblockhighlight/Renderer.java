@@ -846,7 +846,8 @@ public class Renderer {
 			BlockPos pos = block.getBlockPos();
 			BlockState state = mc.level.getBlockState(pos);
 			var fluid = mc.level.getFluidState(pos);
-			VoxelShape raw = fluid.isEmpty() ? state.getShape(mc.level, pos) : fluid.getShape(mc.level, pos);
+			VoxelShape raw = state.getShape(mc.level, pos);
+			if (raw.isEmpty() && !fluid.isEmpty()) raw = fluid.getShape(mc.level, pos);
 			Direction connected = null;
 			VoxelShape neighbor = null;
 			//get connected blocks
