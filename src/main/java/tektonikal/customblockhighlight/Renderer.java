@@ -590,7 +590,7 @@ public class Renderer {
 	public static void updateModelLines(VoxelShape shape, HitResult evilHitResult) {
 		Direction keyDir = null;
 		BlockState keyNeighbor = null;
-		if (evilHitResult instanceof BlockHitResult bhr) {
+		if (evilHitResult instanceof BlockHitResult bhr && getActiveInstance().connectedBlocks) {
 			keyDir = joinConnected(bhr.getBlockPos());
 			if (keyDir != null) keyNeighbor = mc.level.getBlockState(bhr.getBlockPos().relative(keyDir));
 		}
@@ -609,7 +609,7 @@ public class Renderer {
 		if (evilHitResult instanceof BlockHitResult bhr) {
 			RandomSource randomSource = RandomSource.create(0);
 			BlockPos pos = bhr.getBlockPos();
-			Direction dir = joinConnected(pos);
+			Direction dir = getActiveInstance().connectedBlocks ? joinConnected(pos) : null;
 			if (dir != null) {
 				Vec3 offset = Vec3.ZERO;
 				try {
