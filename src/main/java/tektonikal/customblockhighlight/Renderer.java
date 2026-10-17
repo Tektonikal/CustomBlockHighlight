@@ -717,18 +717,17 @@ public class Renderer {
 	}
 
 	public static EnumSet<Direction> getConcealedFaces(BlockPos pos) {
-        /*
-        I don't know if I should keep the original behavior for this
-        As of now, this method means that even when rendering the box for a block with multiple parts,
-        it will still cull faces relative to the selected block, and not the entire rendered selection
-         */
+		// check around the entire connected box, not just the hovered block
+		Direction connected = getActiveInstance().connectedBlocks ? joinConnected(pos) : null;
+		BlockPos other = connected == null ? null : pos.relative(connected);
 		EnumSet<Direction> set = EnumSet.allOf(Direction.class);
-		if (isBlockEmpty(pos.above())) set.remove(Direction.UP);
-		if (isBlockEmpty(pos.below())) set.remove(Direction.DOWN);
-		if (isBlockEmpty(pos.north())) set.remove(Direction.NORTH);
-		if (isBlockEmpty(pos.east())) set.remove(Direction.EAST);
-		if (isBlockEmpty(pos.south())) set.remove(Direction.SOUTH);
-		if (isBlockEmpty(pos.west())) set.remove(Direction.WEST);
+		for (Direction d : Direction.values()) {
+			boolean open;
+			if (other == null || d == connected.getOpposite()) open = isBlockEmpty(pos.relative(d));
+			else if (d == connected) open = isBlockEmpty(other.relative(d));
+			else open = isBlockEmpty(pos.relative(d)) || isBlockEmpty(other.relative(d));
+			if (open) set.remove(d);
+		}
 		return set;
 	}
 
