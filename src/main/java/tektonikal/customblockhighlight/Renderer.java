@@ -490,7 +490,7 @@ public class Renderer {
 			a = getLerpedRGB(c1, c2, (float) (zeroMin.distanceTo(line.minPos) / normalised));
 			b = getLerpedRGB(c1, c2, (float) (zeroMin.distanceTo(line.maxPos) / normalised));
 		}
-		line.render(pose, buffer, a, b, alpha, cfg.lineWidth, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
+		line.render(pose, buffer, a, b, alpha, cfg.lineWidth * lineProg, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
 	}
 
 	//? if >=26.1 {
