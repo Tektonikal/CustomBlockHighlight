@@ -1067,7 +1067,7 @@ public class Renderer {
 		for (int i = 0; i < lineStates.size(); i++) {
 			LineState lineState = lineStates.get(i);
 			if (usesLineFades(cfg.getLineConfig(i))) {
-				for (int n = 0; n < 6; n++) lineState.fadeOutSides();
+				lineState.fadeOutSides();
 			}
 			lineState.edgeAlpha = cfg.fadeOut ? easeF(lineState.edgeAlpha, 0, cfg.fadeOutSpeed) : 0;
 		}
