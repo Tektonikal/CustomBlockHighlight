@@ -142,19 +142,21 @@ public class Renderer {
 
 
 	//? if >=1.21.5 {
-	public static final RenderPipeline LINE_NO_DEPTH = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/evil-lines", true);
-	public static final RenderPipeline FILL_NO_DEPTH = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/evil-fill", true);
-	public static final RenderPipeline LINES_CONCEALED_ONLY = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/eviler-lines", false);
-	public static final RenderPipeline FILL_CONCEALED_ONLY = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/eviler-fill", false);
+	public static final RenderPipeline LINE_NO_DEPTH = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/evil-lines", true, true);
+	public static final RenderPipeline FILL_NO_DEPTH = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/evil-fill", true, false);
+	public static final RenderPipeline LINES_CONCEALED_ONLY = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/eviler-lines", false, true);
+	public static final RenderPipeline FILL_CONCEALED_ONLY = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/eviler-fill", false, false);
+	//~ if <1.21.11 'DEBUG_QUADS' -> 'RenderPipelines.DEBUG_STRUCTURE_QUADS'
+	private static final RenderPipeline FILL_NORMAL = DEBUG_QUADS;
 
-	private static RenderPipeline evilPipeline(RenderPipeline.Snippet snippet, String path, boolean alwaysPass) {
+	private static RenderPipeline evilPipeline(RenderPipeline.Snippet snippet, String path, boolean alwaysPass, boolean writeDepth) {
 		RenderPipeline.Builder builder = RenderPipeline.builder(snippet)
 				.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", path))
 				//? if 26.3{
 				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
 				//?}
 				.withCull(false);
-		return RenderPipelines.register(withDepth(builder, alwaysPass).build());
+		return RenderPipelines.register(withDepth(builder, alwaysPass, writeDepth).build());
 	}
 
 	public static RenderPipeline getPipeline(DepthTestMode mode, boolean lines) {
@@ -162,7 +164,7 @@ public class Renderer {
 			case ALWAYS_PASS -> lines ? LINE_NO_DEPTH : FILL_NO_DEPTH;
 			case HIDDEN_ONLY -> lines ? LINES_CONCEALED_ONLY : FILL_CONCEALED_ONLY;
 			//~ if 26.3 'LINES' -> 'LINES_TRANSLUCENT'
-			case NORMAL -> lines ? LINES : DEBUG_QUADS;
+			case NORMAL -> lines ? LINES : FILL_NORMAL;
 		};
 	}
 	//?}
@@ -178,12 +180,12 @@ public class Renderer {
 	*///?}
 
 	//? if >=26.1 {
-	private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, boolean alwaysPass) {
-		return builder.withDepthStencilState(new DepthStencilState(alwaysPass ? CompareOp.ALWAYS_PASS : CompareOp.LESS_THAN, true));
+	private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, boolean alwaysPass, boolean writeDepth) {
+		return builder.withDepthStencilState(new DepthStencilState(alwaysPass ? CompareOp.ALWAYS_PASS : CompareOp.LESS_THAN, writeDepth));
 	}
 	//?} elif >=1.21.5 {
-	/*private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, boolean alwaysPass) {
-		return builder.withDepthTestFunction(alwaysPass ? DepthTestFunction.NO_DEPTH_TEST : DepthTestFunction.GREATER_DEPTH_TEST).withDepthWrite(true);
+	/*private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, boolean alwaysPass, boolean writeDepth) {
+		return builder.withDepthTestFunction(alwaysPass ? DepthTestFunction.NO_DEPTH_TEST : DepthTestFunction.GREATER_DEPTH_TEST).withDepthWrite(writeDepth);
 	}
 	*///?} else {
 	/*public static void applyDepth(DepthTestMode mode) {
@@ -427,7 +429,9 @@ public class Renderer {
 		RenderSystem.defaultBlendFunc();
 		RenderSystem.disableCull();
 		applyDepth(fillMode);
+		RenderSystem.depthMask(lines);
 		BufferUploader.drawWithShader(builtBuffer);
+		RenderSystem.depthMask(true);
 		RenderSystem.enableDepthTest();
 		RenderSystem.depthFunc(GL11.GL_LEQUAL);
 		RenderSystem.enableCull();
