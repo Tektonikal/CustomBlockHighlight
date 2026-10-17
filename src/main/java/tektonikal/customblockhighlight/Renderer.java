@@ -639,15 +639,15 @@ public class Renderer {
 	}
 
 	private static List<Line> syncLines(List<Line> current, List<Line> targets, Vec3 center) {
+		if (!getActiveInstance().doEasing) {
+			return targets;
+		}
 		while (current.size() < targets.size()) {
 			current.add(new Line(center, center));
 		}
 		while (current.size() > targets.size()) {
 			toRemove.add(current.getLast());
 			current.removeLast();
-		}
-		if (!getActiveInstance().doEasing) {
-			return targets;
 		}
 		double k = easeFactor(getActiveInstance().easeSpeed);
 		for (int i = 0; i < current.size(); i++) {
