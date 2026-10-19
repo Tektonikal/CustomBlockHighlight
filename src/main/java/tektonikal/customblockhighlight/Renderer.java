@@ -971,7 +971,8 @@ public class Renderer {
 					//neighbor = LegacyWorld.getShape(pos.relative(connected));
 				}
 			}
-			if (cachedShape != null && pos.equals(shapeKeyPos) && state == shapeKeyState && raw == shapeKeyRaw && connected == shapeKeyDir && neighbor == shapeKeyNeighbor) {
+			// Compared by value, 1.8.9 builds a new shape on every lookup
+			if (cachedShape != null && pos.equals(shapeKeyPos) && state == shapeKeyState && Objects.equals(raw, shapeKeyRaw) && connected == shapeKeyDir && Objects.equals(neighbor, shapeKeyNeighbor)) {
 				return cachedShape;
 			}
 			shapeKeyPos = pos;
@@ -1185,7 +1186,7 @@ public class Renderer {
 				//? if >1.8.9 {
 				if (!isCubeLike(mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos()))) {
 				//?} else
-				//if (!isCubeLike(LegacyWorld.getShape(block.getBlockPos()))) {
+				//if (!isCubeLike(block.getBlockPos().equals(shapeKeyPos) ? shapeKeyRaw : LegacyWorld.getShape(block.getBlockPos()))) {
 					target = new Quaternionf();
 				}
 
