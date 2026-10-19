@@ -468,12 +468,15 @@ public class Renderer {
 	}
 	*///?} else {
 	/*public static VertexConsumer startDrawing(boolean lines, DepthTestMode mode) {
-		return legacyBuffer.begin(lines);
+		return legacyBuffer.beginBatch(lines);
 	}
 
 	private static void finishDraw(boolean lines, DepthTestMode mode) {
-		legacyBuffer.draw(lines ? mode : getActiveInstance().fillDepthTest);
+		legacyBuffer.endBatch(lines ? mode : getActiveInstance().fillDepthTest);
 	}
+
+	// block aligned so the uploaded geometry doesn't change as the camera moves
+	private static Vec3 legacyOrigin = Vec3.ZERO;
 	*///?}
 
 	public static void drawBoxFill(PoseStack stack, AABB box, Pair<Color, Color> cols, float[] alpha) {
@@ -499,7 +502,9 @@ public class Renderer {
 
 	private static void doEvilMatrixPreparations(PoseStack stack, AABB box, float scaleBlocks, float scalePercentage) {
 		stack.pushPose();
-		stack.translate(box.minX - camera.position().x, box.minY - camera.position().y, box.minZ - camera.position().z);
+		//~ if =1.8.9 'camera.position()' -> 'legacyOrigin'
+		Vec3 origin = camera.position();
+		stack.translate(box.minX - origin.x, box.minY - origin.y, box.minZ - origin.z);
 		Vec3 vec = moveToZero(box).getCenter();
 		stack.translate(vec.x, vec.y, vec.z);
 		if (getActiveInstance().rotations) {
@@ -812,7 +817,15 @@ public class Renderer {
         HitResult evilHitResult = tick();
         if (evilHitResult == null || !isAnythingVisible()) return;
         get().push("Custom block outline render");
+        //? if =1.8.9 {
+        /*Vec3 cam = camera.position();
+        double ox = Math.floor(cam.x), oy = Math.floor(cam.y), oz = Math.floor(cam.z);
+        if (ox != legacyOrigin.x || oy != legacyOrigin.y || oz != legacyOrigin.z) legacyOrigin = new Vec3(ox, oy, oz);
+        legacyBuffer.beginFrame();
+        *///?}
         draw(c.poseStack(), isCrystalObstructed(evilHitResult));
+        //? if =1.8.9
+        //legacyBuffer.drawFrame(ox - cam.x, oy - cam.y, oz - cam.z);
         //? if >=26.2
         flushDraws();
         get().pop();
