@@ -1,12 +1,15 @@
 package tektonikal.customblockhighlight.config;
 
 import com.google.gson.JsonSyntaxException;
+//? if >1.8.9 {
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import dev.isxander.yacl3.impl.ProvidesBindingForDeprecation;
+//?}
 import it.unimi.dsi.fastutil.Pair;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
+//? if >1.8.9
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -27,16 +30,19 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.sun.jna.Platform.isWindows;
+//? if >1.8.9
 import static net.minecraft.util.Util.getMillis;
 
 @SuppressWarnings("NoTranslation") // temporary fix until fletching table finds a solution
 public class BlockHighlightConfig {
+    //? if >1.8.9 {
     public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val ->
             Component.translatable(String.format("%.2f", val)
                     .replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
     public static final ValueFormatter<Float> BLOCKS_FORMATTER_THREE_PLACES = val ->
             Component.translatable(String.format("%.3f", val)
                     .replace(".000", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
+    //?}
     @SuppressWarnings("UnusedAssignment") // required for clinit stuff
     public static BlockHighlightConfig ACTIVE_INSTANCE = new BlockHighlightConfig();
 
@@ -65,7 +71,7 @@ public class BlockHighlightConfig {
         public Pair<Color, Color> getColors(boolean isCrystalObstructed, Color crystalHelperCol) {
             return Pair.of(
                     isCrystalObstructed ? crystalHelperCol : this.rainbowSettings.enabled ? this.rainbowSettings.getRainbowCol(true) : this.col1,
-                    isCrystalObstructed ? crystalHelperCol : this.rainbowSettings.enabled ? this.rainbowSettings.getRainbowCol(false) : this.col2
+                    isCrystalObstructed ? crystalHelperCol : this.rainbowSettings.isSecondaryEnabled() ? this.rainbowSettings.getRainbowCol(false) : this.col2
             );
         }
 
@@ -79,6 +85,8 @@ public class BlockHighlightConfig {
 
     public static class RainbowSettings {
         public boolean enabled;
+        // null follows enabled, so configs from before per-color rainbow keep both colors in sync
+        public Boolean secondaryEnabled;
         public int delay;
         public float saturation;
         public float brightness;
@@ -92,8 +100,20 @@ public class BlockHighlightConfig {
             this.brightness = brightness;
         }
 
+        public boolean isSecondaryEnabled() {
+            return secondaryEnabled == null ? enabled : secondaryEnabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+            this.secondaryEnabled = null;
+        }
+
         public Color getRainbowCol(boolean primaryCol) {
+            //? if >1.8.9 {
             float rainbowState = Mth.ceil((getMillis() + (primaryCol ? 0 : this.delay))) * this.speed / 50;
+            //?} else
+            //float rainbowState = Mth.ceil((Minecraft.getTime() + (primaryCol ? 0 : this.delay))) * this.speed / 50;
             rainbowState %= 360;
             return Color.getHSBColor(rainbowState / 360, this.saturation, this.brightness);
         }
@@ -187,6 +207,7 @@ public class BlockHighlightConfig {
 	public boolean showWhenNoInteraction = false;
 	//TODO: exclude barriers and no render when inside of block
 
+    //? if >1.8.9 {
     static <T> StateManager<T> createInstant(@NotNull T def, @NotNull Supplier<@NotNull T> getter, @NotNull Consumer<@NotNull T> setter) {
         return new EvilInstantStateManager<>(Binding.generic(def, getter, setter));
     }
@@ -218,7 +239,7 @@ public class BlockHighlightConfig {
     @Updatable
     public static Option<Boolean> o_outlineRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.enabled = newVal))
+            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.setEnabled(newVal)))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
@@ -341,7 +362,7 @@ public class BlockHighlightConfig {
     @Updatable
     public static Option<Boolean> o_soutlineRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.enabled = newVal))
+            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.setEnabled(newVal)))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
@@ -451,7 +472,7 @@ public class BlockHighlightConfig {
     @Updatable
     public static Option<Boolean> o_toutlineRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.enabled = newVal))
+            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.setEnabled(newVal)))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
@@ -561,7 +582,7 @@ public class BlockHighlightConfig {
     @Updatable
     public static Option<Boolean> o_fillRainbow = Option.<Boolean>createBuilder()
             .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.enabled = newVal))
+            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.setEnabled(newVal)))
             .controller(TickBoxControllerBuilder::create)
             .addListener((option, event) -> update(option, option.pendingValue()))
             .build();
@@ -1204,6 +1225,12 @@ public class BlockHighlightConfig {
                 });
         return this;
     }
+    //?} else {
+    /*public BlockHighlightConfig applyValuesToOptionInstances() {
+        CBHOneConfig.refresh();
+        return this;
+    }
+    *///?}
 
     static {
         ACTIVE_INSTANCE = ConfigManager.load();

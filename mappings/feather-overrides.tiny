@@ -1,0 +1,18 @@
+tiny	2	0	intermediary	named
+c	net/minecraft/client/Minecraft	net/minecraft/client/Minecraft
+	f	Lnet/minecraft/unmapped/C_34399650;	f_26407825	level
+	m	()Lnet/minecraft/unmapped/C_42232651;	m_67314413	getCameraEntity
+c	net/minecraft/unmapped/C_32594356	net/minecraft/util/math/BlockPos
+	m	()Lnet/minecraft/unmapped/C_32594356;	m_61542932	above
+	m	()Lnet/minecraft/unmapped/C_32594356;	m_23145905	below
+	m	(Lnet/minecraft/unmapped/C_28786548;)Lnet/minecraft/unmapped/C_32594356;	m_39481470	relative
+c	net/minecraft/unmapped/C_64041439	net/minecraft/world/World
+	m	(Lnet/minecraft/unmapped/C_32594356;)Z	m_64558657	isEmptyBlock
+c	net/minecraft/unmapped/C_27154081	net/minecraft/util/profiler/Profiler
+	m	(Ljava/lang/String;)V	m_00042816	popPush
+c	net/minecraft/unmapped/C_46108969	net/minecraft/world/WorldView
+	m	(Lnet/minecraft/unmapped/C_32594356;)Z	m_64558657	isEmptyBlock
+c	net/minecraft/unmapped/C_28786548	net/minecraft/util/math/Direction
+	m	()I	m_48689500	getStepX
+	m	()I	m_29389506	getStepY
+	m	()I	m_22521050	getStepZ

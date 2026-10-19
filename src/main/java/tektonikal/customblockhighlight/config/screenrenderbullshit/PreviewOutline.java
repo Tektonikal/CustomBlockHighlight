@@ -4,6 +4,7 @@ package tektonikal.customblockhighlight.config.screenrenderbullshit;
 /*import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import it.unimi.dsi.fastutil.Pair;
+//? if >1.8.9
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -26,7 +27,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 /^import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.renderer.RenderType;
 ^///?}
-//?} else {
+//?} elif >1.8.9 {
 /^import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -34,6 +35,8 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.renderpearl.api.vertex.VertexFormat;
+^///?} else {
+/^import tektonikal.customblockhighlight.legacy.vertex.LegacyVertexBuffer;
 ^///?}
 
 public class PreviewOutline {
@@ -60,13 +63,17 @@ public class PreviewOutline {
 		}
 		return types;
 	}
-	//?} else {
+	//?} elif >1.8.9 {
 	/^private static BufferBuilder currentDraw;
 	^///?}
 
+	//? if >1.8.9 {
 	public static void draw(PoseStack stack, MultiBufferSource.BufferSource bufferSource, PresetsScreen.Preset preset) {
+	//?} else
+	//public static void draw(PoseStack stack, LegacyVertexBuffer bufferSource, PresetsScreen.Preset preset) {
 		Pair<List<CBHLineRenderInfo>, CBHFillRenderInfo> info = preset.renderInfo.get();
 
+		//? if >1.8.9
 		bufferSource.endBatch();
 
 		CBHFillRenderInfo fillInfo = info.right();
@@ -80,6 +87,7 @@ public class PreviewOutline {
 		for (CBHLineRenderInfo lineInfo : info.first().reversed()) {
 			AABB lineBox = lineInfo.shape().bounds();
 			stack.pushPose();
+			//? if >1.8.9
 			stack.last().pose().scaleLocal(UNDO_VIEW_SHRINK);
 			Vertexer.applyExpansion(stack, lineBox, lineInfo.scaleBlocks(), lineInfo.scalePercent());
 			Vertexer.vertexBoxLines(stack.last(), beginLayer(bufferSource, lineInfo.mode(), true), lineBox, lineInfo.cols(), lineInfo.alphas(), lineInfo.width(), lineInfo.cutFromCenter(), lineInfo.cutFromCorner(), lineInfo.outerMult(), lineInfo.innerMult());
@@ -88,23 +96,31 @@ public class PreviewOutline {
 		}
 	}
 
+	//? if >1.8.9 {
 	private static VertexConsumer beginLayer(MultiBufferSource.BufferSource bufferSource, DepthTestMode mode, boolean lines) {
+	//?} else
+	//private static VertexConsumer beginLayer(LegacyVertexBuffer bufferSource, DepthTestMode mode, boolean lines) {
 		//? if >=1.21.5 {
 		return bufferSource.getBuffer((lines ? LINE_TYPES : FILL_TYPES).get(mode));
-		//?} else {
+		//?} elif >1.8.9 {
 		/^currentDraw = Tesselator.getInstance().begin(lines ? VertexFormat.Mode.LINES : VertexFormat.Mode.QUADS, lines ? DefaultVertexFormat.POSITION_COLOR_NORMAL : DefaultVertexFormat.POSITION_COLOR);
 		return currentDraw;
+		^///?} else {
+		/^return bufferSource.begin(lines);
 		^///?}
 	}
 
+	//? if >1.8.9 {
 	private static void endLayer(MultiBufferSource.BufferSource bufferSource, DepthTestMode mode, boolean lines, float width) {
+	//?} else
+	//private static void endLayer(LegacyVertexBuffer bufferSource, DepthTestMode mode, boolean lines, float width) {
 		//? if >=1.21.11 {
 		bufferSource.endBatch();
 		//?} elif >=1.21.5 {
 		/^RenderSystem.lineWidth(lines ? width : 1F);
 		bufferSource.endBatch();
 		RenderSystem.lineWidth(1F);
-		^///?} else {
+		^///?} elif >1.8.9 {
 		/^MeshData builtBuffer = currentDraw.build();
 		currentDraw = null;
 		if (builtBuffer == null) return;
@@ -119,6 +135,8 @@ public class PreviewOutline {
 		RenderSystem.enableCull();
 		RenderSystem.disableBlend();
 		RenderSystem.lineWidth(1F);
+		^///?} else {
+		/^bufferSource.draw(mode);
 		^///?}
 	}
 }

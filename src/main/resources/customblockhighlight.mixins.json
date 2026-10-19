@@ -15,7 +15,12 @@
     "GameRendererMixin"
     //? if >=1.21.4
     ,"InactivityFpsLimiterMixin"
+    //? if >1.8.9
     ,"YACLScreenMixin"
+    //? if =1.8.9 {
+    /*,"LiquidBlockMixin"
+    ,"WorldRendererMixin"
+    *///?}
     //? if >=26.2 {
     ,"ShapeOutlineFeatureRendererMixin"
     //?}

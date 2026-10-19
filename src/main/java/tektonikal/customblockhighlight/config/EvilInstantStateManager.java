@@ -1,5 +1,6 @@
 package tektonikal.customblockhighlight.config;
 
+//? if >1.8.9 {
 import dev.isxander.yacl3.api.Binding;
 import dev.isxander.yacl3.api.StateManager;
 import dev.isxander.yacl3.impl.ProvidesBindingForDeprecation;
@@ -78,3 +79,4 @@ public class EvilInstantStateManager<T> implements StateManager<T>, ProvidesBind
         return this.binding;
     }
 }
+//?}
