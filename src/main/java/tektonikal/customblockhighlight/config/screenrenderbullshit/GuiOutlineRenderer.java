@@ -1,15 +1,15 @@
 package tektonikal.customblockhighlight.config.screenrenderbullshit;
 
 //? if >=1.21.8 {
-/*import com.mojang.blaze3d.platform.Lighting;
-import tektonikal.customblockhighlight.legacy.vertex.PoseStack;
+import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.render.pip.PictureInPictureRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import org.joml.Quaternionf;
 
 //? if >=26.2 {
-/^import tektonikal.customblockhighlight.legacy.Pair;
+import it.unimi.dsi.fastutil.Pair;
 import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.block.BlockModelRenderState;
@@ -19,25 +19,25 @@ import net.minecraft.util.LightCoordsUtil;
 import tektonikal.customblockhighlight.CBHFeatureRenderer;
 
 import java.util.List;
-^///?} else {
-import net.minecraft.client.renderer.MultiBufferSource;
+//?} else {
+/*import net.minecraft.client.renderer.MultiBufferSource;
 //? if >=26.1 {
-/^import net.minecraft.client.renderer.block.BlockModelRenderState;
+import net.minecraft.client.renderer.block.BlockModelRenderState;
 import net.minecraft.client.renderer.block.BlockModelResolver;
 import net.minecraft.client.renderer.block.model.BlockDisplayContext;
 import net.minecraft.client.renderer.feature.FeatureRenderDispatcher;
 import net.minecraft.util.LightCoordsUtil;
-^///?} else {
-import net.minecraft.client.renderer.LightTexture;
-//?}
-//?}
+//?} else {
+/^import net.minecraft.client.renderer.LightTexture;
+^///?}
+*///?}
 
 public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState> {
 	//? if <26.2 {
-	public GuiOutlineRenderer(MultiBufferSource.BufferSource bufferSource) {
+	/*public GuiOutlineRenderer(MultiBufferSource.BufferSource bufferSource) {
 		super(bufferSource);
 	}
-	//?}
+	*///?}
 
 	@Override
 	public Class<EvilRenderState> getRenderStateClass() {
@@ -53,7 +53,7 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
 	}
 
 	//? if >=26.2 {
-	/^@Override
+	@Override
 	protected void renderToTexture(EvilRenderState renderState, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
 		if (renderState.preset() == null) return;
 		if (!PresetsScreen.shouldRender(renderState.preset())) {
@@ -79,9 +79,9 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
         CBHFeatureRenderer.Submit t = new CBHFeatureRenderer.Submit(info.first(), linePose, info.right());
 		submitNodeCollector.submitCustom(SubmitRenderPhases.ALWAYS_ON_TOP, t);
 	}
-	^///?} else {
+	//?} else {
 	
-	@Override
+	/*@Override
 	protected void renderToTexture(EvilRenderState renderState, PoseStack poseStack) {
 		if (renderState.preset() == null) return;
 		if (!PresetsScreen.shouldRender(renderState.preset())) {
@@ -95,20 +95,20 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
 		poseStack.pushPose();
 		poseStack.translate(-0.5F, -0.5F, -0.5F);
 		//? if >=26.1 {
-		/^BlockModelResolver blockModelResolver = new BlockModelResolver(Minecraft.getInstance().getModelManager());
+		BlockModelResolver blockModelResolver = new BlockModelResolver(Minecraft.getInstance().getModelManager());
 		BlockModelRenderState blockModelRenderState = new BlockModelRenderState();
 		blockModelResolver.update(blockModelRenderState, renderState.preset().block.defaultBlockState(), BlockDisplayContext.create());
 		FeatureRenderDispatcher featureRenderDispatcher = Minecraft.getInstance().gameRenderer.getFeatureRenderDispatcher();
 		blockModelRenderState.submit(poseStack, featureRenderDispatcher.getSubmitNodeStorage(), LightCoordsUtil.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0);
 		featureRenderDispatcher.renderAllFeatures();
-		^///?} else {
-		Minecraft.getInstance().getBlockRenderer().renderSingleBlock(renderState.preset().block.defaultBlockState(), poseStack, bufferSource, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
-		//?}
+		//?} else {
+		/^Minecraft.getInstance().getBlockRenderer().renderSingleBlock(renderState.preset().block.defaultBlockState(), poseStack, bufferSource, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+		^///?}
 		poseStack.popPose();
 
 		PreviewOutline.draw(poseStack, bufferSource, renderState.preset());
 	}
-	//?}
+	*///?}
 
 	@Override
 	protected float getTranslateY(final int height, final int guiScale) {
@@ -120,4 +120,4 @@ public class GuiOutlineRenderer extends PictureInPictureRenderer<EvilRenderState
 		return "outline";
 	}
 }
-*///?}
+//?}

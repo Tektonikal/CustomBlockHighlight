@@ -1,8 +1,8 @@
 package tektonikal.customblockhighlight.legacy.phys;
 
 //? if =1.8.9 {
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
+/*import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 
 public class BlockHitResult extends HitResult {
 	private final Direction direction;
@@ -28,4 +28,4 @@ public class BlockHitResult extends HitResult {
 		return miss ? Type.MISS : Type.BLOCK;
 	}
 }
-//?}
+*///?}

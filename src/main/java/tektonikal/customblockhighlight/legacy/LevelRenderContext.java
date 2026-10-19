@@ -1,8 +1,8 @@
 package tektonikal.customblockhighlight.legacy;
 
 //? if =1.8.9 {
-import tektonikal.customblockhighlight.legacy.vertex.PoseStack;
+/*import com.mojang.blaze3d.vertex.PoseStack;
 
 public record LevelRenderContext(PoseStack poseStack) {
 }
-//?}
+*///?}

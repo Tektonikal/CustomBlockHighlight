@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy.phys;
 
 //? if =1.8.9 {
-import org.joml.Vector3f;
+/*import org.joml.Vector3f;
 import org.joml.Vector3fc;
 
 public class Vec3 {
@@ -82,4 +82,4 @@ public class Vec3 {
 		return "(" + x + ", " + y + ", " + z + ")";
 	}
 }
-//?}
+*///?}

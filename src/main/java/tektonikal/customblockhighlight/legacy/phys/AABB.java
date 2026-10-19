@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy.phys;
 
 //? if =1.8.9 {
-import net.minecraft.util.math.Box;
+/*import net.minecraft.util.math.Box;
 
 public class AABB {
 	public final double minX;
@@ -99,4 +99,4 @@ public class AABB {
 		return "AABB[" + minX + ", " + minY + ", " + minZ + "] -> [" + maxX + ", " + maxY + ", " + maxZ + "]";
 	}
 }
-//?}
+*///?}

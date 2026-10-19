@@ -1,18 +1,18 @@
 package tektonikal.customblockhighlight;
 
 //? if >=26.2 {
-/*import tektonikal.customblockhighlight.legacy.vertex.PoseStack;
-import tektonikal.customblockhighlight.legacy.vertex.VertexConsumer;
-import tektonikal.customblockhighlight.legacy.Pair;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.client.renderer.feature.FeatureFrameContext;
 import net.minecraft.client.renderer.feature.FeatureRendererType;
 import net.minecraft.client.renderer.feature.RenderTypeFeatureRenderer;
 import net.minecraft.client.renderer.feature.submit.SubmitNode;
 import net.minecraft.client.renderer.rendertype.*;
 import net.minecraft.world.entity.Pose;
-import tektonikal.customblockhighlight.legacy.phys.AABB;
-import tektonikal.customblockhighlight.legacy.phys.shapes.Shapes;
-import tektonikal.customblockhighlight.legacy.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.CBHFillRenderInfo;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.CBHLineRenderInfo;
 
@@ -72,4 +72,4 @@ public class CBHFeatureRenderer extends RenderTypeFeatureRenderer<CBHFeatureRend
 		}
 	}
 }
-*///?}
+//?}

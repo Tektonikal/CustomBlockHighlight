@@ -2,17 +2,17 @@ package tektonikal.customblockhighlight.config;
 
 import com.google.gson.JsonSyntaxException;
 //? if >1.8.9 {
-/*import dev.isxander.yacl3.api.*;
+import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import dev.isxander.yacl3.impl.ProvidesBindingForDeprecation;
-*///?}
-import tektonikal.customblockhighlight.legacy.Pair;
+//?}
+import it.unimi.dsi.fastutil.Pair;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 //? if >1.8.9
-//import net.minecraft.client.gui.screens.Screen;
-import tektonikal.customblockhighlight.legacy.Component;
-import tektonikal.customblockhighlight.legacy.Mth;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import org.jetbrains.annotations.NotNull;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen;
 import tektonikal.customblockhighlight.util.DepthTestMode;
@@ -31,18 +31,18 @@ import java.util.function.Supplier;
 
 import static com.sun.jna.Platform.isWindows;
 //? if >1.8.9
-//import static net.minecraft.util.Util.getMillis;
+import static net.minecraft.util.Util.getMillis;
 
 @SuppressWarnings("NoTranslation") // temporary fix until fletching table finds a solution
 public class BlockHighlightConfig {
     //? if >1.8.9 {
-    /*public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val ->
+    public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val ->
             Component.translatable(String.format("%.2f", val)
                     .replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
     public static final ValueFormatter<Float> BLOCKS_FORMATTER_THREE_PLACES = val ->
             Component.translatable(String.format("%.3f", val)
                     .replace(".000", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
-    *///?}
+    //?}
     @SuppressWarnings("UnusedAssignment") // required for clinit stuff
     public static BlockHighlightConfig ACTIVE_INSTANCE = new BlockHighlightConfig();
 
@@ -111,9 +111,9 @@ public class BlockHighlightConfig {
 
         public Color getRainbowCol(boolean primaryCol) {
             //? if >1.8.9 {
-            /*float rainbowState = Mth.ceil((getMillis() + (primaryCol ? 0 : this.delay))) * this.speed / 50;
-            *///?} else
-            float rainbowState = Mth.ceil((Minecraft.getTime() + (primaryCol ? 0 : this.delay))) * this.speed / 50;
+            float rainbowState = Mth.ceil((getMillis() + (primaryCol ? 0 : this.delay))) * this.speed / 50;
+            //?} else
+            //float rainbowState = Mth.ceil((Minecraft.getTime() + (primaryCol ? 0 : this.delay))) * this.speed / 50;
             rainbowState %= 360;
             return Color.getHSBColor(rainbowState / 360, this.saturation, this.brightness);
         }
@@ -208,7 +208,7 @@ public class BlockHighlightConfig {
 	//TODO: exclude barriers and no render when inside of block
 
     //? if >1.8.9 {
-    /*static <T> StateManager<T> createInstant(@NotNull T def, @NotNull Supplier<@NotNull T> getter, @NotNull Consumer<@NotNull T> setter) {
+    static <T> StateManager<T> createInstant(@NotNull T def, @NotNull Supplier<@NotNull T> getter, @NotNull Consumer<@NotNull T> setter) {
         return new EvilInstantStateManager<>(Binding.generic(def, getter, setter));
     }
 
@@ -1225,12 +1225,12 @@ public class BlockHighlightConfig {
                 });
         return this;
     }
-    *///?} else {
-    public BlockHighlightConfig applyValuesToOptionInstances() {
+    //?} else {
+    /*public BlockHighlightConfig applyValuesToOptionInstances() {
         CBHOneConfig.refresh();
         return this;
     }
-    //?}
+    *///?}
 
     static {
         ACTIVE_INSTANCE = ConfigManager.load();

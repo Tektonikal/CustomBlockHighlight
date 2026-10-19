@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy.vertex;
 
 //? if =1.8.9 {
-import net.minecraft.client.render.platform.GlStateManager;
+/*import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import net.minecraft.client.render.vertex.Tesselator;
@@ -133,4 +133,4 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 		}
 	}
 }
-//?}
+*///?}

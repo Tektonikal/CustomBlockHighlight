@@ -1,11 +1,11 @@
 package tektonikal.customblockhighlight.mixin;
 
 //? if >=1.21.4 {
-/*import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.mojang.blaze3d.platform.FramerateLimitTracker;
 import dev.isxander.yacl3.gui.YACLScreen;
 import net.minecraft.client.Minecraft;
-import tektonikal.customblockhighlight.legacy.Component;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -15,9 +15,9 @@ import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen
 public abstract class InactivityFpsLimiterMixin {
 
 	//? if >=1.21.5 {
-	/^@Shadow
+	@Shadow
 	public abstract FramerateLimitTracker.FramerateThrottleReason getThrottleReason();
-	^///?}
+	//?}
 
 	@Shadow
 	private int framerateLimit;
@@ -25,12 +25,12 @@ public abstract class InactivityFpsLimiterMixin {
 	@ModifyReturnValue(method = "getFramerateLimit", at = @At("RETURN"))
 	int yeah(int original) {
 		//? if >=1.21.5 {
-		/^if (getThrottleReason() == FramerateLimitTracker.FramerateThrottleReason.OUT_OF_LEVEL_MENU &&
+		if (getThrottleReason() == FramerateLimitTracker.FramerateThrottleReason.OUT_OF_LEVEL_MENU &&
 				Minecraft.getInstance().gui.screen() instanceof PresetsScreen || (Minecraft.getInstance().gui.screen() instanceof YACLScreen s && s.config.title().equals(Component.translatable("cbh.config.title")))) {
 			return framerateLimit;
 		}
-		^///?}
+		//?}
 		return original;
 	}
 }
-*///?}
+//?}

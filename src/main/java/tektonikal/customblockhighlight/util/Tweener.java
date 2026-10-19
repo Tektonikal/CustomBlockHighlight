@@ -1,6 +1,6 @@
 package tektonikal.customblockhighlight.util;
 
-import tektonikal.customblockhighlight.legacy.Mth;
+import net.minecraft.util.Mth;
 import tektonikal.customblockhighlight.CustomBlockHighlight;
 
 import java.util.function.Supplier;

@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy;
 
 //? if =1.8.9 {
-public final class Mth {
+/*public final class Mth {
 	private Mth() {
 	}
 
@@ -48,4 +48,4 @@ public final class Mth {
 		return start + delta * (end - start);
 	}
 }
-//?}
+*///?}

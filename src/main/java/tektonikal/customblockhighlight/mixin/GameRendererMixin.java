@@ -1,10 +1,10 @@
 package tektonikal.customblockhighlight.mixin;
 
 //? if >1.8.9 {
-/*//? if >=26.1 {
-/^import com.llamalad7.mixinextras.sugar.Local;
+//? if >=26.1 {
+import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
-^///?}
+//?}
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
@@ -18,8 +18,8 @@ import tektonikal.customblockhighlight.Renderer;
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
 }
-*///?} else {
-import net.minecraft.client.render.GameRenderer;
+//?} else {
+/*import net.minecraft.client.render.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,7 +27,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tektonikal.customblockhighlight.Renderer;
 import tektonikal.customblockhighlight.legacy.LegacyClient;
 import tektonikal.customblockhighlight.legacy.LevelRenderContext;
-import tektonikal.customblockhighlight.legacy.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
@@ -41,4 +41,4 @@ public class GameRendererMixin {
 		Renderer.mainLoop(new LevelRenderContext(new PoseStack()));
 	}
 }
-//?}
+*///?}

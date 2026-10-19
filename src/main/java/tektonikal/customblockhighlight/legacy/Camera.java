@@ -1,9 +1,9 @@
 package tektonikal.customblockhighlight.legacy;
 
 //? if =1.8.9 {
-import net.minecraft.client.Minecraft;
-import net.minecraft.entity.Entity;
-import tektonikal.customblockhighlight.legacy.phys.Vec3;
+/*import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
 
 public final class Camera {
 	public static final Camera MAIN = new Camera();
@@ -22,4 +22,4 @@ public final class Camera {
 		);
 	}
 }
-//?}
+*///?}

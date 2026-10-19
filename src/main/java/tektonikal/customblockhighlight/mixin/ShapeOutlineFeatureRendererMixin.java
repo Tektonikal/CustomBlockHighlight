@@ -1,14 +1,14 @@
 package tektonikal.customblockhighlight.mixin;
 
 //? if >=26.2 {
-/*import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import tektonikal.customblockhighlight.legacy.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.SubmitNodeCollection;
 import net.minecraft.client.renderer.feature.FeatureFrameContext;
 import net.minecraft.client.renderer.feature.ShapeOutlineFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import tektonikal.customblockhighlight.legacy.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.spongepowered.asm.mixin.Mixin;
 import tektonikal.customblockhighlight.Renderer;
 
@@ -25,4 +25,4 @@ public class ShapeOutlineFeatureRendererMixin {
 //		});
 //	}
 }
-*///?}
+//?}

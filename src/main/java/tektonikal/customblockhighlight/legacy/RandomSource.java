@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy;
 
 //? if =1.8.9 {
-import java.util.Random;
+/*import java.util.Random;
 
 public class RandomSource extends Random {
 	private RandomSource(long seed) {
@@ -12,4 +12,4 @@ public class RandomSource extends Random {
 		return new RandomSource(seed);
 	}
 }
-//?}
+*///?}

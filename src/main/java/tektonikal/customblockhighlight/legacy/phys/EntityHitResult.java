@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy.phys;
 
 //? if =1.8.9 {
-import net.minecraft.entity.Entity;
+/*import net.minecraft.world.entity.Entity;
 
 public class EntityHitResult extends HitResult {
 	private final Entity entity;
@@ -19,4 +19,4 @@ public class EntityHitResult extends HitResult {
 		return Type.ENTITY;
 	}
 }
-//?}
+*///?}

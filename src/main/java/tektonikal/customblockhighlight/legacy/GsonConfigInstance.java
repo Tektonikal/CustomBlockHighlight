@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy;
 
 //? if =1.8.9 {
-import com.google.gson.JsonDeserializationContext;
+/*import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
@@ -28,4 +28,4 @@ public final class GsonConfigInstance {
 		}
 	}
 }
-//?}
+*///?}

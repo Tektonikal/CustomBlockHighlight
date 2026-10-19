@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.legacy.phys.shapes;
 
 //? if =1.8.9 {
-import tektonikal.customblockhighlight.legacy.phys.AABB;
+/*import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -126,4 +126,4 @@ public class VoxelShape {
 		return "VoxelShape" + Arrays.toString(boxes.toArray());
 	}
 }
-//?}
+*///?}

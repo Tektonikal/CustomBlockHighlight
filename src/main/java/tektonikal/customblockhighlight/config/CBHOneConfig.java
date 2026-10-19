@@ -1,7 +1,7 @@
 package tektonikal.customblockhighlight.config;
 
 //? if =1.8.9 {
-import com.google.gson.JsonSyntaxException;
+/*import com.google.gson.JsonSyntaxException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import org.polyfrost.compose.render.PolyColor;
@@ -341,4 +341,4 @@ public class CBHOneConfig extends Config {
 		return value.name();
 	}
 }
-//?}
+*///?}
