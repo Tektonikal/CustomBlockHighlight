@@ -770,8 +770,10 @@ public class Renderer {
 			return true;
 		}
 		return state.isAir(); // == Level.isEmptyBlock(pos)
-		//?} else
-		//return mc.level.isEmptyBlock(pos);
+		//?} else {
+		/*if (mc.level.getBlockState(pos).getBlock().getMaterial().isLiquid()) return true;
+		return mc.level.isEmptyBlock(pos);
+		*///?}
 	}
 
 	public static EnumSet<Direction> getConcealedFaces(BlockPos pos) {
