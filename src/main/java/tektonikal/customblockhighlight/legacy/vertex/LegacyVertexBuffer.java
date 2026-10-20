@@ -66,6 +66,7 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 		GlStateManager.disableLighting();
 		GlStateManager.shadeModel(GL11.GL_SMOOTH);
 		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		GlStateManager.depthMask(lines);
 		applyDepth(mode);
 
 		if (lines) {
@@ -75,6 +76,7 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 		}
 
 		GL11.glLineWidth(1.0F);
+		GlStateManager.depthMask(true);
 		GlStateManager.enableDepthTest();
 		GlStateManager.depthFunc(GL11.GL_LEQUAL);
 		GlStateManager.shadeModel(GL11.GL_FLAT);
