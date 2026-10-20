@@ -1,9 +1,9 @@
 package tektonikal.customblockhighlight.config;
 
-//? if =1.8.9 {
-/*import com.google.gson.JsonSyntaxException;
+import com.google.gson.JsonSyntaxException;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
+//? if =1.8.9
+//import net.minecraft.client.gui.screen.Screen;
 import org.polyfrost.compose.render.PolyColor;
 import org.polyfrost.oneconfig.api.config.v1.Config;
 import org.polyfrost.oneconfig.api.config.v1.Properties;
@@ -40,7 +40,7 @@ public class CBHOneConfig extends Config {
 	private String subcategory;
 
 	private CBHOneConfig() {
-		super("custom-block-highlight.json", "assets/icon.png", "Custom Block Highlight", Category.VISUALS);
+		super("custom-block-highlight.json", "assets/customblockhighlight/icon.png", "Custom Block Highlight", Category.VISUALS);
 	}
 
 	public static void init() {
@@ -53,8 +53,26 @@ public class CBHOneConfig extends Config {
 	}
 
 	public static void openPresets() {
-		Minecraft minecraft = Minecraft.getInstance();
+		//? if >1.8.9 {
+		Minecraft.getInstance().setScreenAndShow(new PresetsScreen(false, Minecraft.getInstance().gui.screen()));
+		//?} else {
+		/*Minecraft minecraft = Minecraft.getInstance();
 		minecraft.openScreen(new PresetsScreen(false, minecraft.screen));
+		*///?}
+	}
+
+	private static void setClipboard(String text) {
+		//? if >1.8.9 {
+		Minecraft.getInstance().keyboardHandler.setClipboard(text);
+		//?} else
+		//Screen.setClipboard(text);
+	}
+
+	private static String getClipboard() {
+		//? if >1.8.9 {
+		return Minecraft.getInstance().keyboardHandler.getClipboard();
+		//?} else
+		//return Screen.getClipboard();
 	}
 
 	@Override
@@ -66,7 +84,8 @@ public class CBHOneConfig extends Config {
 		this.properties = new ArrayList<>();
 		tree.addMetadata("custom_save", (Runnable) ConfigManager::save);
 		tree.addMetadata("no_cache", true);
-		tree.addMetadata("open_original_screen", (Runnable) CBHOneConfig::openPresets);
+		//? if =1.8.9
+		//tree.addMetadata("open_original_screen", (Runnable) CBHOneConfig::openPresets);
 		buildOptions();
 		return tree;
 	}
@@ -75,7 +94,9 @@ public class CBHOneConfig extends Config {
 		BooleanSupplier global = () -> getActiveInstance().enableModRendering;
 
 		group("Outline", "General");
-		toggle("globalModToggle", "Enable Mod Rendering", null, c -> c.enableModRendering, (c, v) -> c.enableModRendering = v, () -> true);
+		// OneConfig's card switch: the one option it leaves usable while the mod is switched off there
+		toggle("globalModToggle", "Enable Mod Rendering", null, c -> c.enableModRendering, (c, v) -> c.enableModRendering = v, () -> true)
+				.addMetadata("masterToggle", true);
 		toggle("vanillaOutline", "Show Vanilla Outline", null, c -> c.drawVanillaOutline, (c, v) -> c.drawVanillaOutline = v, () -> true);
 		lineLayer("", "Primary Layer", c -> c.primary, "Completely toggle all line rendering.", global, 0.5F, 0.99F);
 
@@ -86,36 +107,48 @@ public class CBHOneConfig extends Config {
 		group("Fill", "Fill");
 		toggle("fillEnabled", "Enabled", null, c -> c.fillEnabled, (c, v) -> c.fillEnabled = v, global);
 		BooleanSupplier fill = () -> global.getAsBoolean() && getActiveInstance().fillEnabled;
-		subcategory = "Color";
+		beginAccordion("fillColorGroup", "Color");
 		colorSetting("fill", c -> c.fillCol, fill, 1);
-		subcategory = "Scaling";
+		beginAccordion("fillScalingGroup", "Scaling");
 		slider("fillExpandBlocks", "Adjust Size By (Blocks)", null, c -> c.fillExpandBlocks, (c, v) -> c.fillExpandBlocks = v, -2F, 1F, 0.0625F, fill);
 		slider("fillExpandPercent", "Adjust Size By (Percentage)", null, c -> c.fillExpandPercent, (c, v) -> c.fillExpandPercent = v, 0F, 2F, 0.01F, fill);
-		subcategory = "Miscellaneous";
+		beginAccordion("fillMiscGroup", "Miscellaneous");
 		dropdown("fillType", "Face Mode", FACE_MODE_DESCRIPTION, FaceMode.class, c -> c.fillType, (c, v) -> c.fillType = v, fill);
 		dropdown("fillDepthTest", "Depth Test", DEPTH_TEST_DESCRIPTION, DepthTestMode.class, c -> c.fillDepthTest, (c, v) -> c.fillDepthTest = v, fill);
 
-		group("Extras", "Easing");
-		toggle("doEasing", "Enabled", "Controls how fast the outline moves between targets, as well as individual lines from the model. Disable to turn off all animation.", c -> c.doEasing, (c, v) -> c.doEasing = v, global);
+		group("Extras", "Animations");
+		beginAccordion("easingGroup", "Easing");
+		headToggle("doEasing", "Easing", "Controls how fast the outline moves between targets, as well as individual lines from the model. Disable to turn off all animation.", c -> c.doEasing, (c, v) -> c.doEasing = v, global);
 		BooleanSupplier easing = () -> global.getAsBoolean() && getActiveInstance().doEasing;
 		slider("easeSpeed", "Speed", null, c -> c.easeSpeed, (c, v) -> c.easeSpeed = v, 5F, 100F, 0.5F, easing);
 		toggle("improvedEasing", "Improved Easing", "Calculates animations based on frame timings rather than FPS for more consistent animations, especially during rapid changes in FPS. Meant for people who play on uncapped FPS!", c -> c.improvedEasing, (c, v) -> c.improvedEasing = v, easing);
 
-		subcategory = "Fading Animations";
+		// two switches, so neither can be the header
+		beginAccordion("fadeGroup", "Fading Animations");
 		toggle("fadeIn", "In", null, c -> c.fadeIn, (c, v) -> c.fadeIn = v, global);
 		slider("fadeInSpeed", "Speed", null, c -> c.fadeInSpeed, (c, v) -> c.fadeInSpeed = v, 5F, 25F, 0.1F, () -> global.getAsBoolean() && getActiveInstance().fadeIn);
 		toggle("fadeOut", "Out", null, c -> c.fadeOut, (c, v) -> c.fadeOut = v, global);
 		slider("fadeOutSpeed", "Speed", null, c -> c.fadeOutSpeed, (c, v) -> c.fadeOutSpeed = v, 5F, 25F, 0.1F, () -> global.getAsBoolean() && getActiveInstance().fadeOut);
 
-		subcategory = "Scaling Animation";
-		toggle("scale", "Enabled", null, c -> c.scale, (c, v) -> c.scale = v, global);
+		beginAccordion("scaleGroup", "Scaling Animation");
+		headToggle("scale", "Scaling Animation", null, c -> c.scale, (c, v) -> c.scale = v, global);
 		slider("scaleSpeed", "Speed", null, c -> c.scaleSpeed, (c, v) -> c.scaleSpeed = v, 5F, 25F, 0.1F, () -> global.getAsBoolean() && getActiveInstance().scale);
 
-		subcategory = "Line Thickness Animation";
-		toggle("animateLineThickness", "Enabled", null, c -> c.animateLineThickness, (c, v) -> c.animateLineThickness = v, global);
+		beginAccordion("lineThicknessGroup", "Line Thickness Animation");
+		headToggle("animateLineThickness", "Line Thickness Animation", null, c -> c.animateLineThickness, (c, v) -> c.animateLineThickness = v, global);
 		slider("lineThicknessSpeed", "Speed", null, c -> c.lineThicknessAnimationSpeed, (c, v) -> c.lineThicknessAnimationSpeed = v, 5F, 25F, 0.1F, () -> global.getAsBoolean() && getActiveInstance().animateLineThickness);
 
-		subcategory = "Render Conditions";
+		group("Extras", "General");
+		// end crystals can't be placed by players on 1.8.9
+		//? if >1.8.9 {
+		beginAccordion("crystalHelperGroup", "Crystal Helper");
+		headToggle("crystalHelper", "Crystal Helper", "Highlights the block in the color below when you are looking at an obsidian block that crystals cannot be placed on.", c -> c.crystalHelper, (c, v) -> c.crystalHelper = v, global);
+		BooleanSupplier crystal = () -> global.getAsBoolean() && getActiveInstance().crystalHelper;
+		plainColor("crystalHelperLineColor", "Line Color", c -> c.crystalHelperLineColor, (c, v) -> c.crystalHelperLineColor = v, crystal);
+		plainColor("crystalHelperFillColor", "Fill Color", c -> c.crystalHelperFillColor, (c, v) -> c.crystalHelperFillColor = v, crystal);
+		//?}
+
+		beginAccordion("renderConditionsGroup", "Render Conditions");
 		toggle("allowEntities", "Select Entities", null, c -> c.allowEntities, (c, v) -> c.allowEntities = v, global);
 		toggle("allowLiquids", "Select Fluids", "Makes fluid blocks valid targets.", c -> c.allowLiquids, (c, v) -> c.allowLiquids = v, global);
 		BooleanSupplier liquids = () -> global.getAsBoolean() && getActiveInstance().allowLiquids;
@@ -124,24 +157,24 @@ public class CBHOneConfig extends Config {
 		toggle("showWhenNoHud", "Show In Hidden HUD", null, c -> c.showWhenNoHud, (c, v) -> c.showWhenNoHud = v, global);
 		toggle("showWhenNoInteraction", "Show When Unable To Interact", "Stops rendering of the selection when in adventure or spectator mode.", c -> c.showWhenNoInteraction, (c, v) -> c.showWhenNoInteraction = v, global);
 
-		subcategory = "Miscellaneous";
+		beginAccordion("miscGroup", "Miscellaneous");
 		toggle("connectedBlocks", "Connected Outlines", "Connects double blocks like chests. Applies to both the fill and outline.", c -> c.connectedBlocks, (c, v) -> c.connectedBlocks = v, global);
 		toggle("updateWhenUnfocused", "Update When Unfocused", "Continues moving the outline box toward its target even when it's not being rendered.", c -> c.updateWhenUnfocused, (c, v) -> c.updateWhenUnfocused = v, global);
 		toggle("rotations", "Rotations (Beta)", "Rotates the outline based on what side of the block you're looking at. Not a finalized or stable feature, here be dragons!", c -> c.rotations, (c, v) -> c.rotations = v, global);
 		slider("rotationSpeed", "Speed", null, c -> c.rotationSpeed, (c, v) -> c.rotationSpeed = v, 5F, 50F, 0.1F, () -> global.getAsBoolean() && getActiveInstance().rotations);
 
-		subcategory = "Config";
+		beginAccordion("configGroup", "Config");
 		button("copy", "Copy To Clipboard", null, "Copy", () -> {
 			ConfigManager.save(); // technically unnecessary
-			Screen.setClipboard(ConfigManager.GSON.toJson(getActiveInstance()));
+			setClipboard(ConfigManager.GSON.toJson(getActiveInstance()));
 		});
 		button("load", "Load From Clipboard", "Loads settings from your clipboard if they're valid.", "Load", () -> {
 			try {
-				BlockHighlightConfig yeah = ConfigManager.GSON.fromJson(Screen.getClipboard(), BlockHighlightConfig.class);
+				BlockHighlightConfig yeah = ConfigManager.GSON.fromJson(getClipboard(), BlockHighlightConfig.class);
 				if (yeah == null) {
 					return;
 				}
-				BlockHighlightConfig.ACTIVE_INSTANCE = yeah.applyValuesToOptionInstances();
+				BlockHighlightConfig.setActive(yeah);
 				ConfigManager.save();
 			} catch (JsonSyntaxException ignored) {
 			}
@@ -168,20 +201,22 @@ public class CBHOneConfig extends Config {
 		slider(prefix + "lineExpand", "Adjust Size By (Blocks)", null, c -> layer.apply(c).lineExpandBlocks, (c, v) -> layer.apply(c).lineExpandBlocks = v, -2F, 1F, 0.0625F, enabled);
 		slider(prefix + "lineExpandPercent", "Adjust Size By (Percentage)", null, c -> layer.apply(c).lineExpandPercentage, (c, v) -> layer.apply(c).lineExpandPercentage = v, 0F, 2F, 0.01F, enabled);
 
-//		beginAccordion(prefix + "lineSubdivisionGroup", "Subdivision");
-//		slider(prefix + "cutFromCorner", "Cut From Corner", null, c -> layer.apply(c).cutFromCorner, (c, v) -> {
-//			LineConfig line = layer.apply(c);
-//			line.cutFromCorner = v;
-//			if (v + line.cutFromCenter >= 0.95F) line.cutFromCenter = Math.clamp(0.95F - v, 0F, 1F);
-//		}, 0F, maxCut, 0.01F, enabled);
-//		slider(prefix + "outerThicknessMult", "Outer Thickness Multiplier", null, c -> layer.apply(c).outerThicknessMult, (c, v) -> layer.apply(c).outerThicknessMult = v, 0F, 2F, 0.05F, enabled);
-//		slider(prefix + "cutFromCenter", "Cut From Center", null, c -> layer.apply(c).cutFromCenter, (c, v) -> {
-//			LineConfig line = layer.apply(c);
-//			line.cutFromCenter = v;
-//			if (v + line.cutFromCorner >= 0.95F) line.cutFromCorner = Math.clamp(0.95F - v, 0F, 1F);
-//		}, 0F, maxCut, 0.01F, enabled);
-//		slider(prefix + "innerThicknessMult", "Inner Thickness Multiplier", null, c -> layer.apply(c).innerThicknessMult, (c, v) -> layer.apply(c).innerThicknessMult = v, 0F, 2F, 0.05F, enabled);
-//		endAccordion();
+		beginAccordion(prefix + "lineSubdivisionGroup", "Subdivision");
+		slider(prefix + "cutFromCorner", "Cut From Corner", null, c -> layer.apply(c).cutFromCorner, (c, v) -> {
+			LineConfig line = layer.apply(c);
+			line.cutFromCorner = v;
+			if (v + line.cutFromCenter >= 0.95F) line.cutFromCenter = Math.clamp(0.95F - v, 0F, 1F);
+		}, 0F, maxCut, 0.01F, enabled);
+		//? if >=1.21.11
+		slider(prefix + "outerThicknessMult", "Outer Thickness Multiplier", null, c -> layer.apply(c).outerThicknessMult, (c, v) -> layer.apply(c).outerThicknessMult = v, 0F, 2F, 0.05F, enabled);
+		slider(prefix + "cutFromCenter", "Cut From Center", null, c -> layer.apply(c).cutFromCenter, (c, v) -> {
+			LineConfig line = layer.apply(c);
+			line.cutFromCenter = v;
+			if (v + line.cutFromCorner >= 0.95F) line.cutFromCorner = Math.clamp(0.95F - v, 0F, 1F);
+		}, 0F, maxCut, 0.01F, enabled);
+		//? if >=1.21.11
+		slider(prefix + "innerThicknessMult", "Inner Thickness Multiplier", null, c -> layer.apply(c).innerThicknessMult, (c, v) -> layer.apply(c).innerThicknessMult = v, 0F, 2F, 0.05F, enabled);
+		endAccordion();
 	}
 
 	private void colorSetting(String prefix, Function<BlockHighlightConfig, ColorSetting> setting, BooleanSupplier enabled, int minAlpha) {
@@ -251,9 +286,21 @@ public class CBHOneConfig extends Config {
 		target = tree;
 	}
 
-	private void toggle(String id, String title, String description, Function<BlockHighlightConfig, Boolean> getter, BiConsumer<BlockHighlightConfig, Boolean> setter, BooleanSupplier enabled) {
+	// an accordion's header switch: OneConfig takes the first switch without a visualizer in it as the header
+	private void headToggle(String id, String title, String description, Function<BlockHighlightConfig, Boolean> getter, BiConsumer<BlockHighlightConfig, Boolean> setter, BooleanSupplier enabled) {
+		property(id, title, description, getter, setter, Boolean.class, enabled);
+	}
+
+	// a single opaque color without alpha or rainbow, like the crystal helper ones
+	private void plainColor(String id, String title, Function<BlockHighlightConfig, Color> getter, BiConsumer<BlockHighlightConfig, Color> setter, BooleanSupplier enabled) {
+		Property<PolyColor> property = property(id, title, null, c -> new PolyColor(getter.apply(c).getRGB() | 0xFF000000), (c, v) -> setter.accept(c, new Color(v.getRawArgb() & 0xFFFFFF)), PolyColor.class, enabled);
+		property.addMetadata("visualizer", Visualizer.ColorVisualizer.class);
+	}
+
+	private Property<Boolean> toggle(String id, String title, String description, Function<BlockHighlightConfig, Boolean> getter, BiConsumer<BlockHighlightConfig, Boolean> setter, BooleanSupplier enabled) {
 		Property<Boolean> property = property(id, title, description, getter, setter, Boolean.class, enabled);
 		property.addMetadata("visualizer", Visualizer.SwitchVisualizer.class);
+		return property;
 	}
 
 	private void slider(String id, String title, String description, Function<BlockHighlightConfig, Float> getter, BiConsumer<BlockHighlightConfig, Float> setter, float min, float max, float step, BooleanSupplier enabled) {
@@ -341,4 +388,3 @@ public class CBHOneConfig extends Config {
 		return value.name();
 	}
 }
-*///?}

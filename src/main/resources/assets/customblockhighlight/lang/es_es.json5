@@ -1,0 +1,141 @@
+{
+  "cbh": {
+    // TODO: divide further by category.. don't have everything just in config
+    "config": {
+      ".": "Config",
+      "general": "General",
+      "global_toggle": " - Activar Mod",
+      "show_vanilla_outline": " - Usar borde vanilla",
+      "main_outline_toggle_desc": "Renderizar las lineas",
+      "non_primary_layer_toggle_desc": "Añadir otra capa de lineas. Cada linea se renderiza debajo de la linea previa.",
+      "improved_easing":"  - Animacion mejorada",
+      "improved_easing.description":"Calcula las animaciones basadas en el delta de fotogramas (frames) en vez de FPS para animaciones con mas consistencia, por la mayoria durante cambios rapidos de FPS. Hecho para las personas que tienen FPS sin limite!",
+      // layout
+      "title": "Custom Block Highlight",
+      "outline": "Borde",
+      "color": "Color",
+      "misc": "Miscellaneo",
+      "subdiv": "Subdivision",
+      "scaling": "Tamaño",
+      "render_conditions": "Renderizar si:",
+      "secondary_layer": "Capa Secundaria",
+      "tertiary_layer": "Capa Terciaria",
+      "fill": "Rellenar",
+      "extras": "Extras",
+      "easing": "Animacion",
+      "easing.description": "Controla con que velocidad se mueve el borde entre objetos, y lineas individuales del modelo. Desactiva para quitar todas animaciones.",
+      "fade": "Animaciones de desaparicion",
+      "scale": "Animacion del Tamaño",
+      "line_thickness": "Animacion de Ancho",
+      "copy_to_clipboard": "- Copiar al portapapeles",
+      "copy": "Copiar",
+      "load_from_clipboard": "- Cargar de portapapeles",
+      "load_from_clipboard.description": "Carga ajustes de tu portapapeles si son validos.",
+      "load": "Cargar",
+      "presets": "- Preajustes",
+      "open": "Abrir",
+      // other
+      "enabled": "Activado",
+      "enabled_in": "- Activado",
+      "primary": "- Primario",
+      "secondary": "- Secundario",
+      "opacity": "- Opacidad",
+      // TODO: there are 2 keys here, one for with - and one without... problem should be
+      //  gone once we switch config libraries, but for now 2 keys are necessary
+      "rainbow_": "Arcoiris",
+      "rainbow": "- Arcoiris",
+      "mode": {
+        ".": "  - Modo de cara",
+        "unindented": "- Modo de cara",
+        "description.1": "Dicta cuales caras son visibles cuando mirando un bloque. Solo sirve con el modo Clasico (Limites)",
+        "description.2": "- Expuestas al aire",
+        "description.3": "- Todas",
+        "description.4": "- Caras ocultas",
+        "description.5": "- Mirada",
+      },
+      "depthTest": {
+        ".": "- Prueba de profundidad",
+        "description": "Dicta como el elemento se va a ver contra otro terreno. Cuidado al usar esto con lineas con capas, puede haber errores visuales!"
+      },
+      "expand_blocks": "- Ajustar tamaño por (Bloques)",
+      "expand_percent": "- Ajustar tamaño por (Porcentage)",
+      "lineWidth": "- Ancho de linea",
+      "cutFromCorner": "- Cortar de la Esquina",
+      "cutFromCenter": "- Cortar del Centro",
+      "alphaMultiplier": "- Multiplicador de Opacidad",
+      "outer_thickness_multiplier": "  - Multiplicador de ancho externo",
+      "inner_thickness_multiplier": "  - Multiplicador de ancho interno",
+      "speed": "  - Velocidad",
+      "in": "- Adentro",
+      "out": "- Afuera",
+      "delay": {
+        ".": "  - Retraso",
+        "description": "Cuando retraso usar para la segunda parte del arcoiris en el gradiente"
+      },
+      "saturation": "  - Saturacion",
+      "brightness": "  - Brillo",
+      "connected_outlines": {
+        ".": "- Bordes conectados",
+        "description": "Conecta bloques doble como cofres. Aplica al relleno y el borde."
+      },
+      "update_when_unfocused": {
+        ".": "- Actualizar si desenfocado",
+        "description": "Continua moviendo el borde hasta su objetivo incluso cuando no esta siendo renderizado."
+      },
+      "crystal_helper": {
+        ".": "Assistante de Cristal",
+        "description": "Destaca el bloque en el color debajo cuando no se puede poner un cristal del end encima.",
+        "line_color": "  - Color de Linea",
+        "fill_color": "  - Color de Relleno"
+      },
+      "select_entities": "- Seleccionar Entidades",
+      "select_fluids": {
+        ".": "- Seleccionar Liquidos",
+        "description": "Hace que los bloques liquidos sean objetos validos."
+      },
+      "rotations": {
+        ".": "- Rotaciones (Beta)",
+        "description": "Rota el borde basado en cual cara de el bloque estas mirando. No esta finalizado o estable, aqui hay dragones!"
+      },
+      "show_when_no_hud": "- Visible en HUD oculta",
+      "show_when_no_interaction": "- Visible cuando no se puede interactuar",
+      "show_when_no_interaction.desc": "Deja de usar la renderizacion de bloques cuando en modo espectador o aventura",
+      "only_source_blocks": "  - Solo en bloques de fuente",
+      "holding_appropriate_item": "  - Solo cuando usando la cosa apropiado",
+      "holding_appropriate_item_desc": "Barcos, cubos, y nenufares."
+    },
+    "presets": {
+      "screenTitle": "CBH Presets Screen",
+      "vanilla": "Pizza sin queso",
+      "sweat": "Vampirico",
+      "trans": "Mujeres hermosas",
+      "classic": "Pizza con queso",
+      "fancy": "Sobreestimulacion"
+    },
+    "enum": {
+      "shape_style": {
+        ".": "- Estilo de Forma",
+        "description": "Dicta como la forma del bloque sera calculada.",
+        "classic": "Clasico (Limites)",
+        "collision": "Forma de colision",
+        "model": "Forma del modelo (Beta)"
+      },
+      "faceMode": {
+        "all": "Todas",
+        "airExposed": "Caras expuestas al aire",
+        "concealed": "Caras ocultas",
+        "lookAt": "Cara mirada"
+      },
+      "depthTestMode": {
+        "normal":"Normal",
+        "alwaysPass":"Siempre pasar",
+        "hiddenOnly": "Solo ocultas"
+      },
+      "outlineStyle": {
+        "classic": "Clasicas",
+        "flat": "Plana",
+        "screen": "Espacio de la pantalla"
+      }
+    }
+  }
+}

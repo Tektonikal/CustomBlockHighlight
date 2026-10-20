@@ -1,0 +1,141 @@
+{
+  "cbh": {
+    // TODO: divide further by category.. don't have everything just in config
+    "config": {
+      ".": "Config",
+      "general": "Obecné",
+      "global_toggle": " - Zapnout kreslení modu",
+      "show_vanilla_outline": " - Zobrazovat defaultní obrys",
+      "main_outline_toggle_desc": "Kompletně zapnout nebo vypnout zobrazování.",
+      "non_primary_layer_toggle_desc": "Zapnout další vrstvu obrysu. Každá vrstva se kreslí pod dou před ní.",
+      "improved_easing":"  - Zlepšené smazání",
+      "improved_easing.description":"Počítá animace podle frame timingu místo FPS pro konzistentní animace, hlavně v rapidních změnách v FPS. Pro hráče, kteří hrajou bez omezených FPS!",
+      // layout
+      "title": "Custom Block Highlight - Vlastní Obrysy Bloků",
+      "outline": "Obrys",
+      "color": "Barva",
+      "misc": "Ostatní",
+      "subdiv": "Podrozdělení",
+      "scaling": "Scaling",
+      "render_conditions": "Podmínky kreslení",
+      "secondary_layer": "Sekundární vrstva",
+      "tertiary_layer": "Třetí vrstva",
+      "fill": "Výplň",
+      "extras": "Extra",
+      "easing": "Easing",
+      "easing.description": "Ovládá to, jak rychle se obrys pohybuje mezi cíly, společně s jednotlivými čáry z modelu. Vypněte pro vypnutí veškeré animace.",
+      "fade": "Přecházecí animace",
+      "scale": "Scalující animace",
+      "line_thickness": "Tloušťka animace",
+      "copy_to_clipboard": "- Zkopírovat do schránky",
+      "copy": "Zkopírovat",
+      "load_from_clipboard": "- Načíst ze schránky",
+      "load_from_clipboard.description": "Načtou se nastavení ze schránky jestli jsou platné.",
+      "load": "Načíst",
+      "presets": "- Přednastavené",
+      "open": "Otevřít",
+      // other
+      "enabled": "Zapnuto",
+      "enabled_in": "- Zapnuto",
+      "primary": "- Primární",
+      "secondary": "- Sekundární",
+      "opacity": "- Průhlednost",
+      // TODO: there are 2 keys here, one for with - and one without... problem should be
+      //  gone once we switch config libraries, but for now 2 keys are necessary
+      "rainbow_": "Duha",
+      "rainbow": "- Duha",
+      "mode": {
+        ".": "  - Režim stěn",
+        "unindented": "- Režim stěn",
+        "description.1": "Diktuje, které stěny jsou viditelné, když se koukáš na blok. Pouze funguje s režimem Bounds.",
+        "description.2": "- Odhalené vzduchu",
+        "description.3": "- Všechny",
+        "description.4": "- Zaktryté stěny",
+        "description.5": "- Zhlíženo",
+      },
+      "depthTest": {
+        ".": "- Test hloubky",
+        "description": "Diktuje jak se tento element bude zkreslovat vůči jinému terénu. Pozor na použití s několika vrstvami, vizuální vady se můžou objevit!"
+      },
+      "expand_blocks": "- Poštelovat velikost (Bloky)",
+      "expand_percent": "- Poštelovat velikost (Procenty)",
+      "lineWidth": "- Tloušťka čar",
+      "cutFromCorner": "- Uříznout z rohu",
+      "cutFromCenter": "- Uříznout ze středu",
+      "alphaMultiplier": "- Násobitel průhlednosti",
+      "outer_thickness_multiplier": "  - Násobitel vnější tloušťky",
+      "inner_thickness_multiplier": "  - Násobitel vnitřní tloušťky",
+      "speed": "  - Rychlost",
+      "in": "- In",
+      "out": "- Out",
+      "delay": {
+        ".": "  - Opoždění",
+        "description": "Jak moc opozdit duhovou barvu, která je použita pro sekundární část přechodu."
+      },
+      "saturation": "  - Sytost",
+      "brightness": "  - Jas",
+      "connected_outlines": {
+        ".": "- Spojené obrysy",
+        "description": "Spojí dvojité bloky, jako např. truhly. Aplikuje se na výplň i venek."
+      },
+      "update_when_unfocused": {
+        ".": "- Aktualizovat mimo kreslení",
+        "description": "Pohyb obrysového boxu pokračuje i když jeho cíl není zkreslen."
+      },
+      "crystal_helper": {
+        ".": "Crystal Helper",
+        "description": "Označí blok barvou spod, když se koukáš na obsidianový blok, na který nelze položit Endový krystal.",
+        "line_color": "  - Barva čáry",
+        "fill_color": "  - Barva výplně"
+      },
+      "select_entities": "- Zvolit entity",
+      "select_fluids": {
+        ".": "- Zvolit tekutiny",
+        "description": "Umožní se zaměřit na tekuté bloky."
+      },
+      "rotations": {
+        ".": "- Otáčení (Beta)",
+        "description": "Otáčí obrys podle strany bloku, na kterou koukáš. Není to dokonalá ani stabilní součást, takže bacha na to!"
+      },
+      "show_when_no_hud": "- Zobrazovat se skrytým HUDem",
+      "show_when_no_interaction": "- Zobrazovat když nejde interaktovat",
+      "show_when_no_interaction.desc": "Zabrání kreslení v herních módech, kde nelze interaktovat s bloky.",
+      "only_source_blocks": "  - Pouze zdrojové bloky",
+      "holding_appropriate_item": "  - Pouze když je vhodný item v ruce",
+      "holding_appropriate_item_desc": "Lodě, kýbly a lekníny."
+    },
+    "presets": {
+      "screenTitle": "CBH Přednastavené",
+      "vanilla": "Dej mi to samotný!",
+      "sweat": "PvP potič",
+      "trans": "Krásné ženy!",
+      "classic": "Klasický CBH zážitek",
+      "fancy": "Úplně se vším, prosim!"
+    },
+    "enum": {
+      "shape_style": {
+        ".": "- Styl tvaru",
+        "description": "Diktuje jak se bude počítat.",
+        "classic": "Klasický (Bounds)",
+        "collision": "Tvar podle kolize",
+        "model": "Tvar podle modelu (Beta)"
+      },
+      "faceMode": {
+        "all": "Všechny",
+        "airExposed": "Stěny odhalené vzduchu",
+        "concealed": "Skryté stěny",
+        "lookAt": "Zhlížené stěny"
+      },
+      "depthTestMode": {
+        "normal":"Normální",
+        "alwaysPass":"Vždy projít",
+        "hiddenOnly": "Pouze skryté"
+      },
+      "outlineStyle": {
+        "classic": "Klasika",
+        "flat": "Ploché",
+        "screen": "Screen Space"
+      }
+    }
+  }
+}

@@ -48,7 +48,7 @@ public class ConfigManager {
     }
 
     public static BlockHighlightConfig loadPreset(String name) {
-        try (var stream = PresetsScreen.class.getResourceAsStream("/assets/presets/" + name + ".json")) {
+        try (var stream = PresetsScreen.class.getResourceAsStream("/assets/customblockhighlight/presets/" + name + ".json")) {
             if (stream == null) return null;
             return loadFromJsonString(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
         } catch (IOException ignored) {
@@ -79,7 +79,7 @@ public class ConfigManager {
     }
 
     public static BlockHighlightConfig getPreset(PresetsScreen.Preset preset) {
-        try (var stream = PresetsScreen.class.getResourceAsStream("/assets/presets/" + preset.name + ".json")) {
+        try (var stream = PresetsScreen.class.getResourceAsStream("/assets/customblockhighlight/presets/" + preset.name + ".json")) {
             if (stream == null) throw new NullPointerException();
             try {
                 return GSON.fromJson(new String(stream.readAllBytes(), StandardCharsets.UTF_8), BlockHighlightConfig.class);

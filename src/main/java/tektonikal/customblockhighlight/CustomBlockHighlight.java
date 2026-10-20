@@ -39,11 +39,6 @@ public class CustomBlockHighlight implements ModInitializer {
 		clampTwoOptions(o_cutFromCorner, o_cutFromCenter);
 		clampTwoOptions(o_scutFromCenter, o_scutFromCorner);
 		clampTwoOptions(o_tcutFromCenter, o_tcutFromCorner);
-        BlockHighlightConfig.update(o_shapeStyle, o_shapeStyle.stateManager().get());
-        BlockHighlightConfig.update(o_sshapeStyle, o_sshapeStyle.stateManager().get());
-        BlockHighlightConfig.update(o_tshapeStyle, o_tshapeStyle.stateManager().get());
-        BlockHighlightConfig.update(o_globalModToggle, false);
-        BlockHighlightConfig.update(o_globalModToggle, o_globalModToggle.stateManager().get());
 		BlockHighlightConfig.getActiveInstance().applyValuesToOptionInstances();
 		LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, hit) -> getActiveInstance().drawVanillaOutline);
 		//? if >=26.2

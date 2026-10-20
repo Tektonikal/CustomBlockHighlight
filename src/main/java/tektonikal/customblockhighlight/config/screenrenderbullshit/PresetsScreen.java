@@ -71,7 +71,7 @@ public class PresetsScreen extends Screen {
     }
 
     public static void loadPreset(Preset preset) {
-        BlockHighlightConfig.ACTIVE_INSTANCE = ConfigManager.loadPreset(preset.name);
+        BlockHighlightConfig.setActive(ConfigManager.loadPreset(preset.name));
         //? if =1.8.9
         //ConfigManager.save(); // OneConfig only saves after its own properties change
     }

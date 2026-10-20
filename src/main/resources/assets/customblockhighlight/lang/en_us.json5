@@ -46,6 +46,7 @@
       "rainbow": "- Rainbow",
       "mode": {
         ".": "  - Face Mode",
+        "unindented": "- Face Mode",
         "description.1": "Dictates what faces are visible when looking at a block. Only works with the Bounds mode.",
         "description.2": "- Air Exposed",
         "description.3": "- All",

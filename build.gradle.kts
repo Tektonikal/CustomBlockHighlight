@@ -46,7 +46,14 @@ repositories {
         maven("https://maven.cloverclient.com/releases") {
             content { includeGroup("pl.tomgirl") }
         }
-        google()
+    } else {
+        strictMaven("https://repo.polyfrost.org/releases", "Polyfrost Releases", "org.polyfrost.oneconfig", "com.github.bawnorton.mixinsquared")
+    }
+    // what OneConfig pulls in
+    strictMaven("https://repo.hypixel.net/repository/Hypixel/", "Hypixel", "net.hypixel")
+    google()
+    maven("https://redirector.kotlinlang.org/maven/compose-dev") {
+        content { includeGroupByRegex("org\\.jetbrains\\..*") }
     }
 }
 
@@ -67,8 +74,11 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${property("deps.fabric_loader")}")
     if (isOrnithe) {
         val oneconfig = property("deps.oneconfig") as String
-        modImplementation("org.polyfrost.oneconfig:${sc.current.version}-ornithe:$oneconfig")
-        for (module in arrayOf("commands", "config", "config-impl", "events", "internal", "ui", "utils", "hud")) {
+        modImplementation("org.polyfrost.oneconfig:${sc.current.version}-ornithe:$oneconfig") {
+            exclude(group = "net.fabricmc", module = "fabric-loader")
+            exclude(group = "me.djtheredstoner") // DevAuth
+        }
+        for (module in arrayOf("commands", "config", "config-impl", "events", "internal", "ui", "utils", "hud", "notifications", "poly-compose")) {
             implementation("org.polyfrost.oneconfig:$module:$oneconfig")
         }
         val joml = "org.joml:joml:${property("deps.joml")}"
@@ -78,6 +88,16 @@ dependencies {
         modImplementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric_api")}")
         modImplementation("dev.isxander:yet-another-config-lib:${property("deps.yacl")}-fabric")
         modImplementation("com.terraformersmc:modmenu:${property("deps.modmenu")}")
+        val oneconfig = property("deps.oneconfig") as String
+        for (module in arrayOf("config", "config-impl", "poly-compose")) {
+            compileOnly("org.polyfrost.oneconfig:$module:$oneconfig") { isTransitive = false }
+        }
+        val oneconfigMc = if (sc.current.parsed >= "26.1" && sc.current.parsed < "26.2") "26.1" else sc.current.version
+        modLocalRuntime("org.polyfrost.oneconfig:$oneconfigMc-fabric:$oneconfig") {
+            exclude(group = "net.fabricmc.fabric-api") // keep ours
+            exclude(group = "net.fabricmc", module = "fabric-loader")
+            exclude(group = "me.djtheredstoner") // DevAuth
+        }
     }
 }
 
@@ -90,6 +110,12 @@ loom {
 
     decompilerOptions.named("vineflower") {
         options.put("mark-corresponding-synthetics", "1")
+    }
+
+    // groups the classes and resources output into one mod in dev, like the jar. without it the mod's only root
+    // is the resources folder, so OneConfig can't tell our classes are ours and wraps the YACL screen a second time
+    mods.register(property("mod.id") as String) {
+        sourceSet(sourceSets.main.get())
     }
 
     runConfigs.remove(runConfigs.getByName("server"))
@@ -131,10 +157,15 @@ tasks {
         inputs.property("version", project.version.toString())
 
         filesMatching("fabric.mod.json") { expand(props) }
-        if (isOrnithe) filesMatching("fabric.mod.json") {
-            filter { line ->
-                line.takeUnless { "\"fabric-api\"" in it || "ModMenuIntegration" in it }
-                    ?.replace("\"yet_another_config_lib_v3\": \"*\"", "\"oneconfigv1\": \"*\"")
+        if (isOrnithe) {
+            // built against this OneConfig, so older ones aren't accepted
+            val oneconfig = project.property("deps.oneconfig") as String
+            inputs.property("oneconfig", oneconfig)
+            filesMatching("fabric.mod.json") {
+                filter { line ->
+                    line.takeUnless { "\"fabric-api\"" in it || "ModMenuIntegration" in it || "CBHOneConfigEntrypoint" in it }
+                        ?.replace("\"yet_another_config_lib_v3\": \"*\"", "\"oneconfigv1\": \">=$oneconfig\"")
+                }
             }
         }
 
