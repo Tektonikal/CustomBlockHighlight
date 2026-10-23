@@ -122,6 +122,16 @@ public class VoxelShape {
 	}
 
 	@Override
+	public boolean equals(Object o) {
+		return this == o || o instanceof VoxelShape other && boxes.equals(other.boxes);
+	}
+
+	@Override
+	public int hashCode() {
+		return boxes.hashCode();
+	}
+
+	@Override
 	public String toString() {
 		return "VoxelShape" + Arrays.toString(boxes.toArray());
 	}
