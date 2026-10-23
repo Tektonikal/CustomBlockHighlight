@@ -5,14 +5,19 @@ package tektonikal.customblockhighlight.legacy.vertex;
 import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import net.minecraft.client.render.vertex.Tesselator;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 
+import java.nio.FloatBuffer;
 import java.util.Arrays;
 
 public final class LegacyVertexBuffer implements VertexConsumer {
 	private static final int STRIDE = 8;
 	private static final int X = 0, Y = 1, Z = 2, R = 3, G = 4, B = 5, A = 6, WIDTH = 7;
+	// same as vanilla's modern rendertype_lines.vsh, pulls lines toward the camera so they don't z-fight with faces
+	private static final float VIEW_SHRINK = 1F - 1F / 256F;
+	private static final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
 
 	private float[] data = new float[STRIDE * 256];
 	private int vertices;
@@ -70,7 +75,14 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 		applyDepth(mode);
 
 		if (lines) {
+			GL11.glMatrixMode(GL11.GL_MODELVIEW);
+			GL11.glGetFloatv(GL11.GL_MODELVIEW_MATRIX, modelView);
+			GL11.glPushMatrix();
+			GL11.glLoadIdentity();
+			GL11.glScalef(VIEW_SHRINK, VIEW_SHRINK, VIEW_SHRINK);
+			GL11.glMultMatrixf(modelView);
 			drawLines();
+			GL11.glPopMatrix();
 		} else {
 			drawPrimitive(GL11.GL_QUADS, 0, vertices - vertices % 4);
 		}
