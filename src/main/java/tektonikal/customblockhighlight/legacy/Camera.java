@@ -21,5 +21,12 @@ public final class Camera {
 				camera.prevZ + (camera.z - camera.prevZ) * tickDelta
 		);
 	}
+
+	public Vec3 eye() {
+		Entity camera = Minecraft.getInstance().getCameraEntity();
+		if (camera == null) return Vec3.ZERO;
+		net.minecraft.util.math.Vec3d eye = camera.getEyePosition(LegacyClient.tickDelta());
+		return new Vec3(eye.x, eye.y, eye.z);
+	}
 }
 *///?}

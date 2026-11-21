@@ -27,11 +27,9 @@ public record EvilRenderState(
 			final int y0,
 			final int x1,
 			final int y1,
-			final float scale,
-			@Nullable final ScreenRectangle scissorArea
+			final float scale
 	) {
-		this(xAngle, yAngle, preset, x0, y0, x1, y1, scale, scissorArea,
-				PictureInPictureRenderState.getBounds(x0, y0, x1, y1, scissorArea));
+		this(xAngle, yAngle, preset, x0, y0, x1, y1, scale, null, PictureInPictureRenderState.getBounds(x0, y0, x1, y1, null));
 	}
 }
 //?}

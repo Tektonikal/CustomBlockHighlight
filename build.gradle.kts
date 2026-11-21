@@ -2,8 +2,8 @@ import net.ornithemc.ploceus.api.PloceusGradleExtensionApi
 
 plugins {
     id("dev.kikugie.loom-back-compat")
-    id("net.fabricmc.fabric-loom-remap") version "1.17-SNAPSHOT" apply false
-    id("ploceus") version "1.17.4" apply false
+    id("net.fabricmc.fabric-loom-remap") version "1.19-SNAPSHOT" apply false
+    id("ploceus") version "1.19.2" apply false
     id("dev.kikugie.fletching-table.fabric") version "0.2.0-alpha.9"
     id("dev.kikugie.fletching-table.lang") version "0.2.0-alpha.9"
 }
@@ -22,12 +22,8 @@ base.archivesName = property("mod.archives_name") as String
 val requiredJava: JavaVersion = when {
     isOrnithe -> JavaVersion.VERSION_25
     sc.current.parsed >= "26.1" -> JavaVersion.VERSION_25
-    sc.current.parsed >= "1.20.5" -> JavaVersion.VERSION_21
-    else -> JavaVersion.VERSION_17
+    else -> JavaVersion.VERSION_21
 }
-
-val compatibleVersions: List<String> = sc.properties.rawOrNull("mod", "mc_releases")
-    ?.asList().orEmpty().map { it.toString() }
 
 repositories {
     fun strictMaven(url: String, alias: String, vararg groups: String) = exclusiveContent {
@@ -35,7 +31,6 @@ repositories {
         filter { groups.forEach(::includeGroup) }
     }
     strictMaven("https://api.modrinth.com/maven", "Modrinth", "maven.modrinth")
-    maven("https://api.modrinth.com/maven") { name = "Modrinth (unscoped)" }
     maven("https://maven.isxander.dev/releases") { name = "Xander Releases" }
     maven("https://maven.isxander.dev/snapshots") { name = "Xander Snapshots" }
     strictMaven("https://maven.terraformersmc.com/releases", "TerraformersMC", "com.terraformersmc")
@@ -49,7 +44,6 @@ repositories {
     } else {
         strictMaven("https://repo.polyfrost.org/releases", "Polyfrost Releases", "org.polyfrost.oneconfig", "com.github.bawnorton.mixinsquared")
     }
-    // what OneConfig pulls in
     strictMaven("https://repo.hypixel.net/repository/Hypixel/", "Hypixel", "net.hypixel")
     google()
     maven("https://redirector.kotlinlang.org/maven/compose-dev") {
@@ -76,7 +70,7 @@ dependencies {
         val oneconfig = property("deps.oneconfig") as String
         modImplementation("org.polyfrost.oneconfig:${sc.current.version}-ornithe:$oneconfig") {
             exclude(group = "net.fabricmc", module = "fabric-loader")
-            exclude(group = "me.djtheredstoner") // DevAuth
+            exclude(group = "me.djtheredstoner")
         }
         for (module in arrayOf("commands", "config", "config-impl", "events", "internal", "ui", "utils", "hud", "notifications", "poly-compose")) {
             implementation("org.polyfrost.oneconfig:$module:$oneconfig")
@@ -88,17 +82,27 @@ dependencies {
         modImplementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric_api")}")
         modImplementation("dev.isxander:yet-another-config-lib:${property("deps.yacl")}-fabric")
         modImplementation("com.terraformersmc:modmenu:${property("deps.modmenu")}")
+        findProperty("deps.iris")?.let { modCompileOnly("maven.modrinth:iris:$it") }
         val oneconfig = property("deps.oneconfig") as String
         for (module in arrayOf("config", "config-impl", "poly-compose")) {
             compileOnly("org.polyfrost.oneconfig:$module:$oneconfig") { isTransitive = false }
         }
         val oneconfigMc = if (sc.current.parsed >= "26.1" && sc.current.parsed < "26.2") "26.1" else sc.current.version
         modLocalRuntime("org.polyfrost.oneconfig:$oneconfigMc-fabric:$oneconfig") {
-            exclude(group = "net.fabricmc.fabric-api") // keep ours
+            exclude(group = "net.fabricmc.fabric-api")
             exclude(group = "net.fabricmc", module = "fabric-loader")
-            exclude(group = "me.djtheredstoner") // DevAuth
+            exclude(group = "me.djtheredstoner")
         }
     }
+}
+
+dependencies {
+    testImplementation("net.fabricmc:fabric-loader-junit:${property("deps.fabric_loader")}")
+}
+
+tasks.test {
+    useJUnitPlatform()
+    enabled = !isOrnithe
 }
 
 fletchingTable {
@@ -112,8 +116,6 @@ loom {
         options.put("mark-corresponding-synthetics", "1")
     }
 
-    // groups the classes and resources output into one mod in dev, like the jar. without it the mod's only root
-    // is the resources folder, so OneConfig can't tell our classes are ours and wraps the YACL screen a second time
     mods.register(property("mod.id") as String) {
         sourceSet(sourceSets.main.get())
     }
@@ -123,8 +125,21 @@ loom {
     runConfigs.all {
         preferGradleTask = true
         generateRunConfig = true
-        runDirectory = rootProject.file("run")
+        if (name != "clientGameTest") runDirectory = rootProject.file("run")
         jvmArguments.add("-Dmixin.debug.export=true")
+    }
+}
+
+if (project.name == "26.3.x" || project.name == "26.2.x") {
+    fabricApi.configureTests {
+        createSourceSet = true
+        modId = "custom-block-highlight-gametest"
+        enableGameTests = false
+        enableClientGameTests = true
+    }
+    sourceSets.named("gametest") {
+        java.setSrcDirs(listOf(rootProject.file("src/gametest/java")))
+        resources.setSrcDirs(listOf(rootProject.file("src/gametest/resources")))
     }
 }
 
@@ -147,20 +162,35 @@ tasks {
             set(key, value)
         }
 
+        val oneconfig = project.property("deps.oneconfig") as String
+        inputs.property("oneconfig", oneconfig)
         val props = buildMap {
+            put("oneconfig", oneconfig)
             register("id", "mod.id")
             register("name", "mod.name")
             register("minecraft", "mod.mc_compat")
             register("loader", "deps.fabric_loader")
             put("version", project.version.toString())
+            put("java", requiredJava.majorVersion)
+            for ((key, dep) in listOf("fapi" to "deps.fabric_api", "yacl" to "deps.yacl")) {
+                val minimum = if (isOrnithe) "*" else (project.findProperty("${dep}_min") ?: project.property(dep)).toString().substringBefore('+')
+                val range = if (isOrnithe) "*" else ">=$minimum"
+                inputs.property(key, range)
+                put(key, range)
+            }
         }
         inputs.property("version", project.version.toString())
+        inputs.property("java", requiredJava.majorVersion)
+
+        doLast {
+            val lang = destinationDir.resolve("assets/customblockhighlight/lang")
+            for (locale in listOf("es_ar", "es_cl", "es_ec", "es_mx", "es_uy", "es_ve")) {
+                lang.resolve("es_es.json").copyTo(lang.resolve("$locale.json"), overwrite = true)
+            }
+        }
 
         filesMatching("fabric.mod.json") { expand(props) }
         if (isOrnithe) {
-            // built against this OneConfig, so older ones aren't accepted
-            val oneconfig = project.property("deps.oneconfig") as String
-            inputs.property("oneconfig", oneconfig)
             filesMatching("fabric.mod.json") {
                 filter { line ->
                     line.takeUnless { "\"fabric-api\"" in it || "ModMenuIntegration" in it || "CBHOneConfigEntrypoint" in it }

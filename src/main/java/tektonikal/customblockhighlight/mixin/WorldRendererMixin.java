@@ -14,7 +14,7 @@ import tektonikal.customblockhighlight.config.BlockHighlightConfig;
 public class WorldRendererMixin {
 	@Inject(method = "renderBlockOutline", at = @At("HEAD"), cancellable = true)
 	private void cbh$hideVanillaOutline(PlayerEntity camera, HitResult hit, int mode, float tickDelta, CallbackInfo ci) {
-		if (!BlockHighlightConfig.getActiveInstance().drawVanillaOutline) ci.cancel();
+		if (BlockHighlightConfig.getActiveInstance().enableModRendering && !BlockHighlightConfig.getActiveInstance().drawVanillaOutline) ci.cancel();
 	}
 }
 *///?}

@@ -1,27 +1,30 @@
 package tektonikal.customblockhighlight.legacy;
 
 //? if =1.8.9 {
-/*public final class LegacyClient {
+/*import net.minecraft.client.options.KeyBinding;
+import net.ornithemc.osl.keybinds.api.KeyBindingEvents;
+
+public final class LegacyClient {
 	private static float tickDelta;
-	private static long lastFrameNs = System.nanoTime();
-	private static long frameTimeNs = 16_666_666L;
+	private static KeyBinding toggleKey;
 
 	private LegacyClient() {
 	}
 
 	public static void onFrame(float tickDelta) {
 		LegacyClient.tickDelta = tickDelta;
-		long now = System.nanoTime();
-		frameTimeNs = now - lastFrameNs;
-		lastFrameNs = now;
 	}
 
 	public static float tickDelta() {
 		return tickDelta;
 	}
 
-	public static long frameTimeNs() {
-		return frameTimeNs;
+	public static void registerToggleKey() {
+		KeyBindingEvents.REGISTER_KEYBINDS.register(registry -> toggleKey = registry.register("cbh.key.toggle", 0, "key.categories.misc"));
+	}
+
+	public static boolean toggleKeyPressed() {
+		return toggleKey != null && toggleKey.consumeClick();
 	}
 }
 *///?}

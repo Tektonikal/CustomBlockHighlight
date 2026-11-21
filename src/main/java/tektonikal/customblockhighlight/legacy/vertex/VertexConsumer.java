@@ -19,7 +19,6 @@ public interface VertexConsumer {
 		return addVertex(pose, vec.x(), vec.y(), vec.z());
 	}
 
-	// fixed function lines have no normals
 	default VertexConsumer setNormal(PoseStack.Pose pose, float x, float y, float z) {
 		return this;
 	}

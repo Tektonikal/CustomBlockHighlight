@@ -13,10 +13,8 @@
   },
   "client": [
     "GameRendererMixin"
-    //? if >=1.21.4
+    //? if >=1.21.5
     ,"InactivityFpsLimiterMixin"
-    //? if >1.8.9
-    ,"YACLScreenMixin"
     //? if =1.8.9 {
     /*,"LiquidBlockMixin"
     ,"WorldRendererMixin"
@@ -24,5 +22,7 @@
     //? if >=26.2 {
     ,"ShapeOutlineFeatureRendererMixin"
     //?}
+    //? if >=26.3
+    ,"OitDepthMixin"
   ]
 }

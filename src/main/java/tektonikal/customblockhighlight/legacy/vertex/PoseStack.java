@@ -7,7 +7,6 @@ import org.joml.Quaternionfc;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-// no normal matrix, fixed function lines don't use normals
 public class PoseStack {
 	private final Deque<Pose> poses = new ArrayDeque<>();
 

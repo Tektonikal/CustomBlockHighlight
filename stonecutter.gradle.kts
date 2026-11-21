@@ -9,15 +9,11 @@ stonecutter handlers {
 }
 
 stonecutter parameters {
-    swaps["mod_version"] = "\"${property("mod.version")}\";"
-    swaps["minecraft"] = "\"${node.metadata.version}\";"
     val isOrnithe = current.version == "1.8.9"
     if (!isOrnithe) {
         dependencies["fapi"] = node.project.property("deps.fabric_api") as String
         dependencies["yacl"] = node.project.property("deps.yacl") as String
     }
-
-    constants["renderstates"] = current.parsed >= "1.21.9"
 
     replacements {
         string(current.parsed < "1.21.2" && !isOrnithe) {
@@ -53,14 +49,12 @@ stonecutter parameters {
             replace("extractDefaultSprite", "renderDefaultSprite")
             replace("extractDefaultLabel", "renderDefaultLabel")
             replace("addPicturesInPictureState", "submitPicturesInPictureState")
-            replace("afterExtract", "afterRender")
         }
         string(current.parsed < "26.1") {
             replace("centeredText", "drawCenteredString")
         }
         string(current.parsed < "1.21.11" && !isOrnithe) {
             replace("Identifier", "ResourceLocation")
-            replace("camera.entity()", "camera.getEntity()")
             replace("net.minecraft.util.Util", "net.minecraft.Util")
         }
         string(current.parsed < "1.21.11") {
@@ -78,11 +72,8 @@ stonecutter parameters {
             replace("gui.hud.isHidden()", "options.hideGui")
         }
         string(current.parsed >= "26.3") {
-            replace("com.mojang.blaze3d.opengl", "com.mojang.renderpearl.backend.opengl")
-            replace("com.mojang.blaze3d.vulkan", "com.mojang.renderpearl.backend.vulkan")
             replace("com.mojang.blaze3d.textures", "com.mojang.renderpearl.api.textures")
             replace("com.mojang.blaze3d.buffers", "com.mojang.renderpearl.api.buffers")
-            replace("com.mojang.blaze3d.GpuFormat", "com.mojang.renderpearl.api.GpuFormat")
             replace("com.mojang.blaze3d.systems.RenderPass", "com.mojang.renderpearl.api.commands.RenderPass")
             replace("com.mojang.blaze3d.systems.CommandEncoder", "com.mojang.renderpearl.api.commands.CommandEncoder")
             replace("com.mojang.blaze3d.PrimitiveTopology", "com.mojang.renderpearl.api.pipeline.PrimitiveTopology")
@@ -99,19 +90,17 @@ stonecutter parameters {
             replace("net.minecraft.world.phys.shapes.*", "$shim.phys.shapes.*")
             replace("net.minecraft.world.phys.shapes.Shapes", "$shim.phys.shapes.Shapes")
             replace("net.minecraft.world.phys.shapes.VoxelShape", "$shim.phys.shapes.VoxelShape")
+            replace("net.minecraft.world.phys.shapes.BooleanOp", "$shim.phys.shapes.BooleanOp")
             replace("com.mojang.blaze3d.vertex.PoseStack", "$shim.vertex.PoseStack")
             replace("com.mojang.blaze3d.vertex.VertexConsumer", "$shim.vertex.VertexConsumer")
             replace("it.unimi.dsi.fastutil.Pair", "$shim.Pair")
             replace("net.minecraft.util.Mth", "$shim.Mth")
-            replace("net.minecraft.util.RandomSource", "$shim.RandomSource")
             replace("net.minecraft.client.Camera", "$shim.Camera")
-            replace("dev.isxander.yacl3.config.GsonConfigInstance", "$shim.GsonConfigInstance")
             replace("dev.isxander.yacl3.api.NameableEnum", "$shim.NameableEnum")
             replace("net.minecraft.network.chat.Component", "$shim.Component")
             replace("net.minecraft.core.BlockPos", "net.minecraft.util.math.BlockPos")
             replace("net.minecraft.core.Direction", "net.minecraft.util.math.Direction")
             replace("net.minecraft.world.entity.Entity", "net.minecraft.entity.Entity")
-            replace("net.minecraft.world.entity.decoration.HangingEntity", "net.minecraft.entity.decoration.DecorationEntity")
             replace("net.minecraft.world.item.BoatItem", "net.minecraft.item.BoatItem")
             replace("net.minecraft.world.item.Items", "net.minecraft.item.Items")
             replace("net.minecraft.world.level.block.piston.PistonBaseBlock", "net.minecraft.block.PistonBaseBlock")

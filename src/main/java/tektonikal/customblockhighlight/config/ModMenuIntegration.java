@@ -7,7 +7,7 @@ import com.terraformersmc.modmenu.api.ModMenuApi;
 public class ModMenuIntegration implements ModMenuApi {
 	@Override
 	public ConfigScreenFactory<?> getModConfigScreenFactory() {
-		return BlockHighlightConfig.ACTIVE_INSTANCE::getConfigScreen;
+		return YaclMenu::getConfigScreen;
 	}
 }
 //?}

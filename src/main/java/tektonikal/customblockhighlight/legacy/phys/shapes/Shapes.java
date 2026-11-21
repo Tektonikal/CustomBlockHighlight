@@ -44,9 +44,5 @@ public final class Shapes {
 		boxes.addAll(second.toAabbs());
 		return new VoxelShape(boxes);
 	}
-
-	public interface DoubleLineConsumer {
-		void consume(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
-	}
 }
 *///?}

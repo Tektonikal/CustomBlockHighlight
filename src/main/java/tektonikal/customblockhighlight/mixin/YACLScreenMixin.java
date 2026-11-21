@@ -15,9 +15,8 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import tektonikal.customblockhighlight.CustomBlockHighlight;
+import tektonikal.customblockhighlight.config.YaclMenu;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen;
-//? if >=1.21.8
-import tektonikal.customblockhighlight.config.screenrenderbullshit.EvilRenderState;
 
 import static tektonikal.customblockhighlight.CustomBlockHighlight.xAngleTweener;
 import static tektonikal.customblockhighlight.CustomBlockHighlight.yAngleTweener;
@@ -38,14 +37,13 @@ public abstract class YACLScreenMixin extends Screen {
 
 	@WrapMethod(method = "extractBackground")
 	void yeah(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, Operation<Void> original) {
-		if (!config.title().equals(Component.translatable("cbh.config.title"))) {
+		if (!YaclMenu.isOwnConfig(config)) {
 			original.call(guiGraphics, mouseX, mouseY, partialTick);
 			return;
 		}
 		if (tabManager.getCurrentTab() instanceof TabExt tab) {
 			tab.renderBackground(guiGraphics);
 		}
-		//I have a bone to pick with whoever made FAPI screen events.
 		//? if >=1.21.8 {
 		CustomBlockHighlight.xAngle = (float) Math.atan((((guiGraphics.guiWidth() / 6F) * 5F) - Minecraft.getInstance().mouseHandler.getScaledXPos(Minecraft.getInstance().getWindow())) / 40.0F);
 		CustomBlockHighlight.yAngle = (float) Math.atan(((guiGraphics.guiHeight() / 2F) - Minecraft.getInstance().mouseHandler.getScaledYPos(Minecraft.getInstance().getWindow())) / 40.0F);
@@ -56,18 +54,12 @@ public abstract class YACLScreenMixin extends Screen {
 		xAngleTweener.update();
 		yAngleTweener.update();
 		//? if >=1.21.8 {
-		if (PresetsScreen.shouldRender(PresetsScreen.Preset.CURRENT_CONFIG)) {
-			int centerX = (int) ((guiGraphics.guiWidth() / 6F) * 5F);
-			int centerY = guiGraphics.guiHeight() / 2;
-			guiGraphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(xAngleTweener.getF(), yAngleTweener.getF(), PresetsScreen.Preset.CURRENT_CONFIG, centerX - 100, centerY - 100, centerX + 100, centerY + 100, 75, null));
-		}
+		PresetsScreen.PreviewSlot slot = new PresetsScreen.PreviewSlot((int) ((guiGraphics.guiWidth() / 6F) * 5F), guiGraphics.guiHeight() / 2, 100, 75);
+		boolean preview = PresetsScreen.shouldRender(PresetsScreen.Preset.CURRENT_CONFIG);
+		if (preview) PresetsScreen.addPreview(guiGraphics, PresetsScreen.Preset.CURRENT_CONFIG, slot, xAngleTweener.getF(), yAngleTweener.getF());
 		guiGraphics.nextStratum();
 		super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
-        if (PresetsScreen.shouldRender(PresetsScreen.Preset.CURRENT_CONFIG)) {
-            int centerX = (int) ((guiGraphics.guiWidth() / 6F) * 5F);
-            int centerY = guiGraphics.guiHeight() / 2;
-            guiGraphics.guiRenderState.addPicturesInPictureState(new EvilRenderState(xAngleTweener.getF(), yAngleTweener.getF(), PresetsScreen.Preset.CURRENT_CONFIG, centerX - 100, centerY - 100, centerX + 100, centerY + 100, 75, null));
-        }
+		if (preview) PresetsScreen.addPreview(guiGraphics, PresetsScreen.Preset.CURRENT_CONFIG, slot, xAngleTweener.getF(), yAngleTweener.getF());
 		//?} else {
 		/*super.extractBackground(guiGraphics, mouseX, mouseY, partialTick);
 		if (PresetsScreen.shouldRender(PresetsScreen.Preset.CURRENT_CONFIG)) {

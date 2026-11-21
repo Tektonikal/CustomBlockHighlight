@@ -25,12 +25,16 @@
 			"tektonikal.customblockhighlight.config.CBHOneConfigEntrypoint"
 		]
 	},
-  "mixins": ["customblockhighlight.mixins.json"],
+  "mixins": ["customblockhighlight.mixins.json", "customblockhighlight.yacl.mixins.json"],
   "depends": {
 		"fabricloader": ">=${loader}",
-		"fabric-api": "*",
+		"java": ">=${java}",
+		"fabric-api": "${fapi}",
 		"minecraft": "${minecraft}",
-		"yet_another_config_lib_v3": "*"
+		"yet_another_config_lib_v3": "${yacl}"
+	},
+	"breaks": {
+		"oneconfigv1": "<${oneconfig}"
 	},
 	"custom": {
 		"modmenu": {

@@ -6,50 +6,44 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import tektonikal.customblockhighlight.Vertexer;
 
-import static tektonikal.customblockhighlight.CustomBlockHighlight.easeFactor;
-import static tektonikal.customblockhighlight.CustomBlockHighlight.easeF;
-import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
+import static tektonikal.customblockhighlight.CustomBlockHighlight.fadeIn;
+import static tektonikal.customblockhighlight.CustomBlockHighlight.fadeOut;
 
 public class Line {
 	public Vec3 minPos;
 	public Vec3 maxPos;
 	public float alphaMultiplier = 1;
+	public int dirMask;
 
 	public Line(Vec3 minPos, Vec3 maxPos) {
 		this.minPos = minPos;
 		this.maxPos = maxPos;
 	}
 
-	public Vec3 getNormal() {
-		float k = (float) (maxPos.x - minPos.x);
-		float l = (float) (maxPos.y - minPos.y);
-		float m = (float) (maxPos.z - minPos.z);
-		float n = Mth.sqrt(k * k + l * l + m * m);
-		k /= n;
-		l /= n;
-		m /= n;
-		return new Vec3(k, l, m);
-	}
-
-	public void moveTo(Vec3 minPosTo, Vec3 maxPosTo) {
-		moveTo(minPosTo, maxPosTo, easeFactor(getActiveInstance().easeSpeed));
+	public Line(Vec3 minPos, Vec3 maxPos, int dirMask) {
+		this(minPos, maxPos);
+		this.dirMask = dirMask;
 	}
 
 	public void moveTo(Vec3 minPosTo, Vec3 maxPosTo, double k) {
-		if (!minPos.equals(minPosTo)) {
-			this.minPos = new Vec3(this.minPos.x + (minPosTo.x - this.minPos.x) * k, this.minPos.y + (minPosTo.y - this.minPos.y) * k, this.minPos.z + (minPosTo.z - this.minPos.z) * k);
-		}
-		if (!maxPos.equals(maxPosTo)) {
-			this.maxPos = new Vec3(this.maxPos.x + (maxPosTo.x - this.maxPos.x) * k, this.maxPos.y + (maxPosTo.y - this.maxPos.y) * k, this.maxPos.z + (maxPosTo.z - this.maxPos.z) * k);
-		}
+		minPos = ease(minPos, minPosTo, k);
+		maxPos = ease(maxPos, maxPosTo, k);
+	}
+
+	private static final double LAND = 1.0 / 512;
+
+	public static Vec3 ease(Vec3 from, Vec3 to, double k) {
+		if (from.equals(to)) return from;
+		Vec3 next = new Vec3(from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k, from.z + (to.z - from.z) * k);
+		return next.distanceToSqr(to) < LAND * LAND ? to : next;
 	}
 
 	public void update(boolean in) {
 		if (in) {
 			if (this.alphaMultiplier == 1) return;
-			this.alphaMultiplier = getActiveInstance().fadeIn ? easeF(this.alphaMultiplier, 1, getActiveInstance().fadeInSpeed) : 1;
+			this.alphaMultiplier = fadeIn(this.alphaMultiplier, 1);
 		} else {
-			this.alphaMultiplier = getActiveInstance().fadeOut ? easeF(this.alphaMultiplier, 0, getActiveInstance().fadeOutSpeed) : 0;
+			this.alphaMultiplier = fadeOut(this.alphaMultiplier);
 		}
 	}
 
@@ -60,21 +54,7 @@ public class Line {
 		float l = (float) (maxPos.y - minPos.y);
 		float m = (float) (maxPos.z - minPos.z);
 		float n = Mth.sqrt(k * k + l * l + m * m);
+		if (n == 0) return;
 		Vertexer.vertexLine(pose, buf, (float) minPos.x, (float) minPos.y, (float) minPos.z, (float) maxPos.x, (float) maxPos.y, (float) maxPos.z, rgb1, rgb2, a, k / n, l / n, m / n, width, cutFromCenter, cutFromCorner, outerMult, innerMult);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (o == null || getClass() != o.getClass()) return false;
-
-		Line line = (Line) o;
-		return ((minPos.equals(line.minPos) && maxPos.equals(line.maxPos)) || (minPos.equals(line.maxPos) && maxPos.equals(line.minPos)));
-	}
-
-	@Override
-	public int hashCode() {
-		int result = minPos.hashCode();
-		result = 31 * result + maxPos.hashCode();
-		return result;
 	}
 }

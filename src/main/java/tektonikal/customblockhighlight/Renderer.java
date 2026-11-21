@@ -1,101 +1,29 @@
 package tektonikal.customblockhighlight;
-//? if = 26.3{
-import com.mojang.renderpearl.api.pipeline.ColorTargetState;
-import com.mojang.renderpearl.api.pipeline.BlendFunction;
-//?}
 //? if >=26.2
-import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
-//? if >=1.21.5 {
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
-import net.minecraft.client.renderer.RenderPipelines;
-//?}
-//? if >=26.1 {
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
-import com.mojang.renderpearl.api.pipeline.CompareOp;
-//?} elif >=1.21.5
-//import com.mojang.blaze3d.platform.DepthTestFunction;
-//? if >=26.2 {
 import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
-import net.minecraft.client.renderer.StagedVertexBuffer;
-//?} elif >=1.21.5 {
-/*import com.mojang.renderpearl.api.buffers.GpuBuffer;
-import com.mojang.renderpearl.api.commands.CommandEncoder;
-import net.minecraft.client.renderer.MappableRingBuffer;
-import org.lwjgl.system.MemoryUtil;
-*///?} elif >=1.21.4 {
-/*import net.minecraft.client.renderer.CoreShaders;
-import org.lwjgl.opengl.GL11;
-*///?} elif >1.8.9 {
-/*import net.minecraft.client.renderer.GameRenderer;
-import org.lwjgl.opengl.GL11;
-*///?}
-//? if >=1.21.5 {
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.renderpearl.api.commands.RenderPass;
-import com.mojang.renderpearl.api.textures.GpuTextureView;
-//?}
 //? if >1.8.9 {
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import com.mojang.renderpearl.api.vertex.VertexFormat;
 //?} else {
-/*import tektonikal.customblockhighlight.legacy.LegacyClient;
-import tektonikal.customblockhighlight.legacy.LegacyWorld;
-import tektonikal.customblockhighlight.legacy.vertex.*;
+/*import tektonikal.customblockhighlight.legacy.vertex.*;
 *///?}
-// We use the one from fastutil because it makes the Java go faster. It's like putting flame stickers on your car
 import it.unimi.dsi.fastutil.Pair;
+//? if >=26.2
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
 //? if >1.8.9 {
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 //?} else
 //import tektonikal.customblockhighlight.legacy.LevelRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-//? if >=26.1 {
-import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
-import net.minecraft.client.resources.model.SimpleModelWrapper;
-//?} elif >=1.21.5 {
-/*import net.minecraft.client.renderer.block.BlockModelShaper;
-import net.minecraft.client.renderer.block.model.BlockModelPart;
-import net.minecraft.client.renderer.block.model.BlockStateModel;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-*///?} elif >1.8.9 {
-/*import net.minecraft.client.renderer.block.BlockModelShaper;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.resources.model.BakedModel;
-*///?} else {
-/*import net.minecraft.client.render.model.block.BakedModel;
-import net.minecraft.client.render.model.block.BakedQuad;
-*///?}
-//? if >=26.2 {
-import net.minecraft.client.renderer.rendertype.LayeringTransform;
-//? if <26.3
-//import net.minecraft.client.renderer.rendertype.OutputTarget;
-import net.minecraft.client.renderer.rendertype.RenderSetup;
+//? if >=26.2
 import net.minecraft.client.renderer.rendertype.RenderType;
-//?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-//? if >1.8.9
-import net.minecraft.resources.Identifier;
-import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.decoration.HangingEntity;
-import net.minecraft.world.item.BoatItem;
-import net.minecraft.world.item.Items;
-//? if >1.8.9
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.*;
-import net.minecraft.world.level.block.piston.PistonBaseBlock;
-import net.minecraft.world.level.block.piston.PistonHeadBlock;
-import net.minecraft.world.level.block.state.BlockState;
 //? if >1.8.9 {
-import net.minecraft.world.level.block.state.properties.BedPart;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.ChestType;
-import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 //?}
 import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
@@ -112,22 +40,21 @@ import java.awt.*;
 import java.lang.Math;
 import java.util.*;
 import java.util.List;
-//? if >=26.2
 import java.util.function.Function;
-import java.util.stream.Stream;
+import java.util.function.Supplier;
 
-//? if >=1.21.5 {
-import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
-import static net.minecraft.client.renderer.RenderPipelines.LINES;
-//?}
 //? if >=1.21.2
 import static net.minecraft.util.profiling.Profiler.get;
-import static tektonikal.customblockhighlight.CustomBlockHighlight.ease;
 import static tektonikal.customblockhighlight.CustomBlockHighlight.easeFactor;
-import static tektonikal.customblockhighlight.CustomBlockHighlight.easeF;
+import static tektonikal.customblockhighlight.CustomBlockHighlight.fadeIn;
+import static tektonikal.customblockhighlight.CustomBlockHighlight.fadeOut;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.*;
+import static tektonikal.customblockhighlight.RenderBackend.*;
 
-public class Renderer {
+public final class Renderer {
+	private Renderer() {
+	}
+
 	public static final Minecraft mc = Minecraft.getInstance();
 	//? if >1.8.9 {
 	public static final Camera camera = mc.gameRenderer.mainCamera();
@@ -137,7 +64,7 @@ public class Renderer {
 	//? if >=1.21.4
 	private static boolean isCubeLike(VoxelShape shape) { return ((VoxelShapeAccessor) shape).invokeIsCubeLike(); }
 	//? if <1.21.4 {
-	
+
 	/*private static boolean isCubeLike(VoxelShape shape) {
 		if (shape.isEmpty()) return false;
 		AABB bounds = shape.bounds();
@@ -145,345 +72,92 @@ public class Renderer {
 	}
 	*///?}
 
-	//? if >=1.21.2
-	private static Vec3 unitVec3(Direction dir) { return dir.getUnitVec3(); }
-	//? if <1.21.2 {
-	/*private static Vec3 unitVec3(Direction dir) {
-		return new Vec3(dir.getNormal().getX(), dir.getNormal().getY(), dir.getNormal().getZ());
-	}
-	//? if >1.8.9 {
-	private static net.minecraft.util.profiling.ProfilerFiller get() { return mc.getProfiler(); }
-	//?} else
+	//? if >1.8.9 && <1.21.2 {
+	/*private static net.minecraft.util.profiling.ProfilerFiller get() { return mc.getProfiler(); }
+	*///?}
+	//? if =1.8.9
 	//private static net.minecraft.util.profiler.Profiler get() { return mc.profiler; }
-	*///?}
 
-	public static final float[] sideFades = new float[6];
-	public static List<Line> lines = new ArrayList<>();
-	public static List<Line> modelLines = new ArrayList<>();
-	public static List<Line> toRemove = new ArrayList<>();
+	private static final String PROFILED = "customBlockHighlight";
 
+	private static final float[] sideFades = new float[6];
+	private static final class ShapeLayer {
+		List<Line> lines = new ArrayList<>();
+		final List<Line> leavingLines = new ArrayList<>();
+		List<Quad> quads = new ArrayList<>();
+		final List<Quad> leavingQuads = new ArrayList<>();
+		final ShapeSync.UnifiedEdges edges = new ShapeSync.UnifiedEdges();
+		VoxelShape key;
+		Object model;
+		ShapeGeometry geometry = ShapeGeometry.EMPTY;
+		Vec3 center = Vec3.ZERO;
 
-	//? if >=1.21.5 {
-	public static final RenderPipeline LINE_NO_DEPTH = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/evil-lines", true, true);
-	public static final RenderPipeline FILL_NO_DEPTH = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/evil-fill", true, false);
-	public static final RenderPipeline LINES_CONCEALED_ONLY = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/eviler-lines", false, true);
-	public static final RenderPipeline FILL_CONCEALED_ONLY = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/eviler-fill", false, false);
-	//~ if <1.21.11 'DEBUG_QUADS' -> 'RenderPipelines.DEBUG_STRUCTURE_QUADS'
-	private static final RenderPipeline FILL_NORMAL = DEBUG_QUADS;
-
-	private static RenderPipeline evilPipeline(RenderPipeline.Snippet snippet, String path, boolean alwaysPass, boolean writeDepth) {
-		RenderPipeline.Builder builder = RenderPipeline.builder(snippet)
-				.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", path))
-				//? if 26.3{
-				.withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-				//?}
-				.withCull(false);
-		return RenderPipelines.register(withDepth(builder, alwaysPass, writeDepth).build());
-	}
-
-	public static RenderPipeline getPipeline(DepthTestMode mode, boolean lines) {
-		return switch (mode) {
-			case ALWAYS_PASS -> lines ? LINE_NO_DEPTH : FILL_NO_DEPTH;
-			case HIDDEN_ONLY -> lines ? LINES_CONCEALED_ONLY : FILL_CONCEALED_ONLY;
-			//~ if 26.3 'LINES' -> 'LINES_TRANSLUCENT'
-			case NORMAL -> lines ? LINES : FILL_NORMAL;
-		};
-	}
-	//?}
-
-	//? if >=1.21.4 && <1.21.5 {
-	/*public static void setDrawShader(boolean lines) {
-		RenderSystem.setShader(lines ? CoreShaders.RENDERTYPE_LINES : CoreShaders.POSITION_COLOR);
-	}
-	*///?} elif <1.21.4 && >1.8.9 {
-	/*public static void setDrawShader(boolean lines) {
-		RenderSystem.setShader(lines ? GameRenderer::getRendertypeLinesShader : GameRenderer::getPositionColorShader);
-	}
-	*///?}
-
-	//? if >=26.1 {
-	private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, boolean alwaysPass, boolean writeDepth) {
-		// "concealed" = farther than what's there; 26.2+ uses reversed depth (near = 1), 26.1 doesn't
-		//~ if <26.2 'LESS_THAN' -> 'GREATER_THAN'
-		return builder.withDepthStencilState(new DepthStencilState(alwaysPass ? CompareOp.ALWAYS_PASS : CompareOp.LESS_THAN, writeDepth));
-	}
-	//?} elif >=1.21.5 {
-	/*private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, boolean alwaysPass, boolean writeDepth) {
-		return builder.withDepthTestFunction(alwaysPass ? DepthTestFunction.NO_DEPTH_TEST : DepthTestFunction.GREATER_DEPTH_TEST).withDepthWrite(writeDepth);
-	}
-	*///?} elif >1.8.9 {
-	/*public static void applyDepth(DepthTestMode mode) {
-		switch (mode) {
-			case ALWAYS_PASS -> RenderSystem.disableDepthTest();
-			case HIDDEN_ONLY -> {
-				RenderSystem.enableDepthTest();
-				RenderSystem.depthFunc(GL11.GL_GREATER);
+		void update(VoxelShape local, Object model, Supplier<ShapeGeometry> build, boolean wantLines, boolean wantQuads) {
+			if (local != key || model != this.model) {
+				key = local;
+				this.model = model;
+				geometry = build.get();
+				center = local.bounds().getCenter();
 			}
-			case NORMAL -> {
-				RenderSystem.enableDepthTest();
-				RenderSystem.depthFunc(GL11.GL_LEQUAL);
+			if (wantLines) lines = syncLines(lines, geometry.lines(), center, leavingLines, edges);
+			if (wantQuads) quads = syncQuads(quads, geometry.quads(), center, leavingQuads, edges);
+		}
+
+		void easeLeaving() {
+			if (leavingLines.isEmpty() && leavingQuads.isEmpty()) return;
+			Vec3 middle = getCenter();
+			double k = getActiveInstance().scaleOut ? easeFactor(getActiveInstance().easeSpeed) : 0;
+			for (Line line : leavingLines) {
+				line.moveTo(middle, middle, k);
+				line.update(false);
 			}
+			leavingLines.removeIf(line -> line.alphaMultiplier < 1 / 255f);
+			for (Quad quad : leavingQuads) {
+				quad.collapseTo(middle, k);
+				quad.update(false);
+			}
+			leavingQuads.removeIf(quad -> quad.alphaMultiplier < 1 / 255f);
 		}
 	}
-	*///?}
 
-	//? if >=26.2 {
-	public static final RenderType linesNoDepth = RenderType.create("lines_no_depth",
-			RenderSetup.builder(Renderer.LINE_NO_DEPTH)
-					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
-					//? if <26.3
-					//.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
-					.createRenderSetup());
-	public static final RenderType linesConcealed = RenderType.create("lines_concealed",
-			RenderSetup.builder(Renderer.LINES_CONCEALED_ONLY)
-					.setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING)
-					//? if <26.3
-					//.setOutputTarget(OutputTarget.ITEM_ENTITY_TARGET)
-					.createRenderSetup());
-    public static final RenderType fillNoDepth = RenderType.create(
-            "fill_no_depth", RenderSetup.builder(FILL_NO_DEPTH).sortOnUpload().createRenderSetup()
-    );
-    public static final RenderType fillConcealed = RenderType.create(
-            "fill_concealed", RenderSetup.builder(FILL_CONCEALED_ONLY).sortOnUpload().createRenderSetup()
-    );
-	//?}
+	private static final ShapeLayer collisionShape = new ShapeLayer(), modelShape = new ShapeLayer();
 
-	//? if >=26.2 {
-	public static final StagedVertexBuffer stagedOutlineBuffer = new StagedVertexBuffer(() -> " CBH outline", RenderType.SMALL_BUFFER_SIZE);
-	//?}
+	private static ShapeLayer shapeLayer(ShapeStyle style) {
+		return style == ShapeStyle.COLLISION_SHAPE ? collisionShape : modelShape;
+	}
 
-	public static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
 
-	public static float scaleProg = 0;
-	public static float lineProg = 0;
-	public static Quaternionf rotation = new Quaternionf();
-	private static Direction lastHorizontalDirection = Direction.NORTH;
+	private static AABB easeBox = new AABB(0, 0, 0, 0, 0, 0);
+	private static Direction lookedAt;
 
-	public static final Matrix4f lastWorldSpaceMatrix = new Matrix4f();
-	public static final Matrix4f lastProjMat = new Matrix4f();
+	static Vec3[] lookedAtFace() {
+		return lookedAt == null ? null : Vertexer.face(easeBox, lookedAt.ordinal());
+	}
+
+	private static float scaleProg = 0;
+	private static float lineProg = 0;
+	private static float cutProg = 0;
+	private static Quaternionf rotation = new Quaternionf();
+	private static final BoxRoll roll = new BoxRoll();
+
+	public static final Matrix4f lastProjMat = new Matrix4f().setPerspective((float) Math.toRadians(70), 16 / 9F, 0.05F, 1024);
 	public static final Matrix4f lastModMat = new Matrix4f();
 
-	public static final List<LineState> lineStates = new ArrayList<>(Stream.of(new LineState(), new LineState(), new LineState()).toList());
-	//TODO:
+	public static final float HIDDEN_PULL = 1F - 1F / 64F;
+
+	private static final List<LineState> lineStates = List.of(new LineState(), new LineState(), new LineState());
+
+	//? if =1.8.9 {
 	/*
-	Things that model mode hates:
-	- small dripleaf
-	- Waterlogged non-full blocks
-	- Fluids
-	- All (block) entities
-	 */
-
-	/*
-	- 1 layer: ~2.5% frametime
-	- 2 unique layers: ~20%
-	- 3 unique layers: ~27%
-	- 4 unique layers: ~30%
-
-	Conclusion: kill yourself mojang
-	 */
-    //TODO: batching layers together means that identical layers that do not have always pass will always z fight
-	//? if >=26.2 {
-	private static StagedVertexBuffer.Draw currentDraw;
-	//?} elif >=1.21.5 {
-	/*private static MappableRingBuffer vertexBuffer;
-	private static final ByteBufferBuilder allocator = new ByteBufferBuilder(786432);
-
-	private static BufferBuilder currentDraw;
-	*///?} elif >1.8.9 {
-	/*private static BufferBuilder currentDraw;
-	*///?} else {
-	/*public static final LegacyVertexBuffer legacyBuffer = new LegacyVertexBuffer();
-	*///?}
-
-	//? if <26.2
-	//private static float currentLineWidth = 1F;
-
-	//? if >1.8.9 {
-	private static VertexFormat lineFormat() {
-		//? if >=1.21.11 {
-		return DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH;
-		//?} else
-		//return DefaultVertexFormat.POSITION_COLOR_NORMAL;
-	}
-	//?}
-
-	//? if >=26.2 {
-	private static GpuBufferSlice transformUniform() {
-		return RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
-	}
-	//?} elif >=1.21.11 {
-	/*private static GpuBufferSlice transformUniform(float width) {
-		return RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f());
-	}
-	*///?} elif >=1.21.5 {
-	/*private static GpuBufferSlice transformUniform(float width) {
-		return RenderSystem.getDynamicUniforms().writeTransform(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(), new Matrix4f(), width);
-	}
-	*///?}
-
-	//? if >=26.2 {
-	private static Function<RenderType, VertexConsumer> featureSink;
-	private static final RenderType[] worldRenderTypes = new RenderType[DepthTestMode.values().length * 2];
-
-	private static RenderType worldRenderType(DepthTestMode mode, boolean lines) {
-		int i = mode.ordinal() * 2 + (lines ? 1 : 0);
-		RenderType type = worldRenderTypes[i];
-		if (type == null) {
-			RenderPipeline pipeline = getPipeline(mode, lines);
-			type = worldRenderTypes[i] = RenderType.create("cbh_world_" + (lines ? "lines_" : "fill_") + mode.name().toLowerCase(Locale.ROOT),
-					lines ? RenderSetup.builder(pipeline).createRenderSetup() : RenderSetup.builder(pipeline).sortOnUpload().createRenderSetup());
-		}
-		return type;
-	}
-
-	public static VertexConsumer startDrawing(boolean lines, DepthTestMode mode) {
-		if (featureSink != null) return featureSink.apply(worldRenderType(mode, lines));
-		if (lines) {
-			currentDraw = stagedOutlineBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR_NORMAL_LINE_WIDTH, PrimitiveTopology.LINES);
-		} else {
-			currentDraw = stagedOutlineBuffer.appendDraw(DefaultVertexFormat.POSITION_COLOR, PrimitiveTopology.QUADS, RenderSystem.getProjectionType().vertexSorting());
-		}
-		return stagedOutlineBuffer.getVertexBuilder(currentDraw);
-	}
-
-    private record PendingDraw(StagedVertexBuffer.Draw draw, RenderPipeline pipeline) {
-    }
-
-    private static final List<PendingDraw> pendingDraws = new ArrayList<>();
-
-    // Only queues the draw. StagedVertexBuffer is meant to be uploaded and endFrame'd once per frame:
-    // endFrame destroys every pooled buffer not reused, and each pool rounds allocations up to 256KB, so
-    // uploading once per layer re-created GPU buffers every frame (~30% of the render thread with a few layers).
-    private static void finishDraw(boolean lines, DepthTestMode mode) {
-        if (featureSink != null) return;
-        pendingDraws.add(new PendingDraw(currentDraw, getPipeline(lines ? mode : getActiveInstance().fillDepthTest, lines)));
-    }
-
-    private static void flushDraws() {
-        if (pendingDraws.isEmpty()) return;
-        try {
-            stagedOutlineBuffer.upload();
-            RenderTarget mainTarget = mc.gameRenderer.mainRenderTarget();
-            GpuTextureView colorTexture = mainTarget.getColorTextureView();
-            if (colorTexture == null) return;
-            GpuBufferSlice dynamicTransforms = transformUniform();
-            for (PendingDraw pending : pendingDraws) {
-                StagedVertexBuffer.ExecuteInfo info = stagedOutlineBuffer.getExecuteInfo(pending.draw());
-                if (info == null) continue;
-                try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", colorTexture, Optional.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
-                    //? if >=26.3 {
-                    renderPass.setPipeline(RenderSystem.getCompiledPipeline(pending.pipeline()));
-                    //?} else
-                    //renderPass.setPipeline(pending.pipeline());
-                    RenderSystem.bindDefaultUniforms(renderPass);
-                    renderPass.setUniform("DynamicTransforms", dynamicTransforms);
-                    renderPass.setVertexBuffer(0, info.vertexBuffer().slice());
-                    renderPass.setIndexBuffer(info.indexBuffer(), info.indexType());
-                    renderPass.drawIndexed(info.indexCount(), 1, info.firstIndex(), info.baseVertex(), 0);
-                }
-            }
-        } finally {
-            pendingDraws.clear();
-            stagedOutlineBuffer.endFrame();
-        }
-    }
-    //?} elif >=1.21.5 {
-	/*public static VertexConsumer startDrawing(boolean lines, DepthTestMode mode) {
-		currentDraw = new BufferBuilder(allocator, lines ? VertexFormat.Mode.LINES : VertexFormat.Mode.QUADS, lines ? lineFormat() : DefaultVertexFormat.POSITION_COLOR);
-		return currentDraw;
-	}
-
-	private static void finishDraw(boolean lines, DepthTestMode mode) {
-		MeshData builtBuffer = currentDraw.build();
-		if (builtBuffer == null) return;
-		MeshData.DrawState drawState = builtBuffer.drawState();
-		DepthTestMode fillMode = lines ? mode : getActiveInstance().fillDepthTest;
-		float width = lines ? currentLineWidth : 1F;
-		GpuBuffer vertices = upload(drawState, builtBuffer);
-		draw(builtBuffer, drawState, vertices, lines, fillMode, width);
-	}
-
-	private static void draw(MeshData builtBuffer, MeshData.DrawState state, GpuBuffer vertices, boolean lines, DepthTestMode mode, float width) {
-		RenderPipeline p = getPipeline(mode, lines);
-		RenderSystem.AutoStorageIndexBuffer shapeIndexBuffer = RenderSystem.getSequentialBuffer(p.getVertexFormatMode());
-		GpuBuffer indices = shapeIndexBuffer.getBuffer(state.indexCount());
-		VertexFormat.IndexType indexType = shapeIndexBuffer.type();
-		GpuBufferSlice dynamicTransforms = transformUniform(width);
-		RenderTarget mainTarget = mc.gameRenderer.mainRenderTarget();
-
-		try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "CBH pass", mainTarget.getColorTextureView(), OptionalInt.empty(), mainTarget.getDepthTextureView(), OptionalDouble.empty())) {
-			renderPass.setPipeline(p);
-			RenderSystem.bindDefaultUniforms(renderPass);
-			renderPass.setUniform("DynamicTransforms", dynamicTransforms);
-			renderPass.setVertexBuffer(0, vertices);
-			renderPass.setIndexBuffer(indices, indexType);
-			renderPass.drawIndexed(0, 0, state.indexCount(), 1);
-		}
-
-		builtBuffer.close();
-	}
-
-	private static GpuBuffer upload(MeshData.DrawState drawState, MeshData builtBuffer) {
-		int vertexBufferSize = drawState.vertexCount() * drawState.format().getVertexSize();
-		if (vertexBuffer == null || vertexBuffer.size() < vertexBufferSize) {
-			if (vertexBuffer != null) {
-				vertexBuffer.close();
-			}
-			vertexBuffer = new MappableRingBuffer(() -> "CBH render pipeline", 34, vertexBufferSize);
-		}
-
-		CommandEncoder commandEncoder = RenderSystem.getDevice().createCommandEncoder();
-		try (GpuBuffer.MappedView mappedView = commandEncoder.mapBuffer(vertexBuffer.currentBuffer().slice(0, builtBuffer.vertexBuffer().remaining()), false, true)) {
-			MemoryUtil.memCopy(builtBuffer.vertexBuffer(), mappedView.data());
-		}
-
-		GpuBuffer result = vertexBuffer.currentBuffer();
-		vertexBuffer.rotate();
-		return result;
-	}
-	*///?} elif >1.8.9 {
-	/*public static VertexConsumer startDrawing(boolean lines, DepthTestMode mode) {
-		currentDraw = Tesselator.getInstance().begin(lines ? VertexFormat.Mode.LINES : VertexFormat.Mode.QUADS, lines ? lineFormat() : DefaultVertexFormat.POSITION_COLOR);
-		return currentDraw;
-	}
-
-	private static void finishDraw(boolean lines, DepthTestMode mode) {
-		MeshData builtBuffer = currentDraw.build();
-		if (builtBuffer == null) return;
-		DepthTestMode fillMode = lines ? mode : getActiveInstance().fillDepthTest;
-		setDrawShader(lines);
-		RenderSystem.lineWidth(lines ? currentLineWidth : 1F);
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		RenderSystem.disableCull();
-		applyDepth(fillMode);
-		RenderSystem.depthMask(lines);
-		BufferUploader.drawWithShader(builtBuffer);
-		RenderSystem.depthMask(true);
-		RenderSystem.enableDepthTest();
-		RenderSystem.depthFunc(GL11.GL_LEQUAL);
-		RenderSystem.enableCull();
-		RenderSystem.disableBlend();
-		RenderSystem.lineWidth(1F);
-	}
-	*///?} else {
-	/*public static VertexConsumer startDrawing(boolean lines, DepthTestMode mode) {
-		return legacyBuffer.beginBatch(lines);
-	}
-
-	private static void finishDraw(boolean lines, DepthTestMode mode) {
-		legacyBuffer.endBatch(lines ? mode : getActiveInstance().fillDepthTest);
-	}
-
-	// block aligned so the uploaded geometry doesn't change as the camera moves
 	private static Vec3 legacyOrigin = Vec3.ZERO;
 	*///?}
 
-	public static void drawBoxFill(PoseStack stack, AABB box, Pair<Color, Color> cols, float[] alpha) {
+	private static void drawBoxFill(PoseStack stack, AABB box, Pair<Color, Color> cols, float[] alpha) {
 		doEvilMatrixPreparations(stack, box, getActiveInstance().fillExpandBlocks, getActiveInstance().fillExpandPercent);
-		VertexConsumer buffer = startDrawing(false, getActiveInstance().fillDepthTest);
+		pullFill(stack);
+		VertexConsumer buffer = startDrawing(false, getActiveInstance().fillDepthTest, getActiveInstance().fillBlend);
 		Vertexer.vertexBoxQuads(stack.last(), buffer, moveToZero(box), cols, rotateFaceFades(alpha));
-		finishDraw(false, getActiveInstance().fillDepthTest);
+		finishDraw(false, getActiveInstance().fillDepthTest, getActiveInstance().fillBlend);
 		stack.popPose();
 	}
 
@@ -500,253 +174,172 @@ public class Renderer {
 		return rotatedFaceFades;
 	}
 
+	private static boolean snapping;
+	public static Vec3 renderOrigin() {
+		//~ if =1.8.9 'camera.position()' -> 'legacyOrigin'
+		return camera.position();
+	}
+
 	private static void doEvilMatrixPreparations(PoseStack stack, AABB box, float scaleBlocks, float scalePercentage) {
 		stack.pushPose();
-		//~ if =1.8.9 'camera.position()' -> 'legacyOrigin'
-		Vec3 origin = camera.position();
+		Vec3 origin = renderOrigin();
 		stack.translate(box.minX - origin.x, box.minY - origin.y, box.minZ - origin.z);
 		Vec3 vec = moveToZero(box).getCenter();
 		stack.translate(vec.x, vec.y, vec.z);
 		if (getActiveInstance().rotations) {
 			stack.rotateAround(rotation, 0, 0, 0);
 		}
-		AABB scaled = box.inflate(scaleBlocks);
-		Vector3f boxDim = new Vector3f((float) (scaled.getXsize() / box.getXsize()), (float) (scaled.getYsize() / box.getYsize()), (float) (scaled.getZsize() / box.getZsize()));
-		stack.scale(boxDim.x, boxDim.y, boxDim.z);
-		stack.scale(scalePercentage, scalePercentage, scalePercentage);
+		Vertexer.applyExpansion(stack, box, scaleBlocks, scalePercentage);
 		stack.scale(scaleProg, scaleProg, scaleProg);
 		stack.translate(-vec.x, -vec.y, -vec.z);
 	}
 
-	public static void drawLineLayer(PoseStack stack, BlockHighlightConfig.LineConfig cfg, boolean obstructed, int layer, VertexConsumer buffer) {
+	private static void drawLineLayer(PoseStack stack, BlockHighlightConfig.LineConfig cfg, boolean obstructed, int layer, VertexConsumer buffer) {
+		get().push(cfg.screenOutline.enabled ? "screenSpace" : "lines");
 		//? if <26.2
-		//currentLineWidth = cfg.lineWidth;
+		//currentLineWidth = cfg.lineWidth * lineProg;
 		doEvilMatrixPreparations(stack, easeBox, cfg.lineExpandBlocks, cfg.lineExpandPercentage);
+		//? if >1.8.9
+		if (cfg.lineDepthTest == DepthTestMode.HIDDEN_ONLY) stack.last().pose().scaleLocal(HIDDEN_PULL);
 		AABB zeroed = moveToZero(easeBox);
+		LineState state = lineStates.get(layer);
+		float[] cuts = LineState.animatedCuts(state.cutFromCenter, state.cutFromCorner, cutProg);
+		float center = cuts[0], corner = cuts[1];
 		Pair<Color, Color> cols = cfg.color.getColors(obstructed, getActiveInstance().crystalHelperLineColor);
-		if (cfg.shapeStyle != ShapeStyle.CLASSIC_BOX) {
-			int alpha = Math.round(lineStates.get(layer).getEdgeAlpha());
-			if (alpha >= 1) {
+		Vertexer.beginLayer(cfg.lineBlend);
+		try {
+			if (cfg.screenOutline.enabled) {
+				float[] fades = state.lineFades;
+				Vertexer.vertexScreenBox(stack.last(), buffer, screenParts(cfg.shapeStyle, fades, zeroed), cfg.screenOutline, cols, Math.round(mostVisible(fades)), cfg.lineWidth * lineProg, center, corner, cfg.outerThicknessMult, cfg.innerThicknessMult);
+			} else if (cfg.shapeStyle != ShapeStyle.CLASSIC_BOX) {
+				float[] fades = rotateFaceFades(state.lineFades);
 				PoseStack.Pose pose = stack.last();
 				int c1 = cols.first().getRGB() & 0xFFFFFF;
 				int c2 = cols.second().getRGB() & 0xFFFFFF;
 				Vec3 zeroMin = zeroed.getMinPosition();
 				double normalised = zeroMin.distanceTo(zeroed.getMaxPosition());
-				List<Line> src = cfg.shapeStyle == ShapeStyle.COLLISION_SHAPE ? lines : modelLines;
-				for (int i = 0; i < src.size(); i++) renderLine(src.get(i), pose, buffer, c1, c2, zeroMin, normalised, alpha, cfg);
-				for (int i = 0; i < toRemove.size(); i++) renderLine(toRemove.get(i), pose, buffer, c1, c2, zeroMin, normalised, alpha, cfg);
+				float width = cfg.lineWidth * lineProg;
+				ShapeLayer shape = shapeLayer(cfg.shapeStyle);
+				if (unified(getActiveInstance())) {
+					for (Line line : shape.edges.of(shape.quads)) renderLine(line, pose, buffer, c1, c2, zeroMin, normalised, LineState.faceAlpha(line.dirMask, fades, 0), width, center, corner, cfg);
+					for (Quad quad : shape.leavingQuads) renderQuadEdges(quad, pose, buffer, c1, c2, zeroMin, normalised, fades, width, center, corner, cfg);
+				} else {
+					int edgeAlpha = Math.round(state.edgeAlpha);
+					for (Line line : shape.lines) renderLine(line, pose, buffer, c1, c2, zeroMin, normalised, LineState.faceAlpha(line.dirMask, fades, edgeAlpha), width, center, corner, cfg);
+					for (Line line : shape.leavingLines) renderLine(line, pose, buffer, c1, c2, zeroMin, normalised, LineState.faceAlpha(line.dirMask, fades, edgeAlpha), width, center, corner, cfg);
+				}
+			} else {
+				Vertexer.vertexBoxLines(stack.last(), buffer, zeroed, cols, rotateFaceFades(state.lineFades), cfg.lineWidth * lineProg, center, corner, cfg.outerThicknessMult, cfg.innerThicknessMult);
 			}
-		} else {
-			Vertexer.vertexBoxLines(stack.last(), buffer, zeroed, cols, rotateFaceFades(lineStates.get(layer).getLineFades()), cfg.lineWidth * lineProg, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
+		} finally {
+			Vertexer.endLayer();
 		}
+		stack.popPose();
+		get().pop();
+	}
+
+	private static void renderLine(Line line, PoseStack.Pose pose, VertexConsumer buffer, int c1, int c2, Vec3 zeroMin, double normalised, int alpha, float width, float cutFromCenter, float cutFromCorner, BlockHighlightConfig.LineConfig cfg) {
+		int a = c1, b = c2;
+		if (c1 != c2) {
+			a = Vertexer.getLerpedRGB(c1, c2, (float) (zeroMin.distanceTo(line.minPos) / normalised));
+			b = Vertexer.getLerpedRGB(c1, c2, (float) (zeroMin.distanceTo(line.maxPos) / normalised));
+		}
+		line.render(pose, buffer, a, b, alpha, width, cutFromCenter, cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
+	}
+
+	private static void renderQuadEdges(Quad quad, PoseStack.Pose pose, VertexConsumer buffer, int c1, int c2, Vec3 zeroMin, double normalised, float[] fades, float width, float cutFromCenter, float cutFromCorner, BlockHighlightConfig.LineConfig cfg) {
+		for (int e = 0; e < 4; e++) {
+			if (quad.edgeMasks[e] == 0) continue;
+			Vec3 from = quad.corners[e], to = quad.corners[(e + 1) % 4];
+			if (from.distanceToSqr(to) < 1.0E-12) continue;
+			Line edge = new Line(from, to);
+			edge.alphaMultiplier = quad.alphaMultiplier;
+			renderLine(edge, pose, buffer, c1, c2, zeroMin, normalised, LineState.faceAlpha(quad.edgeMasks[e], fades, 0), width, cutFromCenter, cutFromCorner, cfg);
+		}
+	}
+
+	private static void pullFill(PoseStack stack) {
+		//? if >1.8.9
+		if (getActiveInstance().fillDepthTest != DepthTestMode.ALWAYS_PASS) stack.last().pose().scaleLocal(HIDDEN_PULL);
+	}
+
+	private static void drawScreenFill(PoseStack stack, Pair<Color, Color> cols) {
+		BlockHighlightConfig cfg = getActiveInstance();
+		doEvilMatrixPreparations(stack, easeBox, cfg.fillExpandBlocks, cfg.fillExpandPercent);
+		VertexConsumer buffer = startDrawing(false, cfg.fillDepthTest, cfg.fillBlend);
+		Vertexer.vertexScreenFill(stack.last(), buffer, screenParts(cfg.fillShape, sideFades, moveToZero(easeBox)), cfg.fillScreenOutline, cols, Math.round(mostVisible(sideFades)));
+		finishDraw(false, cfg.fillDepthTest, cfg.fillBlend);
 		stack.popPose();
 	}
 
-	private static void renderLine(Line line, PoseStack.Pose pose, VertexConsumer buffer, int c1, int c2, Vec3 zeroMin, double normalised, int alpha, BlockHighlightConfig.LineConfig cfg) {
-		int a = c1, b = c2;
-		if (c1 != c2) { // lerping between equal colors is the identity, skip the sqrt
-			a = getLerpedRGB(c1, c2, (float) (zeroMin.distanceTo(line.minPos) / normalised));
-			b = getLerpedRGB(c1, c2, (float) (zeroMin.distanceTo(line.maxPos) / normalised));
-		}
-		line.render(pose, buffer, a, b, alpha, cfg.lineWidth * lineProg, cfg.cutFromCenter, cfg.cutFromCorner, cfg.outerThicknessMult, cfg.innerThicknessMult);
+	private static float mostVisible(float[] fades) {
+		float most = 0;
+		for (float fade : fades) most = Math.max(most, fade);
+		return most;
 	}
 
-	//? if >=26.1 {
-	private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
-		List<BlockStateModelPart> parts = new ArrayList<>();
-		mc.getModelManager().getBlockStateModelSet().get(state).collectParts(randomSource, parts);
-		parts.forEach(part -> ((SimpleModelWrapper) part).quads().getAll().forEach(quad -> {
-			newLines.add(new Line(new Vec3(quad.position0()).add(offset), new Vec3(quad.position1()).add(offset)));
-			newLines.add(new Line(new Vec3(quad.position1()).add(offset), new Vec3(quad.position2()).add(offset)));
-			newLines.add(new Line(new Vec3(quad.position2()).add(offset), new Vec3(quad.position3()).add(offset)));
-			newLines.add(new Line(new Vec3(quad.position3()).add(offset), new Vec3(quad.position0()).add(offset)));
-		}));
+	private static List<Vec3[]> screenParts(ShapeStyle style, float[] fades, AABB zeroed) {
+		float half = mostVisible(fades) / 2;
+		float[] rotated = rotateFaceFades(fades);
+		List<Vec3[]> parts = new ArrayList<>();
+		if (style == ShapeStyle.CLASSIC_BOX) {
+			boolean all = true;
+			for (float fade : rotated) all &= fade >= half;
+			if (all) return List.<Vec3[]>of(Vertexer.corners(zeroed));
+			for (int d = 0; d < 6; d++) if (rotated[d] >= half) parts.add(Vertexer.face(zeroed, d));
+			return parts;
+		}
+		ShapeLayer shape = shapeLayer(style);
+		for (Quad quad : shape.quads) if (rotated[quad.dir] >= half) parts.add(quad.corners);
+		for (Quad quad : shape.leavingQuads) {
+			if (quad.alphaMultiplier >= 0.5F && rotated[quad.dir] >= half) parts.add(quad.corners);
+		}
+		return parts;
 	}
-	//?} elif >=1.21.11 {
-	/*private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
-		BlockStateModel model = mc.getModelManager().getBlockModelShaper().getBlockModel(state);
-		for (BlockModelPart part : model.collectParts(randomSource)) {
-			for (BakedQuad quad : part.getQuads(null)) {
-				newLines.add(new Line(new Vec3(quad.position0()).add(offset), new Vec3(quad.position1()).add(offset)));
-				newLines.add(new Line(new Vec3(quad.position1()).add(offset), new Vec3(quad.position2()).add(offset)));
-				newLines.add(new Line(new Vec3(quad.position2()).add(offset), new Vec3(quad.position3()).add(offset)));
-				newLines.add(new Line(new Vec3(quad.position3()).add(offset), new Vec3(quad.position0()).add(offset)));
+
+	private static void drawShapeFill(PoseStack stack, ShapeLayer shape, Pair<Color, Color> cols) {
+		BlockHighlightConfig cfg = getActiveInstance();
+		doEvilMatrixPreparations(stack, easeBox, cfg.fillExpandBlocks, cfg.fillExpandPercent);
+		pullFill(stack);
+		VertexConsumer buffer = startDrawing(false, cfg.fillDepthTest, cfg.fillBlend);
+		float[] fades = rotateFaceFades(sideFades);
+		AABB zeroed = moveToZero(easeBox);
+		Vec3 zeroMin = zeroed.getMinPosition();
+		float normaliser = (float) zeroMin.distanceTo(zeroed.getMaxPosition());
+		for (List<Quad> list : List.of(shape.quads, shape.leavingQuads)) {
+			for (Quad quad : list) {
+				int alpha = Math.round(fades[quad.dir] * quad.alphaMultiplier);
+				if (alpha < 1) continue;
+				Vertexer.vertexQuad(stack.last(), buffer, cols, alpha, zeroMin, normaliser, quad.corners);
 			}
 		}
-	}
-	*///?} elif >=1.21.5 {
-	/*private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
-		BlockStateModel model = mc.getModelManager().getBlockModelShaper().getBlockModel(state);
-		for (BlockModelPart part : model.collectParts(randomSource)) {
-			for (BakedQuad quad : part.getQuads(null)) {
-				addRawQuadLines(quad, offset, newLines);
-			}
-		}
-	}
-	*///?} elif >1.8.9 {
-	/*private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
-		BakedModel model = mc.getModelManager().getBlockModelShaper().getBlockModel(state);
-		for (BakedQuad quad : model.getQuads(state, null, randomSource)) {
-			addRawQuadLines(quad, offset, newLines);
-		}
-	}
-	*///?} else {
-	/*private static void addModelLines(BlockState state, RandomSource randomSource, Vec3 offset, ArrayList<Line> newLines) {
-		BakedModel model = mc.getBlockRenderDispatcher().getModelShaper().getModel(state);
-		for (Direction face : Direction.values()) {
-			for (BakedQuad quad : model.getQuads(face)) {
-				addRawQuadLines(quad, offset, newLines);
-			}
-		}
-		for (BakedQuad quad : model.getQuads()) {
-			addRawQuadLines(quad, offset, newLines);
-		}
-	}
-	*///?}
-
-	//? if >=1.21.5 && <1.21.11 {
-	/*private static void addRawQuadLines(BakedQuad quad, Vec3 offset, ArrayList<Line> newLines) {
-		int[] v = quad.vertices();
-		Vec3[] corners = new Vec3[4];
-		for (int i = 0; i < 4; i++) {
-			int base = i * 8;
-			corners[i] = new Vec3(Float.intBitsToFloat(v[base]), Float.intBitsToFloat(v[base + 1]), Float.intBitsToFloat(v[base + 2])).add(offset);
-		}
-		newLines.add(new Line(corners[0], corners[1]));
-		newLines.add(new Line(corners[1], corners[2]));
-		newLines.add(new Line(corners[2], corners[3]));
-		newLines.add(new Line(corners[3], corners[0]));
-	}
-	*///?} elif <1.21.5 && >1.8.9 {
-	/*private static void addRawQuadLines(BakedQuad quad, Vec3 offset, ArrayList<Line> newLines) {
-		int[] v = quad.getVertices();
-		Vec3[] corners = new Vec3[4];
-		for (int i = 0; i < 4; i++) {
-			int base = i * 8;
-			corners[i] = new Vec3(Float.intBitsToFloat(v[base]), Float.intBitsToFloat(v[base + 1]), Float.intBitsToFloat(v[base + 2])).add(offset);
-		}
-		newLines.add(new Line(corners[0], corners[1]));
-		newLines.add(new Line(corners[1], corners[2]));
-		newLines.add(new Line(corners[2], corners[3]));
-		newLines.add(new Line(corners[3], corners[0]));
-	}
-	*///?} elif =1.8.9 {
-	/*// 1.8.9 quads are 7 ints per vertex (position, color, uv, lightmap)
-	private static void addRawQuadLines(BakedQuad quad, Vec3 offset, ArrayList<Line> newLines) {
-		int[] v = quad.getVertices();
-		Vec3[] corners = new Vec3[4];
-		for (int i = 0; i < 4; i++) {
-			int base = i * 7;
-			corners[i] = new Vec3(Float.intBitsToFloat(v[base]), Float.intBitsToFloat(v[base + 1]), Float.intBitsToFloat(v[base + 2])).add(offset);
-		}
-		newLines.add(new Line(corners[0], corners[1]));
-		newLines.add(new Line(corners[1], corners[2]));
-		newLines.add(new Line(corners[2], corners[3]));
-		newLines.add(new Line(corners[3], corners[0]));
-	}
-	*///?}
-
-	private static VoxelShape clKey, mlKey;
-	private static Direction mlKeyDir;
-	private static BlockState mlKeyNeighbor;
-	private static List<Line> clTargets = List.of(), mlTargets = List.of();
-	private static Vec3 clCenter = Vec3.ZERO, mlCenter = Vec3.ZERO;
-
-	public static void updateModelLines(VoxelShape shape, HitResult evilHitResult) {
-		Direction keyDir = null;
-		BlockState keyNeighbor = null;
-		if (evilHitResult instanceof BlockHitResult bhr && getActiveInstance().connectedBlocks) {
-			keyDir = joinConnected(bhr.getBlockPos());
-			if (keyDir != null) keyNeighbor = mc.level.getBlockState(bhr.getBlockPos().relative(keyDir));
-		}
-		if (shape != mlKey || keyDir != mlKeyDir || keyNeighbor != mlKeyNeighbor) {
-			mlKey = shape;
-			mlKeyDir = keyDir;
-			mlKeyNeighbor = keyNeighbor;
-			mlTargets = buildModelLines(shape, evilHitResult);
-			mlCenter = moveToZero(shape).bounds().getCenter();
-		}
-		modelLines = syncLines(modelLines, mlTargets, mlCenter);
+		finishDraw(false, cfg.fillDepthTest, cfg.fillBlend);
+		stack.popPose();
 	}
 
-	private static List<Line> buildModelLines(VoxelShape shape, HitResult evilHitResult) {
-		ArrayList<Line> newLines = new ArrayList<>();
-		if (evilHitResult instanceof BlockHitResult bhr) {
-			RandomSource randomSource = RandomSource.create(0);
-			BlockPos pos = bhr.getBlockPos();
-			Vec3 min = shape.bounds().getMinPosition().subtract(Vec3.atLowerCornerOf(pos));
-			Direction dir = getActiveInstance().connectedBlocks ? joinConnected(pos) : null;
-			if (dir != null) {
-				addModelLines(modelState(pos.relative(dir)), randomSource, unitVec3(dir).add(modelOffset(pos.relative(dir))).subtract(min), newLines);
-			}
-			addModelLines(modelState(pos), randomSource, modelOffset(pos).subtract(min), newLines);
-		}
-		return newLines;
-	}
-
-	private static BlockState modelState(BlockPos pos) {
-		//? if >1.8.9 {
-		return mc.level.getBlockState(pos);
-		//?} else
-		//return LegacyWorld.getActualState(pos);
-	}
-
-	private static Vec3 modelOffset(BlockPos pos) {
-		//? if >1.8.9 {
-		return mc.level.getBlockState(pos).getOffset(pos);
-		//?} else
-		//return LegacyWorld.getOffset(pos);
-	}
-
-	private static List<Line> syncLines(List<Line> current, List<Line> targets, Vec3 center) {
+	private static List<Line> syncLines(List<Line> current, List<Line> targets, Vec3 center, List<Line> leaving, ShapeSync.UnifiedEdges edges) {
 		if (!getActiveInstance().doEasing) {
 			return targets;
 		}
-		while (current.size() < targets.size()) {
-			current.add(new Line(center, center));
-		}
-		while (current.size() > targets.size()) {
-			toRemove.add(current.getLast());
-			current.removeLast();
-		}
-		double k = easeFactor(getActiveInstance().easeSpeed);
-		for (int i = 0; i < current.size(); i++) {
-			Line line = current.get(i);
-			Line target = targets.get(i);
-			line.moveTo(target.minPos, target.maxPos, k);
-			line.update(true);
-		}
-		return current;
+		return ShapeSync.syncLines(current, targets, center, leaving, edges, snapping, easeFactor(getActiveInstance().easeSpeed));
 	}
 
-	public static void updateLinesCommon() {
-		if (toRemove.isEmpty()) return;
-		Vec3 center = getCenter();
-		double k = easeFactor(getActiveInstance().easeSpeed);
-		for (Line line : toRemove) {
-			line.moveTo(center, center, k);
-			line.update(false);
+	private static List<Quad> syncQuads(List<Quad> current, List<Quad> targets, Vec3 center, List<Quad> leaving, ShapeSync.UnifiedEdges edges) {
+		if (!getActiveInstance().doEasing) {
+			return targets;
 		}
-		toRemove.removeIf(line -> line.alphaMultiplier < 1 / 255f);
+		return ShapeSync.syncQuads(current, targets, center, leaving, edges, snapping, easeFactor(getActiveInstance().easeSpeed));
+	}
+
+	private static void updateLinesCommon() {
+		collisionShape.easeLeaving();
+		modelShape.easeLeaving();
 	}
 
 	public static @NonNull Vec3 getCenter() {
 		return moveToZero(easeBox).getCenter();
 	}
 
-	public static void updateCollisionLines(VoxelShape shape) {
-		if (shape != clKey) {
-			clKey = shape;
-			VoxelShape zeroed = moveToZero(shape);
-			ArrayList<Line> newLines = new ArrayList<>();
-			zeroed.forAllEdges((minX, minY, minZ, maxX, maxY, maxZ) -> newLines.add(new Line(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ))));
-			clTargets = newLines;
-			clCenter = zeroed.bounds().getCenter();
-		}
-		lines = syncLines(lines, clTargets, clCenter);
-	}
-
-	//TODO: minimize usage of moveToZero
 	public static AABB moveToZero(AABB box) {
 		return box.move(box.getMinPosition().reverse());
 	}
@@ -756,613 +349,523 @@ public class Renderer {
 		return shape.move(-min.x, -min.y, -min.z);
 	}
 
-	private static EnumSet<Direction> getSides(FaceMode type, BlockPos pos, HitResult evilHitResult) {
+	private static final int ALL_SIDES = 63;
+
+	private static int sides(FaceMode type, Target target) {
+		if (!(target.hit() instanceof BlockHitResult block)) return ALL_SIDES;
 		return switch (type) {
-			case LOOKAT ->
-					(evilHitResult instanceof BlockHitResult block) ? EnumSet.of(block.getDirection()) : EnumSet.allOf(Direction.class);
-			case AIR_EXPOSED -> EnumSet.complementOf(getConcealedFaces(pos));
-			case CONCEALED -> getConcealedFaces(pos);
-			default -> EnumSet.allOf(Direction.class);
+			case LOOKAT -> 1 << block.getDirection().ordinal();
+			case AIR_EXPOSED -> ALL_SIDES & ~concealedFaces(target.pos(), target.connected());
+			case CONCEALED -> concealedFaces(target.pos(), target.connected());
+			default -> ALL_SIDES;
 		};
 	}
 
 	public static boolean isBlockEmpty(BlockPos pos) {
 		if (mc.level == null) throw new IllegalStateException("level == null");
-		//? if >1.8.9 {
-		BlockState state = mc.level.getBlockState(pos);
-		if (!state.hasProperty(BlockStateProperties.WATERLOGGED) && !mc.level.getFluidState(pos).isEmpty()) {
-			//ignore liquids, but not waterlogged blocks
-			return true;
-		}
-		return state.isAir(); // == Level.isEmptyBlock(pos)
-		//?} else {
-		/*if (mc.level.getBlockState(pos).getBlock().getMaterial().isLiquid()) return true;
-		return mc.level.isEmptyBlock(pos);
+		//? if >=1.21.4 {
+		return !mc.level.getBlockState(pos).isSolidRender();
+		//?} elif >1.8.9 {
+		/*return !mc.level.getBlockState(pos).isSolidRender(mc.level, pos);
+		*///?} else {
+		/*return !mc.level.getBlockState(pos).getBlock().isOpaque();
 		*///?}
 	}
 
-	public static EnumSet<Direction> getConcealedFaces(BlockPos pos) {
-		// check around the entire connected box, not just the hovered block
-		Direction connected = getActiveInstance().connectedBlocks ? joinConnected(pos) : null;
+	private static int concealed;
+
+	private static int concealedFaces(BlockPos pos, Direction connected) {
+		if (concealed >= 0) return concealed;
 		BlockPos other = connected == null ? null : pos.relative(connected);
-		EnumSet<Direction> set = EnumSet.allOf(Direction.class);
+		concealed = ALL_SIDES;
 		for (Direction d : Direction.values()) {
 			boolean open;
 			if (other == null || d == connected.getOpposite()) open = isBlockEmpty(pos.relative(d));
 			else if (d == connected) open = isBlockEmpty(other.relative(d));
 			else open = isBlockEmpty(pos.relative(d)) || isBlockEmpty(other.relative(d));
-			if (open) set.remove(d);
+			if (open) concealed &= ~(1 << d.ordinal());
 		}
-		return set;
+		return concealed;
 	}
 
-	public static int getLerpedRGB(int c1, int c2, float percent) {
-		int r = Math.clamp(Mth.lerpInt(percent, c1 >> 16 & 0xFF, c2 >> 16 & 0xFF), 0, 255);
-		int g = Math.clamp(Mth.lerpInt(percent, c1 >> 8 & 0xFF, c2 >> 8 & 0xFF), 0, 255);
-		int b = Math.clamp(Mth.lerpInt(percent, c1 & 0xFF, c2 & 0xFF), 0, 255);
-		return r << 16 | g << 8 | b;
-	}
-
-	public static Color getLerpedColor(Color c1, Color c2, float percent) {
-		return new Color(Math.clamp(Mth.lerpInt(percent, c1.getRed(), c2.getRed()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getGreen(), c2.getGreen()), 0, 255), Math.clamp(Mth.lerpInt(percent, c1.getBlue(), c2.getBlue()), 0, 255));
-	}
-
-    public static void mainLoop(LevelRenderContext c) {
-        //? if >=26.2 {
-        if (featureFrame) { // already advanced + submitted through the feature pipeline this frame
-            featureFrame = false;
-            return;
-        }
-        //?}
-        HitResult evilHitResult = tick();
-        if (evilHitResult == null || !isAnythingVisible()) return;
-        get().push("Custom block outline render");
-        //? if =1.8.9 {
-        /*Vec3 cam = camera.position();
-        double ox = Math.floor(cam.x), oy = Math.floor(cam.y), oz = Math.floor(cam.z);
-        if (ox != legacyOrigin.x || oy != legacyOrigin.y || oz != legacyOrigin.z) legacyOrigin = new Vec3(ox, oy, oz);
-        legacyBuffer.beginFrame();
-        *///?}
-        draw(c.poseStack(), isCrystalObstructed(evilHitResult));
-        //? if =1.8.9
-        //legacyBuffer.drawFrame(ox - cam.x, oy - cam.y, oz - cam.z);
-        //? if >=26.2
-        flushDraws();
-        get().pop();
-    }
-
-    //? if >=26.2 {
-    private static boolean featureFrame;
-    private static boolean featureObstructed;
-    private static final PoseStack featurePoseStack = new PoseStack();
-
-    public static void collectSubmits(LevelRenderContext c) {
-        //? if >=26.3
-        if (mc.gameRenderer.useImprovedTransparency()) return; // AFTER_TERRAIN becomes the OIT phase; keep the END_MAIN pass
-        featureFrame = true;
-        HitResult evilHitResult = tick();
-        if (evilHitResult == null || !isAnythingVisible()) return;
-        featureObstructed = isCrystalObstructed(evilHitResult);
-        c.submitNodeCollector().submitCustom(SubmitRenderPhases.AFTER_TERRAIN, CBHFeatureRenderer.WORLD);
-    }
-
-    public static void drawWorld(Function<RenderType, VertexConsumer> sink) {
-        get().push("Custom block outline render");
-        featureSink = sink;
-        try {
-            draw(featurePoseStack, featureObstructed);
-        } finally {
-            featureSink = null;
-            get().pop();
-        }
-    }
-    //?}
-
-    private static boolean isIgnoredEntity(HitResult hitResult) {
-        return hitResult instanceof EntityHitResult entityHitResult && (!getActiveInstance().allowEntities || entityHitResult.getEntity().isInvisible());
-    }
-
-    private static HitResult tick() {
-        //? if >1.8.9 {
-        if (mc.player == null || mc.player.gameMode() == null || !getActiveInstance().enableModRendering) return null;
-        boolean canInteract = !mc.player.gameMode().isBlockPlacingRestricted();
-        //?} else {
-        /*if (mc.player == null || mc.interactionManager == null || !getActiveInstance().enableModRendering) return null;
-        boolean canInteract = mc.player.abilities.canModifyWorld;
-        *///?}
-        if (!((!mc.gui.hud.isHidden() || getActiveInstance().showWhenNoHud) && (canInteract || getActiveInstance().showWhenNoInteraction))) return null;
-        get().push("Custom block outline pre");
-        HitResult evilHitResult = getHitResult();
-        if (evilHitResult != null) {
-            if (!isIgnoredEntity(evilHitResult)) easeBoxAndEdges(evilHitResult, getVoxelShape(evilHitResult));
-            updateProgresses(evilHitResult);
-        }
-        get().pop();
-        return evilHitResult;
-    }
-
-    private static boolean isAnythingVisible() {
-        BlockHighlightConfig cfg = getActiveInstance();
-        if (cfg.fillEnabled) {
-            for (float f : sideFades) if (Math.round(f) >= 1) return true;
-        }
-        if (cfg.primary.enabled) {
-            for (int i = 0; i < lineStates.size(); i++) {
-                LineConfig lc = cfg.getLineConfig(i);
-                if (!lc.enabled) continue;
-                LineState state = lineStates.get(i);
-                if (lc.shapeStyle == ShapeStyle.CLASSIC_BOX) {
-                    for (float f : state.lineFades) if (Math.round(f) >= 1) return true;
-                } else if (Math.round(state.edgeAlpha) >= 1) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean usesLineFades(LineConfig lc) {
-        return lc.enabled && lc.shapeStyle == ShapeStyle.CLASSIC_BOX;
-    }
-
-	//? if >1.8.9 {
-	public static HitResult getHitResult() {
-		if (mc.level == null || mc.player == null || mc.getCameraEntity() == null) return null;
-		if (mc.hitResult instanceof EntityHitResult) return mc.hitResult;
-		if (getActiveInstance().allowLiquids && isHoldingValidItem()) {
-			HitResult yeah = pick(mc.getCameraEntity(), mc.player.blockInteractionRange(), mc.getDeltaTracker().getRealtimeDeltaTicks());
-			if (yeah instanceof BlockHitResult) {
-				return yeah;
-			}
+	public static void mainLoop(LevelRenderContext c) {
+		//? if >=1.21.5
+		if (IrisCompat.isRenderingShadowPass()) return;
+		//? if >=26.2 {
+		if (featureFrame) {
+			featureFrame = false;
+			return;
 		}
-		return mc.hitResult;
-	}
-
-	public static boolean isHoldingValidItem() {
-		if (getActiveInstance().onlyWhenHoldingAppropriate) {
-			return mc.player.getMainHandItem().is(Items.BUCKET) || mc.player.getOffhandItem().is(Items.BUCKET) || mc.player.getMainHandItem().is(Items.LILY_PAD) || mc.player.getOffhandItem().is(Items.LILY_PAD) || mc.player.getMainHandItem().getItem() instanceof BoatItem || mc.player.getOffhandItem().getItem() instanceof BoatItem;
-		} else {
-			return true;
-		}
-	}
-	//?} else {
-	/*public static HitResult getHitResult() {
-		if (mc.level == null || mc.player == null || mc.getCameraEntity() == null) return null;
-		HitResult crosshair = HitResult.of(mc.crosshairTarget);
-		if (crosshair instanceof EntityHitResult) return crosshair;
-		if (getActiveInstance().allowLiquids && isHoldingValidItem()) {
-			HitResult yeah = pick(mc.getCameraEntity(), mc.interactionManager.getReach(), LegacyClient.tickDelta());
-			if (yeah instanceof BlockHitResult) {
-				return yeah;
-			}
-		}
-		return crosshair;
-	}
-
-	public static boolean isHoldingValidItem() {
-		if (getActiveInstance().onlyWhenHoldingAppropriate) {
-			net.minecraft.item.ItemStack stack = mc.player.getItemInHand();
-			if (stack == null || stack.getItem() == null) return false;
-			return stack.getItem() == Items.BUCKET || stack.getItem() instanceof net.minecraft.item.LilyPadItem || stack.getItem() instanceof BoatItem;
-		} else {
-			return true;
-		}
-	}
-	*///?}
-
-	private static VoxelShape cachedShape;
-	private static BlockPos shapeKeyPos;
-	private static BlockState shapeKeyState;
-	private static VoxelShape shapeKeyRaw, shapeKeyNeighbor;
-	private static Direction shapeKeyDir;
-	private static AABB shapeKeyEntityBox;
-	private static VoxelShape boundsKey;
-	private static AABB boundsValue;
-
-	public static @NonNull VoxelShape getVoxelShape(HitResult evilHitResult) {
-		if (mc.level == null || mc.getCameraEntity() == null) return Shapes.block();
-		if (evilHitResult instanceof BlockHitResult block) {
-			BlockPos pos = block.getBlockPos();
-			//? if >1.8.9 {
-			BlockState state = mc.level.getBlockState(pos);
-			var fluid = mc.level.getFluidState(pos);
-			VoxelShape raw = state.getShape(mc.level, pos);
-			if (raw.isEmpty() && !fluid.isEmpty()) raw = fluid.getShape(mc.level, pos);
-			//?} else {
-			/*BlockState state = mc.level.getBlockState(pos);
-			VoxelShape raw = LegacyWorld.getShape(pos);
+		//?}
+		HitResult evilHitResult = tick();
+		get().push(PROFILED);
+		//? if >=26.3
+		drawQueuedShapeOutlines();
+		if (evilHitResult != null) {
+			//? if =1.8.9 {
+			/*Vec3 cam = camera.position();
+			double ox = Math.floor(cam.x), oy = Math.floor(cam.y), oz = Math.floor(cam.z);
+			if (ox != legacyOrigin.x || oy != legacyOrigin.y || oz != legacyOrigin.z) legacyOrigin = new Vec3(ox, oy, oz);
+			legacyBuffer.beginFrame();
 			*///?}
-			Direction connected = null;
-			VoxelShape neighbor = null;
-			//get connected blocks
-			if (getActiveInstance().connectedBlocks) {
-				connected = joinConnected(pos);
-				if (connected != null) {
-					//? if >1.8.9 {
-					neighbor = mc.level.getBlockState(pos.relative(connected)).getShape(mc.level, pos.relative(connected), CollisionContext.of(mc.getCameraEntity()));
-					//?} else
-					//neighbor = LegacyWorld.getShape(pos.relative(connected));
-				}
-			}
-			// Compared by value, 1.8.9 builds a new shape on every lookup
-			if (cachedShape != null && pos.equals(shapeKeyPos) && state == shapeKeyState && Objects.equals(raw, shapeKeyRaw) && connected == shapeKeyDir && Objects.equals(neighbor, shapeKeyNeighbor)) {
-				return cachedShape;
-			}
-			shapeKeyPos = pos;
-			shapeKeyState = state;
-			shapeKeyRaw = raw;
-			shapeKeyDir = connected;
-			shapeKeyNeighbor = neighbor;
-			shapeKeyEntityBox = null;
-			VoxelShape shape = raw.isEmpty() ? Shapes.block() : raw;
-			if (connected != null) {
-				shape = Shapes.join(shape, neighbor.move(connected.getStepX(), connected.getStepY(), connected.getStepZ()), BooleanOp.OR);
-			}
-			return cachedShape = shape.move(pos.getX(), pos.getY(), pos.getZ());
-		} else if (evilHitResult instanceof EntityHitResult entityHitResult && getActiveInstance().allowEntities && !entityHitResult.getEntity().isInvisible()) {
-			Entity entity = entityHitResult.getEntity();
-			//so, so sloppy. might also have the worst workaround of the century for hanging stuff
-			//? if >1.8.9 {
-			float delta = mc.getDeltaTracker().getGameTimeDeltaPartialTick(false);
-			AABB boundingBox = moveToZero(entity.getBoundingBox());
-			AABB box = boundingBox.move(entity.getPosition(delta).subtract(boundingBox.getCenter()).add(0, entity instanceof HangingEntity ? 0 : boundingBox.maxY / 2F, 0));
-			//?} else {
-			/*float delta = LegacyClient.tickDelta();
-			AABB boundingBox = moveToZero(AABB.of(entity.getShape()));
-			Vec3 position = new Vec3(Mth.lerp(delta, entity.prevX, entity.x), Mth.lerp(delta, entity.prevY, entity.y), Mth.lerp(delta, entity.prevZ, entity.z));
-			AABB box = boundingBox.move(position.subtract(boundingBox.getCenter()).add(0, entity instanceof DecorationEntity ? 0 : boundingBox.maxY / 2F, 0));
+			draw(c.poseStack(), Target.isCrystalObstructed(evilHitResult));
+			//? if =1.8.9 {
+			/*get().push("flush");
+			legacyBuffer.drawFrame(ox - cam.x, oy - cam.y, oz - cam.z, true);
+			get().pop();
 			*///?}
-			if (cachedShape != null && box.equals(shapeKeyEntityBox)) {
-				return cachedShape;
-			}
-			shapeKeyPos = null;
-			shapeKeyEntityBox = box;
-			return cachedShape = Shapes.create(box);
 		}
-		return Shapes.block();
+		//? if >=1.21.5 {
+		get().push("flush");
+		flushDraws();
+		get().pop();
+		//?}
+		get().pop();
 	}
 
-	public static void easeBoxAndEdges(HitResult evilHitResult, VoxelShape shape) {
-		if (shape != boundsKey) {
-			boundsKey = shape;
-			boundsValue = shape.bounds();
+	//? if >=26.2 {
+	private static boolean featureFrame;
+	private static boolean featureObstructed;
+	private static final PoseStack featurePoseStack = new PoseStack();
+
+	public static void collectSubmits(LevelRenderContext c) {
+		if (IrisCompat.isRenderingShadowPass()) return;
+		//? if >=26.3
+		if (mc.gameRenderer.useImprovedTransparency()) return;
+		featureFrame = true;
+		HitResult evilHitResult = tick();
+		if (evilHitResult == null) return;
+		boolean translucentTarget = isTranslucentTarget(evilHitResult);
+		featureObstructed = Target.isCrystalObstructed(evilHitResult);
+		c.submitNodeCollector().submitCustom(IrisCompat.isShaderPackInUse() ? SubmitRenderPhases.TRANSLUCENT_CUSTOM_GEOMETRY : translucentTarget ? SubmitRenderPhases.AFTER_TERRAIN : SubmitRenderPhases.SHAPE_OUTLINES, CBHFeatureRenderer.WORLD);
+	}
+
+	private static boolean isTranslucentTarget(HitResult hit) {
+		return hit instanceof BlockHitResult block && hit.getType() != HitResult.Type.MISS
+				&& mc.getModelManager().getBlockStateModelSet().get(mc.level.getBlockState(block.getBlockPos())).hasMaterialFlag(1);
+	}
+
+	public static void drawWorld(Function<RenderType, VertexConsumer> sink) {
+		get().push(PROFILED);
+		featureSink = sink;
+		try {
+			draw(featurePoseStack, featureObstructed);
+		} finally {
+			featureSink = null;
+			get().pop();
 		}
-		AABB targetBox = boundsValue;
+	}
+
+	public static boolean restylesShapeOutlines() {
 		BlockHighlightConfig cfg = getActiveInstance();
-		if (cfg.doEasing) {
-			if (cfg.updateWhenUnfocused || evilHitResult.getType() != HitResult.Type.MISS) {
-				double k = easeFactor(cfg.easeSpeed);
-				easeBox = new AABB(easeBox.minX + (targetBox.minX - easeBox.minX) * k, easeBox.minY + (targetBox.minY - easeBox.minY) * k, easeBox.minZ + (targetBox.minZ - easeBox.minZ) * k, easeBox.maxX + (targetBox.maxX - easeBox.maxX) * k, easeBox.maxY + (targetBox.maxY - easeBox.maxY) * k, easeBox.maxZ + (targetBox.maxZ - easeBox.maxZ) * k);
+		return cfg.enableModRendering && cfg.restyleOtherOutlines && cfg.primary.enabled && !cfg.drawVanillaOutline;
+	}
+
+	public static void drawShapeOutline(PoseStack.Pose pose, VoxelShape shape, Function<RenderType, VertexConsumer> sink) {
+		if (shape.isEmpty()) return;
+		//? if >=26.3 {
+		if (mc.gameRenderer.useImprovedTransparency()) {
+			queuedOutlines.add(new QueuedOutline(pose, shape));
+			return;
+		}
+		//?}
+		get().push(PROFILED);
+		get().push("otherOutlines");
+		featureSink = sink;
+		try {
+			drawShapeOutline(pose, shape);
+		} finally {
+			featureSink = null;
+			get().pop();
+			get().pop();
+		}
+	}
+
+	//? if >=26.3 {
+	private record QueuedOutline(PoseStack.Pose pose, VoxelShape shape) {
+	}
+
+	private static final List<QueuedOutline> queuedOutlines = new ArrayList<>();
+
+	private static void drawQueuedShapeOutlines() {
+		if (queuedOutlines.isEmpty()) return;
+		get().push("otherOutlines");
+		for (QueuedOutline outline : queuedOutlines) drawShapeOutline(outline.pose(), outline.shape());
+		queuedOutlines.clear();
+		get().pop();
+	}
+	//?}
+
+	private static boolean behindLookedAtFace(Direction looked, PoseStack.Pose pose, AABB bounds) {
+		Vector3f normal = new Vector3f(looked.getStepX(), looked.getStepY(), looked.getStepZ());
+		float planeAt = normal.dot(Vertexer.face(easeBox, looked.ordinal())[0].subtract(camera.position()).toVector3f());
+		return Vertexer.behindPlane(normal, planeAt, pose.pose(), bounds);
+	}
+
+	private static void drawShapeOutline(PoseStack.Pose pose, VoxelShape shape) {
+		BlockHighlightConfig cfg = getActiveInstance();
+		AABB bounds = shape.bounds();
+		Vec3 min = bounds.getMinPosition();
+		Vec3 center = bounds.getCenter();
+		double normalised = min.distanceTo(bounds.getMaxPosition());
+		Direction looked = lookedAt;
+		for (int layer = 2; layer >= 0; layer--) {
+			LineConfig lc = cfg.getLineConfig(layer);
+			if (!lc.enabled) continue;
+			PoseStack.Pose layerPose = pose.copy();
+			layerPose.translate((float) center.x, (float) center.y, (float) center.z);
+			CBHFeatureRenderer.applyExpansion(layerPose, bounds, lc.lineExpandBlocks, lc.lineExpandPercentage);
+			layerPose.translate((float) -center.x, (float) -center.y, (float) -center.z);
+			boolean quads = lc.screenOutline.enabled;
+			VertexConsumer buffer = quads && featureSink != null ? featureSink.apply(screenRenderType(lc.lineDepthTest, lc.lineBlend)) : startDrawing(!quads, lc.lineDepthTest, lc.lineBlend);
+			Pair<Color, Color> cols = lc.color.getColors(false, cfg.crystalHelperLineColor);
+			Vertexer.beginLayer(lc.lineBlend);
+			try {
+				if (quads) {
+					if (looked != null && behindLookedAtFace(looked, pose, bounds)) lookedAt = null;
+					Vertexer.vertexScreenBox(layerPose, buffer, lc.shapeStyle == ShapeStyle.CLASSIC_BOX ? List.<Vec3[]>of(Vertexer.corners(bounds)) : shape.toAabbs().stream().map(Vertexer::corners).toList(), lc.screenOutline, cols, lc.color.alpha, lc.lineWidth, lc.cutFromCenter, lc.cutFromCorner, lc.outerThicknessMult, lc.innerThicknessMult);
+				} else if (lc.shapeStyle == ShapeStyle.CLASSIC_BOX) {
+					float[] alphas = new float[6];
+					Arrays.fill(alphas, lc.color.alpha);
+					Vertexer.vertexBoxLines(layerPose, buffer, bounds, cols, alphas, lc.lineWidth, lc.cutFromCenter, lc.cutFromCorner, lc.outerThicknessMult, lc.innerThicknessMult);
+				} else {
+					int c1 = cols.first().getRGB() & 0xFFFFFF;
+					int c2 = cols.second().getRGB() & 0xFFFFFF;
+					shape.forAllEdges((x1, y1, z1, x2, y2, z2) -> renderLine(new Line(new Vec3(x1, y1, z1), new Vec3(x2, y2, z2)), layerPose, buffer, c1, c2, min, normalised, lc.color.alpha, lc.lineWidth, lc.cutFromCenter, lc.cutFromCorner, lc));
+				}
+			} finally {
+				Vertexer.endLayer();
 			}
+			finishDraw(!quads, lc.lineDepthTest, lc.lineBlend);
+		}
+		lookedAt = looked;
+	}
+	//?}
+
+	private static int tickedFrame = -1;
+	private static HitResult tickedHit;
+
+	private static HitResult tick() {
+		if (tickedFrame != CustomBlockHighlight.frame) {
+			tickedFrame = CustomBlockHighlight.frame;
+			get().push(PROFILED);
+			tickedHit = advance();
+			get().pop();
+		}
+		return tickedHit;
+	}
+
+	private static HitResult advance() {
+		//? if >1.8.9 {
+		if (mc.player == null || mc.player.gameMode() == null) return null;
+		//?} else
+		//if (mc.player == null || mc.interactionManager == null) return null;
+		if (!getActiveInstance().enableModRendering || mc.gui.hud.isHidden() && !getActiveInstance().showWhenNoHud) {
+			scaleProg = lineProg = cutProg = 0;
+			Arrays.fill(sideFades, 0);
+			for (LineState state : lineStates) state.clearFades();
+			return null;
+		}
+		get().push("target");
+		Target target = Target.current();
+		get().pop();
+		get().push("update");
+		boolean visible = false;
+		if (target != null) {
+			boolean ignored = !mayHighlight(target) || target.ignored();
+			boolean wasVisible = isAnythingVisible();
+			if (!ignored) easeBoxAndEdges(target, wasVisible);
+			else updateLinesCommon();
+			visible = updateProgresses(target, ignored, wasVisible);
+		}
+		get().pop();
+		return visible ? target.hit() : null;
+	}
+
+	private static boolean mayHighlight(Target target) {
+		//? if >1.8.9 {
+		if (!mc.player.gameMode().isBlockPlacingRestricted() || getActiveInstance().showWhenNoInteraction) return true;
+		if (target.hit() instanceof EntityHitResult) return mc.player.gameMode() != GameType.SPECTATOR;
+		if (target.pos() == null || target.hit().getType() == HitResult.Type.MISS) return false;
+		BlockPos pos = target.pos();
+		if (mc.player.gameMode() == GameType.SPECTATOR) {
+			//? if >=26.3 {
+			return target.state().showAsInteractableInSpectatorMode(mc.level, pos, (BlockHitResult) target.hit());
+			//?} else
+			//return target.state().getMenuProvider(mc.level, pos) != null;
+		}
+		ItemStack stack = mc.player.getMainHandItem();
+		BlockInWorld block = new BlockInWorld(mc.level, pos, false);
+		return !stack.isEmpty() && (stack.canBreakBlockInAdventureMode(block) || stack.canPlaceOnBlockInAdventureMode(block));
+		//?} else {
+		/*if (mc.player.abilities.canModifyWorld || getActiveInstance().showWhenNoInteraction) return true;
+		if (target.hit() instanceof EntityHitResult) return mc.interactionManager.getGameMode() != net.minecraft.world.WorldSettings.GameMode.SPECTATOR;
+		if (target.pos() == null || target.hit().getType() == HitResult.Type.MISS) return false;
+		Block block = target.state().getBlock();
+		if (mc.interactionManager.getGameMode() == net.minecraft.world.WorldSettings.GameMode.SPECTATOR) {
+			return block.hasBlockEntity() && mc.level.getBlockEntity(target.pos()) instanceof net.minecraft.inventory.Inventory;
+		}
+		net.minecraft.item.ItemStack stack = mc.player.getItemInHand();
+		return stack != null && (stack.hasMineBlockOverride(block) || stack.hasPlaceOnBlockOverride(block));
+		*///?}
+	}
+
+	private static boolean isAnythingVisible() {
+		BlockHighlightConfig cfg = getActiveInstance();
+		if (cfg.fillEnabled) {
+			for (float f : sideFades) if (Math.round(f) >= 1) return true;
+		}
+		for (int i = 0; i < lineStates.size(); i++) {
+			LineConfig lc = cfg.getLineConfig(i);
+			if (!isLayerDrawn(cfg, lc)) continue;
+			LineState state = lineStates.get(i);
+			for (float f : state.lineFades) if (Math.round(f) >= 1) return true;
+		}
+		return false;
+	}
+
+	static boolean isLayerDrawn(BlockHighlightConfig cfg, LineConfig lc) {
+		return cfg.primary.enabled && lc.enabled;
+	}
+
+	private static Object easedEntity;
+	private static AABB easedEntityBox;
+
+	private static void easeBoxAndEdges(Target target, boolean visible) {
+		HitResult evilHitResult = target.hit();
+		BlockHighlightConfig cfg = getActiveInstance();
+		if (evilHitResult.getType() == HitResult.Type.MISS && !cfg.updateWhenUnfocused) {
+			easedEntity = null;
+			updateLinesCommon();
+			return;
+		}
+		lookedAt = evilHitResult instanceof BlockHitResult block ? block.getDirection() : null;
+		AABB targetBox = target.bounds();
+		Object entity = evilHitResult instanceof EntityHitResult hit ? hit.getEntity() : null;
+		if (entity != null && entity == easedEntity) {
+			easeBox = easeBox.move(targetBox.minX - easedEntityBox.minX, targetBox.minY - easedEntityBox.minY, targetBox.minZ - easedEntityBox.minZ);
+		}
+		easedEntity = entity;
+		easedEntityBox = targetBox;
+		snapping = cfg.doEasing && cfg.snapWhenFadedOut && evilHitResult.getType() != HitResult.Type.MISS && !visible;
+		if (snapping) {
+			easeBox = targetBox;
+			for (ShapeLayer layer : List.of(collisionShape, modelShape)) {
+				layer.leavingLines.clear();
+				layer.leavingQuads.clear();
+			}
+		}
+		if (cfg.doEasing) {
+			easeBox = lerpBox(easeBox, targetBox, easeFactor(cfg.easeSpeed));
 		} else {
 			easeBox = targetBox;
 		}
-		boolean updateCL = false, updateML = false;
-		for (int i = 0; i < 3; i++) {
-			ShapeStyle style = cfg.getLineConfig(i).shapeStyle;
-			if (style == ShapeStyle.COLLISION_SHAPE) updateCL = true;
-			if (style == ShapeStyle.MODEL_SHAPE) updateML = true;
+		boolean collisionLines = false, modelLines = false;
+		boolean collisionFaces = cfg.fillEnabled && cfg.fillShape == ShapeStyle.COLLISION_SHAPE, modelFaces = cfg.fillEnabled && cfg.fillShape == ShapeStyle.MODEL_SHAPE;
+		for (LineConfig lc : cfg.lineConfigs()) {
+			if (!isLayerDrawn(cfg, lc)) continue;
+			boolean faces = unified(cfg) || lc.screenOutline.enabled;
+			if (lc.shapeStyle == ShapeStyle.COLLISION_SHAPE) {
+				if (faces) collisionFaces = true;
+				else collisionLines = true;
+			}
+			if (lc.shapeStyle == ShapeStyle.MODEL_SHAPE) {
+				if (faces) modelFaces = true;
+				else modelLines = true;
+			}
 		}
-		if (updateCL) {
-			updateCollisionLines(shape);
+		if (isEmptyTarget(target)) {
+			updateLinesCommon();
+			return;
 		}
-		if (updateML) {
-			updateModelLines(shape, evilHitResult);
-		}
+		VoxelShape local = target.local();
+		if (collisionLines || collisionFaces) collisionShape.update(local, null, () -> ShapeGeometry.ofShape(local), collisionLines, collisionFaces);
+		if (modelLines || modelFaces) modelShape.update(local, ModelGeometry.modelKey(target), () -> ModelGeometry.buildModelGeometry(target), modelLines, modelFaces);
 		updateLinesCommon();
 	}
 
+	private static boolean unified(BlockHighlightConfig cfg) {
+		return cfg.unifiedQuads && cfg.doEasing;
+	}
+
+	private static AABB lerpBox(AABB from, AABB to, double k) {
+		Vec3 min = Line.ease(from.getMinPosition(), to.getMinPosition(), k), max = Line.ease(from.getMaxPosition(), to.getMaxPosition(), k);
+		return min.equals(to.getMinPosition()) && max.equals(to.getMaxPosition()) ? to : new AABB(min, max);
+	}
+
 	private static void draw(PoseStack stack, boolean isCrystalObstructed) {
-		//render the fill first, we don't want it drawn over the outline
 		if (getActiveInstance().fillEnabled) {
-			get().push("drawFill");
+			get().push("fill");
 			drawFill(stack, isCrystalObstructed);
 			get().pop();
 		}
-		//now the outline itself
 		if (getActiveInstance().primary.enabled) {
-			get().push("drawOutline");
+			get().push("outlines");
 			drawOutlines(stack, isCrystalObstructed);
 			get().pop();
 		}
 	}
 
-	private static boolean isCrystalObstructed(HitResult evilHitResult) {
-		//? if >1.8.9 {
-		if (mc.level == null) throw new IllegalStateException("level == null");
-		if (!(evilHitResult instanceof BlockHitResult block)) return false;
-		BlockState state = mc.level.getBlockState(block.getBlockPos());
-
-		if (getActiveInstance().crystalHelper) {
-			if (state.getBlock().equals(Blocks.OBSIDIAN) || state.getBlock().equals(Blocks.BEDROCK)) {
-				double pd = block.getBlockPos().above().getX();
-				double pe = block.getBlockPos().above().getY();
-				double pf = block.getBlockPos().above().getZ();
-				return !mc.level.isEmptyBlock(block.getBlockPos().above()) || !mc.level.getEntities(null, new AABB(pd, pe, pf, pd + 1.0, pe + 2.0, pf + 1.0)).isEmpty();
-			} else {
-				return false;
-			}
-		} else {
-			return false;
-		}
-		//?} else
-		//return false;
-	}
-
 	private static void drawFill(PoseStack stack, boolean isCrystalObstructed) {
-		boolean b = getActiveInstance().fillDepthTest != DepthTestMode.ALWAYS_PASS && getActiveInstance().fillExpandBlocks == 0 && getActiveInstance().fillExpandPercent == 1;
-		Renderer.drawBoxFill(stack, easeBox.inflate(b ? 0.00005 : 0), getActiveInstance().fillCol.getColors(isCrystalObstructed, getActiveInstance().crystalHelperFillColor), sideFades);
+		BlockHighlightConfig cfg = getActiveInstance();
+		Pair<Color, Color> cols = cfg.fillCol.getColors(isCrystalObstructed, cfg.crystalHelperFillColor);
+		Vertexer.blend = cfg.fillBlend;
+		if (cfg.fillScreenOutline.enabled) {
+			drawScreenFill(stack, cols);
+		} else {
+			switch (cfg.fillShape) {
+				case CLASSIC_BOX -> drawBoxFill(stack, easeBox, cols, sideFades);
+				case COLLISION_SHAPE, MODEL_SHAPE -> drawShapeFill(stack, shapeLayer(cfg.fillShape), cols);
+			}
+		}
+		Vertexer.blend = BlendMode.NORMAL;
 	}
+
+	//? if >=26.2
+	private static final FloatArrayList screenDepth = new FloatArrayList();
 
 	private static void drawOutlines(PoseStack stack, boolean isCrystalObstructed) {
-		if (mc.level == null) throw new IllegalStateException("level == null");
 		DepthTestMode prevMode = null;
+		BlendMode prevBlend = null;
+		//? if >1.8.9 && <1.21.11
+		//float prevWidth = 0;
 		VertexConsumer buffer = null;
-		for (int layer = 0; layer < 3; layer++) {
+		for (int layer = 2; layer >= 0; layer--) {
 			LineConfig lineConfig = getActiveInstance().getLineConfig(layer);
-			if (lineConfig.enabled) {
-				if (prevMode != lineConfig.lineDepthTest) {
-					if (prevMode != null) {
-						finishDraw(true, prevMode);
-					}
-					buffer = startDrawing(true, lineConfig.lineDepthTest);
-					prevMode = lineConfig.lineDepthTest;
+			if (!lineConfig.enabled) continue;
+			if (lineConfig.screenOutline.enabled) {
+				if (prevMode != null) {
+					finishDraw(true, prevMode, prevBlend);
+					prevMode = null;
 				}
-				drawLineLayer(stack, lineConfig, isCrystalObstructed, layer, buffer);
+				//? if >=26.2 {
+				VertexConsumer quads = featureSink != null ? featureSink.apply(outlineRenderType(lineConfig.lineDepthTest, false, lineConfig.lineBlend, layer)) : startDrawing(false, lineConfig.lineDepthTest, lineConfig.lineBlend);
+				if (featureSink != null && !IrisCompat.isShaderPackInUse() && lineConfig.lineDepthTest != DepthTestMode.HIDDEN_ONLY) Vertexer.depthCopy = screenDepth;
+				//?} else
+				//VertexConsumer quads = startDrawing(false, lineConfig.lineDepthTest, lineConfig.lineBlend);
+				drawLineLayer(stack, lineConfig, isCrystalObstructed, layer, quads);
+				//? if >=26.2
+				Vertexer.depthCopy = null;
+				finishDraw(false, lineConfig.lineDepthTest, lineConfig.lineBlend);
+				continue;
 			}
+			if (prevMode != lineConfig.lineDepthTest || prevBlend != lineConfig.lineBlend
+						//? if >1.8.9 && <1.21.11
+						//|| prevWidth != lineConfig.lineWidth
+			) {
+				if (prevMode != null) {
+					finishDraw(true, prevMode, prevBlend);
+				}
+				//? if >=26.2 {
+				buffer = featureSink != null ? featureSink.apply(outlineRenderType(lineConfig.lineDepthTest, true, lineConfig.lineBlend, layer)) : startDrawing(true, lineConfig.lineDepthTest, lineConfig.lineBlend);
+				//?} else
+				//buffer = startDrawing(true, lineConfig.lineDepthTest, lineConfig.lineBlend);
+				prevMode = lineConfig.lineDepthTest;
+				prevBlend = lineConfig.lineBlend;
+				//? if >1.8.9 && <1.21.11
+				//prevWidth = lineConfig.lineWidth;
+			}
+			drawLineLayer(stack, lineConfig, isCrystalObstructed, layer, buffer);
 		}
-		finishDraw(true, getActiveInstance().primary.lineDepthTest);
+		if (prevMode != null) finishDraw(true, prevMode, prevBlend);
+		//? if >=26.2 {
+		if (screenDepth.isEmpty()) return;
+		VertexConsumer depth = featureSink.apply(SCREEN_DEPTH);
+		for (int i = 0; i < screenDepth.size(); i += 4) depth.addVertex(screenDepth.getFloat(i), screenDepth.getFloat(i + 1), screenDepth.getFloat(i + 2)).setColor(255, 255, 255, (int) screenDepth.getFloat(i + 3));
+		screenDepth.clear();
+		//?}
 	}
 
-	// this is so bad
-	private static void updateProgresses(HitResult evilHitResult) {
-		if (mc.level == null) return;
+	private static boolean updateProgresses(Target target, boolean ignored, boolean wasVisible) {
+		HitResult evilHitResult = target.hit();
 		BlockHighlightConfig cfg = getActiveInstance();
+		double cutEase = cfg.animateLineCuts && wasVisible ? easeFactor(cfg.lineCutSpeed) : 1;
+		for (int i = 0; i < lineStates.size(); i++) lineStates.get(i).easeCuts(cfg.getLineConfig(i).cutFromCenter, cfg.getLineConfig(i).cutFromCorner, cutEase);
 		boolean miss = evilHitResult.getType() == HitResult.Type.MISS;
-		if (isIgnoredEntity(evilHitResult)) {
+		if (ignored) {
 			miss = true;
 			exitFades();
 		} else if (evilHitResult instanceof EntityHitResult) {
-			if (cfg.fillEnabled) {
-				for (int d = 0; d < 6; d++) {
-					sideFades[d] = cfg.fadeIn ? easeF(sideFades[d], cfg.fillCol.alpha, cfg.fadeInSpeed) : cfg.fillCol.alpha;
-				}
-			}
-			for (int i = 0; i < lineStates.size(); i++) {
-				LineState lineState = lineStates.get(i);
-				LineConfig lc = cfg.getLineConfig(i);
-				int targetAlpha = lc.color.alpha;
-				if (usesLineFades(lc)) {
-					for (int d = 0; d < 6; d++) {
-						lineState.lineFades[d] = cfg.fadeIn ? easeF(lineState.lineFades[d], targetAlpha, cfg.fadeInSpeed) : targetAlpha;
-					}
-				}
-				lineState.edgeAlpha = cfg.fadeIn ? easeF(lineState.edgeAlpha, targetAlpha, cfg.fadeInSpeed) : targetAlpha;
-			}
-			if (cfg.rotations) {
-				//? if >1.8.9 {
-				rotation.nlerp(new Quaternionf(), (float) (1 - Math.exp((mc.options.enableVsync().get() || !getActiveInstance().improvedEasing ? -(1.0F / mc.getFps()) : -((double) mc.getFrameTimeNs() / 1000000000)) * cfg.rotationSpeed)));
-				//?} else
-				//rotation.nlerp(new Quaternionf(), (float) easeFactor(cfg.rotationSpeed));
-			}
-		} else if (evilHitResult instanceof BlockHitResult block) {
-			if (mc.level.isEmptyBlock(block.getBlockPos()) || miss) {
+			updateFades(target);
+			updateRotation(target);
+		} else if (evilHitResult instanceof BlockHitResult) {
+			if (isEmptyTarget(target)) {
 				exitFades();
+				easeRotation();
 			} else {
-				@SuppressWarnings("unchecked")
-				EnumSet<Direction>[] sidesByMode = new EnumSet[FaceMode.values().length]; // several layers often share a mode
-				for (int i = 0; i < lineStates.size(); i++) {
-					LineState lineState = lineStates.get(i);
-					LineConfig lc = cfg.getLineConfig(i);
-					int targetAlpha = lc.color.alpha;
-					if (usesLineFades(lc)) {
-						EnumSet<Direction> lines = sidesByMode[lc.outlineType.ordinal()];
-						if (lines == null) lines = sidesByMode[lc.outlineType.ordinal()] = getSides(lc.outlineType, block.getBlockPos(), evilHitResult);
-						for (Direction d : Direction.values()) {
-							if (lines.contains(d)) {
-								lineState.lineFades[d.ordinal()] = cfg.fadeIn ? easeF(lineState.lineFades[d.ordinal()], targetAlpha, cfg.fadeInSpeed) : targetAlpha;
-							} else {
-								lineState.lineFades[d.ordinal()] = cfg.fadeOut ? easeF(lineState.lineFades[d.ordinal()], 0, cfg.fadeOutSpeed) : 0;
-							}
-						}
-					}
-					lineState.edgeAlpha = cfg.fadeIn ? easeF(lineState.edgeAlpha, targetAlpha, cfg.fadeInSpeed) : targetAlpha;
-				}
-				if (cfg.fillEnabled) {
-					EnumSet<Direction> sides = sidesByMode[cfg.fillType.ordinal()];
-					if (sides == null) sides = getSides(cfg.fillType, block.getBlockPos(), evilHitResult);
-					for (Direction dir : Direction.values()) {
-						if (sides.contains(dir)) {
-							sideFades[dir.ordinal()] = cfg.fadeIn ? easeF(sideFades[dir.ordinal()], cfg.fillCol.alpha, cfg.fadeInSpeed) : cfg.fillCol.alpha;
-						} else {
-							sideFades[dir.ordinal()] = cfg.fadeOut ? easeF(sideFades[dir.ordinal()], 0, cfg.fadeOutSpeed) : 0;
-						}
-					}
-				}
-			}
-			if (cfg.rotations) {
-				Direction d = block.getDirection();
-				//? if >1.8.9 {
-				Quaternionf target = d.getRotation();
-				//?} else
-				//Quaternionf target = LegacyWorld.rotation(d);
-
-				if (d != Direction.UP && d != Direction.DOWN) {
-					lastHorizontalDirection = d;
-				} else {
-					float pitch = (float) ((d == Direction.UP) ? (-Math.PI / 2F) : (Math.PI / 2F));
-					//? if >1.8.9 {
-					target = new Quaternionf(lastHorizontalDirection.getRotation()).rotateX(pitch);
-					//?} else
-					//target = LegacyWorld.rotation(lastHorizontalDirection).rotateX(pitch);
-				}
-				//? if >1.8.9 {
-				if (!isCubeLike(mc.level.getBlockState(block.getBlockPos()).getShape(mc.level, block.getBlockPos()))) {
-				//?} else
-				//if (!isCubeLike(block.getBlockPos().equals(shapeKeyPos) ? shapeKeyRaw : LegacyWorld.getShape(block.getBlockPos()))) {
-					target = new Quaternionf();
-				}
-
-				//? if >1.8.9 {
-				rotation.nlerp(target, (float) (1 - Math.exp((mc.options.enableVsync().get() || !getActiveInstance().improvedEasing ? -(1.0F / mc.getFps()) : -((double) mc.getFrameTimeNs() / 1000000000)) * cfg.rotationSpeed)));
-				//?} else
-				//rotation.nlerp(target, (float) easeFactor(cfg.rotationSpeed));
+				updateFades(target);
+				updateRotation(target);
 			}
 		}
-		//I didn't add in/out because it would BREAKKK. TODO THIS
-		scaleProg = cfg.scale ? easeF(scaleProg, miss ? 0 : 1, cfg.scaleSpeed) : 1;
-		lineProg = cfg.animateLineThickness ? easeF(lineProg, miss ? 0 : 1, cfg.lineThicknessAnimationSpeed) : 1;
+		boolean visible = isAnythingVisible();
+		scaleProg = LineState.progress(scaleProg, miss, cfg.scale, cfg.scaleSpeed, cfg.scaleOut, cfg.scaleOutSpeed, visible);
+		lineProg = LineState.progress(lineProg, miss, cfg.animateLineThickness, cfg.lineThicknessAnimationSpeed, cfg.lineThicknessOut, cfg.lineThicknessOutSpeed, visible);
+		cutProg = LineState.progress(cutProg, miss, cfg.animateLineCuts, cfg.lineCutSpeed, cfg.lineCutOut, cfg.lineCutOutSpeed, visible);
+		return visible;
 	}
 
-	public static void exitFades() {
+	private static void updateFades(Target target) {
+		BlockHighlightConfig cfg = getActiveInstance();
+		concealed = -1;
+		for (int i = 0; i < lineStates.size(); i++) {
+			LineConfig lc = cfg.getLineConfig(i);
+			LineState lineState = lineStates.get(i);
+			if (!isLayerDrawn(cfg, lc)) {
+				lineState.clearFades();
+				continue;
+			}
+			fadeSides(lineState.lineFades, sides(lc.outlineType, target), lc.color.alpha);
+			lineState.edgeAlpha = fadeIn(lineState.edgeAlpha, lc.color.alpha);
+		}
+		if (cfg.fillEnabled) fadeSides(sideFades, sides(cfg.fillType, target), cfg.fillCol.alpha);
+		else Arrays.fill(sideFades, 0);
+	}
+
+	private static void fadeSides(float[] fades, int sides, float target) {
+		for (int d = 0; d < 6; d++) fades[d] = (sides & 1 << d) != 0 ? fadeIn(fades[d], target) : fadeOut(fades[d]);
+	}
+
+	private static void updateRotation(Target target) {
+		BlockHighlightConfig cfg = getActiveInstance();
+		if (!cfg.rotations) return;
+		if (target.hit() instanceof BlockHitResult block) {
+			Direction d = block.getDirection();
+			if (isCubeLike(target.raw())) {
+				roll.towards(d);
+			} else {
+				roll.reset(d);
+			}
+		} else {
+			roll.reset(null);
+		}
+		easeRotation();
+	}
+
+	private static void easeRotation() {
+		BlockHighlightConfig cfg = getActiveInstance();
+		if (!cfg.rotations) return;
+		rotation.nlerp(roll.target, (float) easeFactor(cfg.rotationSpeed));
+		if (Math.abs(rotation.dot(roll.target)) > 1 - 1.0E-5F) rotation.set(roll.target);
+	}
+
+	private static boolean isEmptyTarget(Target target) {
+		return target.hit() instanceof BlockHitResult && (target.hit().getType() == HitResult.Type.MISS || mc.level.isEmptyBlock(target.pos()));
+	}
+
+	private static void exitFades() {
 		BlockHighlightConfig cfg = getActiveInstance();
 		if (cfg.fillEnabled) {
-			for (int d = 0; d < 6; d++) {
-				sideFades[d] = cfg.fadeOut ? easeF(sideFades[d], 0, cfg.fadeOutSpeed) : 0;
-			}
-		}
+			for (int d = 0; d < sideFades.length; d++) sideFades[d] = fadeOut(sideFades[d]);
+		} else Arrays.fill(sideFades, 0);
 		for (int i = 0; i < lineStates.size(); i++) {
+			LineConfig lc = cfg.getLineConfig(i);
 			LineState lineState = lineStates.get(i);
-			if (usesLineFades(cfg.getLineConfig(i))) {
-				lineState.fadeOutSides();
+			if (!isLayerDrawn(cfg, lc)) {
+				lineState.clearFades();
+				continue;
 			}
-			lineState.edgeAlpha = cfg.fadeOut ? easeF(lineState.edgeAlpha, 0, cfg.fadeOutSpeed) : 0;
+			lineState.fadeOutSides();
+			lineState.edgeAlpha = fadeOut(lineState.edgeAlpha);
 		}
 	}
-
-	//? if >1.8.9 {
-	public static HitResult pick(Entity e, final double range, final float a) {
-		if (mc.level == null) return null;
-		Vec3 from = e.getEyePosition(a);
-		Vec3 viewVector = e.getViewVector(a);
-		Vec3 to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
-		return mc.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, getActiveInstance().onlySourceBlocks ? ClipContext.Fluid.SOURCE_ONLY : ClipContext.Fluid.ANY, e));
-	}
-	//?} else {
-	/*public static HitResult pick(Entity e, final double range, final float a) {
-		if (mc.level == null) return null;
-		net.minecraft.util.math.Vec3d from = e.getEyePosition(a);
-		net.minecraft.util.math.Vec3d viewVector = e.getRotationVector(a);
-		net.minecraft.util.math.Vec3d to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
-		LegacyWorld.pickAnyFluid = !getActiveInstance().onlySourceBlocks;
-		try {
-			return HitResult.of(mc.level.rayTrace(from, to, true, false, true));
-		} finally {
-			LegacyWorld.pickAnyFluid = false;
-		}
-	}
-	*///?}
-
-	//? if >1.8.9 {
-	private static Direction joinConnected(BlockPos pos) {
-		if (mc.level == null) return null;
-		BlockState connectedState;
-		Direction dir;
-		BlockPos connectedPos;
-		BlockState state = mc.level.getBlockState(pos);
-		if (state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF)) {
-			DoubleBlockHalf halfState = state.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF);
-			Direction d = halfState == DoubleBlockHalf.LOWER ? Direction.UP : Direction.DOWN;
-			connectedPos = pos.relative(d);
-			connectedState = mc.level.getBlockState(connectedPos);
-			if (connectedState.getBlock().getClass().equals(state.getBlock().getClass())) {
-				if (connectedState.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF) && connectedState.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF) == halfState.getOtherHalf()) {
-					return d;
-				}
-			}
-		}
-		if (state.getBlock() instanceof ChestBlock && !state.getValue(ChestBlock.TYPE).equals(ChestType.SINGLE)) {
-			dir = ChestBlock.getConnectedDirection(state);
-			connectedPos = pos.relative(dir);
-			connectedState = mc.level.getBlockState(connectedPos);
-			if (connectedState.getBlock() instanceof ChestBlock) {
-				return dir;
-			}
-		}
-		if (state.getBlock() instanceof BedBlock) {
-			BedPart part = state.getValue(BedBlock.PART);
-			dir = state.getValue(HorizontalDirectionalBlock.FACING);
-			if (part == BedPart.HEAD) {
-				dir = dir.getOpposite();
-			}
-			connectedPos = pos.relative(dir);
-			connectedState = mc.level.getBlockState(connectedPos);
-			if (connectedState.getBlock() instanceof BedBlock && connectedState.getValue(BedBlock.PART) != part) {
-				return dir;
-			}
-		}
-		if (state.getBlock() instanceof PistonHeadBlock) {
-			dir = state.getValue(PistonBaseBlock.FACING);
-			Direction oppDir = dir.getOpposite();
-			connectedPos = pos.relative(oppDir);
-			connectedState = mc.level.getBlockState(connectedPos);
-			if (connectedState.getBlock() instanceof PistonBaseBlock && connectedState.getValue(PistonBaseBlock.FACING) == dir) {
-				return oppDir;
-			}
-		}
-		if (state.getBlock() instanceof PistonBaseBlock && state.getValue(PistonBaseBlock.EXTENDED)) {
-			dir = state.getValue(PistonBaseBlock.FACING);
-			connectedPos = pos.relative(dir);
-			connectedState = mc.level.getBlockState(connectedPos);
-			if (connectedState.getBlock() instanceof PistonHeadBlock && connectedState.getValue(PistonBaseBlock.FACING) == dir) {
-				return dir;
-			}
-		}
-		return null;
-	}
-	//?} else {
-	/*private static Direction joinConnected(BlockPos pos) {
-		if (mc.level == null) return null;
-		BlockState state = mc.level.getBlockState(pos);
-		Block block = state.getBlock();
-		if (block instanceof DoorBlock) {
-			Direction d = state.get(DoorBlock.HALF) == DoorBlock.Half.LOWER ? Direction.UP : Direction.DOWN;
-			BlockState connectedState = mc.level.getBlockState(pos.relative(d));
-			if (connectedState.getBlock() == block && connectedState.get(DoorBlock.HALF) != state.get(DoorBlock.HALF)) {
-				return d;
-			}
-		}
-		if (block instanceof DoublePlantBlock) {
-			Direction d = state.get(DoublePlantBlock.HALF) == DoublePlantBlock.Half.LOWER ? Direction.UP : Direction.DOWN;
-			BlockState connectedState = mc.level.getBlockState(pos.relative(d));
-			if (connectedState.getBlock() == block && connectedState.get(DoublePlantBlock.HALF) != state.get(DoublePlantBlock.HALF)) {
-				return d;
-			}
-		}
-		if (block instanceof ChestBlock) {
-			for (Direction dir : Direction.Plane.HORIZONTAL) {
-				if (mc.level.getBlockState(pos.relative(dir)).getBlock() == block) {
-					return dir;
-				}
-			}
-		}
-		if (block instanceof BedBlock) {
-			BedBlock.Part part = state.get(BedBlock.PART);
-			Direction dir = state.get(BedBlock.FACING);
-			if (part == BedBlock.Part.HEAD) {
-				dir = dir.getOpposite();
-			}
-			BlockState connectedState = mc.level.getBlockState(pos.relative(dir));
-			if (connectedState.getBlock() instanceof BedBlock && connectedState.get(BedBlock.PART) != part) {
-				return dir;
-			}
-		}
-		if (block instanceof PistonHeadBlock) {
-			Direction dir = state.get(PistonHeadBlock.FACING);
-			Direction oppDir = dir.getOpposite();
-			BlockState connectedState = mc.level.getBlockState(pos.relative(oppDir));
-			if (connectedState.getBlock() instanceof PistonBaseBlock && connectedState.get(PistonBaseBlock.FACING) == dir) {
-				return oppDir;
-			}
-		}
-		if (block instanceof PistonBaseBlock && state.get(PistonBaseBlock.EXTENDED)) {
-			Direction dir = state.get(PistonBaseBlock.FACING);
-			BlockState connectedState = mc.level.getBlockState(pos.relative(dir));
-			if (connectedState.getBlock() instanceof PistonHeadBlock && connectedState.get(PistonHeadBlock.FACING) == dir) {
-				return dir;
-			}
-		}
-		return null;
-	}
-	*///?}
 }

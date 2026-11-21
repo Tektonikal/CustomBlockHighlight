@@ -3,69 +3,53 @@ package tektonikal.customblockhighlight;
 //? if >=26.2 {
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.client.renderer.feature.FeatureFrameContext;
 import net.minecraft.client.renderer.feature.FeatureRendererType;
 import net.minecraft.client.renderer.feature.RenderTypeFeatureRenderer;
 import net.minecraft.client.renderer.feature.submit.SubmitNode;
-import net.minecraft.client.renderer.rendertype.*;
-import net.minecraft.world.entity.Pose;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
-import tektonikal.customblockhighlight.config.screenrenderbullshit.CBHFillRenderInfo;
-import tektonikal.customblockhighlight.config.screenrenderbullshit.CBHLineRenderInfo;
+import org.joml.Vector3f;
+import tektonikal.customblockhighlight.config.BlockHighlightConfig;
+import tektonikal.customblockhighlight.config.screenrenderbullshit.PreviewOutline;
+import tektonikal.customblockhighlight.util.BlendMode;
+import tektonikal.customblockhighlight.util.DepthTestMode;
 
-import java.awt.*;
 import java.util.List;
 
 public class CBHFeatureRenderer extends RenderTypeFeatureRenderer<CBHFeatureRenderer.Submit> {
 	public static final FeatureRendererType<Submit> TYPE = FeatureRendererType.create("CBH Outline");
-	private static final float UNDO_VIEW_SHRINK = 256.0F / 255.0F;
 
 	@Override
 	protected void buildGroup(FeatureFrameContext context, List<Submit> submits) {
 		for (Submit submit : submits) {
-			if (submit == WORLD) { // in-world highlight, state lives in Renderer
+			if (submit == WORLD) {
 				Renderer.drawWorld(this::getVertexBuilder);
 				continue;
 			}
-            //fill
-			VertexConsumer blegh = switch (submit.fillInfo.mode()){
-                case NORMAL -> this.getVertexBuilder(RenderTypes.debugQuads());
-                case ALWAYS_PASS -> this.getVertexBuilder(Renderer.fillNoDepth);
-                case HIDDEN_ONLY -> this.getVertexBuilder(Renderer.fillConcealed);
-            };
-            AABB box = Shapes.block().move(-0.5F, -0.5F, -0.5F).bounds();
-            PoseStack.Pose pose = submit.pose.copy();
-            applyExpansion(pose, box, submit.fillInfo.scaleBlocks(), submit.fillInfo.scalePercent());
-            Vertexer.vertexBoxQuads(pose, blegh, box.inflate(0.0001), submit.fillInfo.cols(), submit.fillInfo.alphas());
+			PoseStack stack = new PoseStack();
+			stack.last().set(submit.pose());
+			PreviewOutline.draw(stack, submit.config(), 1, new PreviewOutline.Layers() {
+				@Override
+				public VertexConsumer begin(DepthTestMode mode, boolean lines, boolean screen, BlendMode blend) {
+					if (lines) return getVertexBuilder(RenderBackend.previewLineType(mode, blend));
+					return getVertexBuilder(screen ? RenderBackend.screenRenderType(mode, blend) : RenderBackend.worldRenderType(mode, false, blend));
+				}
 
-            //lines
-			for (CBHLineRenderInfo info : submit.info.reversed()) {
-                AABB box2 = info.shape().bounds();
-                PoseStack.Pose pose2 = submit.pose.copy();
-                pose2.pose().scaleLocal(UNDO_VIEW_SHRINK);
-                applyExpansion(pose2, box2, info.scaleBlocks(), info.scalePercent());
-				VertexConsumer builder = switch (info.mode()) {
-					case NORMAL -> this.getVertexBuilder(RenderTypes.lines());
-					case ALWAYS_PASS -> this.getVertexBuilder(Renderer.linesNoDepth);
-					case HIDDEN_ONLY -> this.getVertexBuilder(Renderer.linesConcealed);
-				};
-				Vertexer.vertexBoxLines(pose2, builder, box2, info.cols(), info.alphas(), info.width(), info.cutFromCenter(), info.cutFromCorner(), info.outerMult(), info.innerMult());
-			}
+				@Override
+				public void end(DepthTestMode mode, boolean lines, BlendMode blend, float width) {
+				}
+			});
 		}
 	}
 
-	private static void applyExpansion(PoseStack.Pose pose, AABB box, float scaleBlocks, float scalePercent) {
-		AABB scaled = box.inflate(scaleBlocks);
-		pose.scale((float) (scaled.getXsize() / box.getXsize()), (float) (scaled.getYsize() / box.getYsize()), (float) (scaled.getZsize() / box.getZsize()));
-		pose.scale(scalePercent, scalePercent, scalePercent);
+	static void applyExpansion(PoseStack.Pose pose, AABB box, float scaleBlocks, float scalePercent) {
+		Vector3f scale = Vertexer.expansionScale(box, scaleBlocks, scalePercent);
+		pose.scale(scale.x, scale.y, scale.z);
 	}
 
-	public static final Submit WORLD = new Submit(List.of(), null, null);
+	public static final Submit WORLD = new Submit(null, null);
 
-	public record Submit(List<CBHLineRenderInfo> info, PoseStack.Pose pose, CBHFillRenderInfo fillInfo) implements SubmitNode {
+	public record Submit(PoseStack.Pose pose, BlockHighlightConfig config) implements SubmitNode {
 		@Override
 		public FeatureRendererType<Submit> featureType() {
 			return CBHFeatureRenderer.TYPE;

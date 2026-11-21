@@ -2,13 +2,13 @@ package tektonikal.customblockhighlight.legacy.vertex;
 
 //? if =1.8.9 {
 /*import net.minecraft.client.render.platform.GlStateManager;
-import net.minecraft.client.render.vertex.BufferBuilder;
-import net.minecraft.client.render.vertex.DefaultVertexFormat;
-import net.minecraft.client.render.vertex.Tesselator;
 import net.minecraft.client.render.platform.MemoryTracker;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
+import tektonikal.customblockhighlight.Renderer;
+import tektonikal.customblockhighlight.util.BlendMode;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 
 import java.nio.ByteBuffer;
@@ -22,7 +22,6 @@ import java.util.List;
 public final class LegacyVertexBuffer implements VertexConsumer {
 	private static final int STRIDE = 8;
 	private static final int X = 0, Y = 1, Z = 2, R = 3, G = 4, B = 5, A = 6, WIDTH = 7;
-	// same as vanilla's modern rendertype_lines.vsh, pulls lines toward the camera so they don't z-fight with faces
 	private static final float VIEW_SHRINK = 1F - 1F / 256F;
 	private static final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
 
@@ -41,13 +40,7 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 	private ByteBuffer uploadBuffer;
 	private int vbo = -1;
 
-	private record Batch(boolean lines, DepthTestMode mode, int from, int to) {
-	}
-
-	public LegacyVertexBuffer begin(boolean lines) {
-		this.lines = lines;
-		this.vertices = 0;
-		return this;
+	private record Batch(boolean lines, DepthTestMode mode, BlendMode blend, int from, int to) {
 	}
 
 	@Override
@@ -93,11 +86,11 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 		return this;
 	}
 
-	public void endBatch(DepthTestMode mode) {
-		if (vertices > batchStart) batches.add(new Batch(lines, mode, batchStart, vertices));
+	public void endBatch(DepthTestMode mode, BlendMode blend) {
+		if (vertices > batchStart) batches.add(new Batch(lines, mode, blend, batchStart, vertices));
 	}
 
-	public void drawFrame(double x, double y, double z) {
+	public void drawFrame(double x, double y, double z, boolean world) {
 		if (batches.isEmpty()) {
 			vertices = 0;
 			return;
@@ -120,28 +113,27 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 		GL11.glColorPointer(4, GL11.GL_UNSIGNED_BYTE, PACKED_STRIDE * 4, 12L);
 		GL11.glEnableClientState(GL11.GL_COLOR_ARRAY);
 		for (Batch batch : batches) {
+			applyBlend(batch.blend());
 			GlStateManager.depthMask(batch.lines());
 			applyDepth(batch.mode());
 			if (batch.lines()) {
-				GL11.glMatrixMode(GL11.GL_MODELVIEW);
-				GL11.glGetFloatv(GL11.GL_MODELVIEW_MATRIX, modelView);
-				GL11.glPushMatrix();
-				GL11.glLoadIdentity();
-				GL11.glScalef(VIEW_SHRINK, VIEW_SHRINK, VIEW_SHRINK);
-				GL11.glMultMatrixf(modelView);
+				pushViewShrink(batch.mode() == DepthTestMode.HIDDEN_ONLY ? VIEW_SHRINK * Renderer.HIDDEN_PULL : VIEW_SHRINK);
 				drawLineRuns(batch.from(), batch.to());
 				GL11.glPopMatrix();
 			} else {
 				int count = batch.to() - batch.from();
 				count -= count % 4;
+				boolean pull = world && batch.mode() != DepthTestMode.ALWAYS_PASS;
+				if (pull) pushViewShrink(Renderer.HIDDEN_PULL);
 				if (count > 0) GL11.glDrawArrays(GL11.GL_QUADS, batch.from(), count);
+				if (pull) GL11.glPopMatrix();
 			}
 		}
 		GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);
 		GL11.glDisableClientState(GL11.GL_COLOR_ARRAY);
 		GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-		// The color array leaves the current color undefined
 		GlStateManager.clearColor();
+		applyBlend(BlendMode.NORMAL);
 
 		GL11.glLineWidth(1.0F);
 		GlStateManager.depthMask(true);
@@ -170,7 +162,6 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 			int g = (int) data[base + G] & 0xFF;
 			int b = (int) data[base + B] & 0xFF;
 			int a = (int) data[base + A] & 0xFF;
-			// bytes in memory must read R, G, B, A
 			packed[out + 3] = LITTLE_ENDIAN ? a << 24 | b << 16 | g << 8 | r : r << 24 | g << 16 | b << 8 | a;
 		}
 		if (vbo != -1 && length == uploadedLength && Arrays.equals(packed, 0, length, uploaded, 0, length)) return;
@@ -190,6 +181,15 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 		if (uploaded.length < length) uploaded = new int[packed.length];
 		System.arraycopy(packed, 0, uploaded, 0, length);
 		uploadedLength = length;
+	}
+
+	private static void pushViewShrink(float shrink) {
+		GL11.glMatrixMode(GL11.GL_MODELVIEW);
+		GL11.glGetFloatv(GL11.GL_MODELVIEW_MATRIX, modelView);
+		GL11.glPushMatrix();
+		GL11.glLoadIdentity();
+		GL11.glScalef(shrink, shrink, shrink);
+		GL11.glMultMatrixf(modelView);
 	}
 
 	private void drawLineRuns(int from, int to) {
@@ -213,76 +213,9 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 		return (data[base + WIDTH] + data[base + STRIDE + WIDTH]) / 2F;
 	}
 
-	public void draw(DepthTestMode mode) {
-		if (vertices == 0) return;
-		GlStateManager.enableBlend();
-		GlStateManager.blendFuncSeparate(770, 771, 1, 0);
-		GlStateManager.disableTexture();
-		GlStateManager.disableCull();
-		GlStateManager.disableAlphaTest();
-		GlStateManager.disableLighting();
-		GlStateManager.shadeModel(GL11.GL_SMOOTH);
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		GlStateManager.depthMask(lines);
-		applyDepth(mode);
-
-		if (lines) {
-			GL11.glMatrixMode(GL11.GL_MODELVIEW);
-			GL11.glGetFloatv(GL11.GL_MODELVIEW_MATRIX, modelView);
-			GL11.glPushMatrix();
-			GL11.glLoadIdentity();
-			GL11.glScalef(VIEW_SHRINK, VIEW_SHRINK, VIEW_SHRINK);
-			GL11.glMultMatrixf(modelView);
-			drawLines();
-			GL11.glPopMatrix();
-		} else {
-			drawPrimitive(GL11.GL_QUADS, 0, vertices - vertices % 4);
-		}
-
-		GL11.glLineWidth(1.0F);
-		GlStateManager.depthMask(true);
-		GlStateManager.enableDepthTest();
-		GlStateManager.depthFunc(GL11.GL_LEQUAL);
-		GlStateManager.shadeModel(GL11.GL_FLAT);
-		GlStateManager.enableAlphaTest();
-		GlStateManager.enableCull();
-		GlStateManager.enableTexture();
-		GlStateManager.disableBlend();
-		vertices = 0;
-	}
-
-	private void drawLines() {
-		int segments = vertices / 2;
-		int start = 0;
-		float width = segmentWidth(0);
-		for (int i = 1; i <= segments; i++) {
-			float next = i < segments ? segmentWidth(i) : Float.NaN;
-			if (next != width) {
-				GL11.glLineWidth(Math.max(width, 0.01F));
-				drawPrimitive(GL11.GL_LINES, start * 2, i * 2);
-				start = i;
-				width = next;
-			}
-		}
-	}
-
-	private float segmentWidth(int segment) {
-		int base = segment * 2 * STRIDE;
-		return (data[base + WIDTH] + data[base + STRIDE + WIDTH]) / 2F;
-	}
-
-	private void drawPrimitive(int glMode, int from, int to) {
-		if (to <= from) return;
-		Tesselator tesselator = Tesselator.getInstance();
-		BufferBuilder builder = tesselator.getBuffer();
-		builder.begin(glMode, DefaultVertexFormat.POSITION_COLOR);
-		for (int i = from; i < to; i++) {
-			int base = i * STRIDE;
-			builder.vertex(data[base + X], data[base + Y], data[base + Z])
-					.color((int) data[base + R], (int) data[base + G], (int) data[base + B], (int) data[base + A])
-					.nextVertex();
-		}
-		tesselator.end();
+	private static void applyBlend(BlendMode blend) {
+		GlStateManager.blendFuncSeparate(blend.glSrc, blend.glDst, GL11.GL_ONE, GL11.GL_ZERO);
+		GL14.glBlendEquation(blend.glEquation);
 	}
 
 	public static void applyDepth(DepthTestMode mode) {

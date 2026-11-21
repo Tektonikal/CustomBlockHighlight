@@ -17,6 +17,7 @@
     },
     "lineWidth": 2.5,
     "lineDepthTest": "ALWAYS_PASS",
+    "lineBlend": "NORMAL",
     "lineExpandBlocks": 0.0,
     "lineExpandPercentage": 1.0,
     "outlineType": "ALL",
@@ -24,7 +25,14 @@
     "cutFromCenter": 0.5,
     "cutFromCorner": 0.0,
     "innerThicknessMult": 1.0,
-    "outerThicknessMult": 1.0
+    "outerThicknessMult": 1.0,
+    "screenOutline": {
+      "enabled": false,
+      "sides": 2,
+      "fit": "SURROUNDING",
+      "rotation": 0.0,
+      "keepOnScreen": false
+    }
   },
   "secondary": {
     "enabled": true,
@@ -42,6 +50,7 @@
     },
     "lineWidth": 5.0,
     "lineDepthTest": "ALWAYS_PASS",
+    "lineBlend": "NORMAL",
     "lineExpandBlocks": 0.0,
     "lineExpandPercentage": 1.0,
     "outlineType": "ALL",
@@ -49,7 +58,14 @@
     "cutFromCenter": 0.5,
     "cutFromCorner": 0.0,
     "innerThicknessMult": 0.5,
-    "outerThicknessMult": 2.0
+    "outerThicknessMult": 2.0,
+    "screenOutline": {
+      "enabled": false,
+      "sides": 2,
+      "fit": "SURROUNDING",
+      "rotation": 0.0,
+      "keepOnScreen": false
+    }
   },
   "tertiary": {
     "enabled": false,
@@ -67,6 +83,7 @@
     },
     "lineWidth": 2.5,
     "lineDepthTest": "ALWAYS_PASS",
+    "lineBlend": "NORMAL",
     "lineExpandBlocks": 0.0,
     "lineExpandPercentage": 1.0,
     "outlineType": "ALL",
@@ -74,7 +91,14 @@
     "cutFromCenter": 0.25,
     "cutFromCorner": 0.0,
     "innerThicknessMult": 1.0,
-    "outerThicknessMult": 1.0
+    "outerThicknessMult": 1.0,
+    "screenOutline": {
+      "enabled": false,
+      "sides": 2,
+      "fit": "SURROUNDING",
+      "rotation": 0.0,
+      "keepOnScreen": false
+    }
   },
   "fillEnabled": true,
   "fillCol": {
@@ -90,27 +114,48 @@
     }
   },
   "fillType": "LOOKAT",
+  "fillShape": "CLASSIC_BOX",
   "fillExpandBlocks": 0.0,
   "fillExpandPercent": 1.0,
   "fillDepthTest": "NORMAL",
+  "fillBlend": "NORMAL",
+  "fillScreenOutline": {
+    "enabled": false,
+    "sides": 2,
+    "fit": "SURROUNDING",
+    "rotation": 0.0,
+    "keepOnScreen": false
+  },
   "doEasing": true,
   "easeSpeed": 35.0,
-  "improvedEasing": false,
+  "snapWhenFadedOut": false,
+  "unifiedQuads": false,
+  "restyleOtherOutlines": true,
   "fadeIn": true,
   "fadeInSpeed": 15.0,
   "fadeOut": true,
   "fadeOutSpeed": 15.0,
   "scale": true,
   "scaleSpeed": 15.0,
+  "scaleOut": true,
+  "scaleOutSpeed": 15.0,
   "animateLineThickness": true,
   "lineThicknessAnimationSpeed": 15.0,
+  "lineThicknessOut": true,
+  "lineThicknessOutSpeed": 15.0,
+  "animateLineCuts": true,
+  "lineCutSpeed": 15.0,
+  "lineCutOut": true,
+  "lineCutOutSpeed": 15.0,
   "crystalHelper": true,
+  "crystalHelperOnlyWhenHolding": true,
   "crystalHelperLineColor": -65536,
   "crystalHelperFillColor": -65536,
   "connectedBlocks": true,
   "updateWhenUnfocused": false,
   "allowEntities": true,
   "allowLiquids": true,
+  "highlightBarriers": false,
   "onlyWhenHoldingAppropriate": true,
   "onlySourceBlocks": true,
   "rotations": false,

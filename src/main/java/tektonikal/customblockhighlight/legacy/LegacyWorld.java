@@ -9,9 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.math.Box;
-import net.minecraft.core.Direction;
 import net.minecraft.util.math.MathHelper;
-import org.joml.Quaternionf;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -21,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class LegacyWorld {
-	public static boolean pickAnyFluid;
+	public static Thread fluidPickThread;
 
 	private LegacyWorld() {
 	}
@@ -42,7 +40,6 @@ public final class LegacyWorld {
 		List<Box> collisions = new ArrayList<>();
 		Box mask = new Box(pos.getX() - 1, pos.getY() - 1, pos.getZ() - 1, pos.getX() + 2, pos.getY() + 2, pos.getZ() + 2);
 		block.addCollisions(world, pos, state, mask, collisions, Minecraft.getInstance().player);
-		// addCollisions changes the block's shared bounds for multi-box blocks, restore them for vanilla's outline
 		block.updateShape(world, pos);
 
 		if (collisions.size() > 1) {
@@ -77,17 +74,6 @@ public final class LegacyWorld {
 		ClientWorld world = Minecraft.getInstance().level;
 		BlockState state = world.getBlockState(pos);
 		return state.getBlock().resolveVirtualProperties(state, world, pos);
-	}
-
-	public static Quaternionf rotation(Direction direction) {
-		return switch (direction) {
-			case DOWN -> new Quaternionf().rotationX((float) Math.PI);
-			case UP -> new Quaternionf();
-			case NORTH -> new Quaternionf().rotationXYZ((float) (Math.PI / 2), 0.0F, (float) Math.PI);
-			case SOUTH -> new Quaternionf().rotationX((float) (Math.PI / 2));
-			case WEST -> new Quaternionf().rotationXYZ((float) (Math.PI / 2), 0.0F, (float) (Math.PI / 2));
-			case EAST -> new Quaternionf().rotationXYZ((float) (Math.PI / 2), 0.0F, (float) (-Math.PI / 2));
-		};
 	}
 }
 *///?}

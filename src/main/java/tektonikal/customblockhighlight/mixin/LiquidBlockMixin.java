@@ -12,7 +12,7 @@ import tektonikal.customblockhighlight.legacy.LegacyWorld;
 public class LiquidBlockMixin {
 	@ModifyReturnValue(method = "canRayTrace", at = @At("RETURN"))
 	private boolean cbh$pickFlowingLiquids(boolean original, BlockState state, boolean allowLiquids) {
-		return original || (allowLiquids && LegacyWorld.pickAnyFluid);
+		return original || (allowLiquids && LegacyWorld.fluidPickThread == Thread.currentThread());
 	}
 }
 *///?}

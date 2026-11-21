@@ -1,1126 +1,272 @@
 package tektonikal.customblockhighlight.config;
 
-import com.google.gson.JsonSyntaxException;
-//? if >1.8.9 {
-import dev.isxander.yacl3.api.*;
-import dev.isxander.yacl3.api.controller.*;
-import dev.isxander.yacl3.impl.ProvidesBindingForDeprecation;
-//?}
 import it.unimi.dsi.fastutil.Pair;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.Minecraft;
-//? if >1.8.9
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
-import org.jetbrains.annotations.NotNull;
-import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen;
+//? if =1.8.9
+//import net.minecraft.client.Minecraft;
+import tektonikal.customblockhighlight.util.BlendMode;
 import tektonikal.customblockhighlight.util.DepthTestMode;
 import tektonikal.customblockhighlight.util.FaceMode;
+import tektonikal.customblockhighlight.util.OutlineFit;
+import tektonikal.customblockhighlight.util.ScreenOutline;
 import tektonikal.customblockhighlight.util.ShapeStyle;
 
 import java.awt.*;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
-import static com.sun.jna.Platform.isWindows;
 //? if >1.8.9
 import static net.minecraft.util.Util.getMillis;
 
-@SuppressWarnings("NoTranslation") // temporary fix until fletching table finds a solution
 public class BlockHighlightConfig {
-    //? if >1.8.9 {
-    public static final ValueFormatter<Float> BLOCKS_FORMATTER_TWO_PLACES = val ->
-            Component.translatable(String.format("%.2f", val)
-                    .replace(".00", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
-    public static final ValueFormatter<Float> BLOCKS_FORMATTER_THREE_PLACES = val ->
-            Component.translatable(String.format("%.3f", val)
-                    .replace(".000", "") + (Math.abs(val) == 1 ? " block" : " blocks"));
-    //?}
-    @SuppressWarnings("UnusedAssignment") // required for clinit stuff
-    public static BlockHighlightConfig ACTIVE_INSTANCE = new BlockHighlightConfig();
+	public record Range(float min, float max, float step) {
+	}
 
-    public static BlockHighlightConfig getActiveInstance() {
-        return ACTIVE_INSTANCE;
-    }
+	public static final Range EXPAND_BLOCKS = new Range(-2F, 1F, 0.0625F);
+	public static final Range EXPAND_PERCENT = new Range(0F, 2F, 0.01F);
+	public static final Range PRIMARY_LINE_WIDTH = new Range(0.5F, 15F, 0.1F), LAYER_LINE_WIDTH = new Range(1F, 15F, 0.1F);
+	public static final Range PRIMARY_CUT = new Range(0F, 0.99F, 0.01F), LAYER_CUT = new Range(0F, 0.95F, 0.01F);
+	public static final float MAX_CUTS = 0.95F;
+	public static final Range THICKNESS_MULT = new Range(0F, 2F, 0.05F);
+	public static final Range RAINBOW_SPEED = new Range(1F, 10F, 0.1F);
+	public static final Range RAINBOW_DELAY = new Range(-1000, 1000, 1);
+	public static final Range UNIT = new Range(0F, 1F, 0.01F);
+	public static final Range SCREEN_ROTATION = new Range(0F, 360F, 1F);
+	public static final Range EASE_SPEED = new Range(5F, 100F, 0.5F);
+	public static final Range ANIMATION_SPEED = new Range(5F, 25F, 0.1F);
+	public static final Range ROTATION_SPEED = new Range(5F, 50F, 0.1F);
 
-    public static void setActive(BlockHighlightConfig config) {
-        if (config == null) return;
-        ACTIVE_INSTANCE = config;
-        config.applyValuesToOptionInstances();
-    }
+	@SuppressWarnings("UnusedAssignment")
+	public static BlockHighlightConfig ACTIVE_INSTANCE = new BlockHighlightConfig();
 
-    public BlockHighlightConfig() {
-    }
+	public static BlockHighlightConfig getActiveInstance() {
+		return ACTIVE_INSTANCE;
+	}
 
-    public LineConfig getLineConfig(int layer) {
-        return switch (layer) {
-            case 2 -> primary;
-            case 1 -> secondary;
-            case 0 -> tertiary;
-            default -> throw new IllegalStateException();
-        };
-    }
+	public static void setActive(BlockHighlightConfig config) {
+		if (config == null) return;
+		config.simpleMode = ACTIVE_INSTANCE.simpleMode;
+		ACTIVE_INSTANCE = config;
+		applyActiveToOptions();
+	}
 
-    public static class ColorSetting {
-        public Color col1;
-        public Color col2;
-        public int alpha;
-        public RainbowSettings rainbowSettings;
+	public BlockHighlightConfig fixNulls() {
+		BlockHighlightConfig defaults = new BlockHighlightConfig();
+		if (primary == null) primary = defaults.primary;
+		if (secondary == null) secondary = defaults.secondary;
+		if (tertiary == null) tertiary = defaults.tertiary;
+		if (fillCol == null) fillCol = defaults.fillCol;
+		fillCol.fixNulls(defaults.fillCol);
+		for (int i = 0; i < 3; i++) {
+			LineConfig layer = getLineConfig(i), fallback = defaults.getLineConfig(i);
+			if (layer.color == null) layer.color = fallback.color;
+			layer.color.fixNulls(fallback.color);
+			if (layer.shapeStyle == null) layer.shapeStyle = fallback.shapeStyle;
+			if (layer.outlineType == null) layer.outlineType = fallback.outlineType;
+			if (layer.lineDepthTest == null) layer.lineDepthTest = fallback.lineDepthTest;
+			if (layer.lineBlend == null) layer.lineBlend = BlendMode.NORMAL;
+			if (layer.screenOutline == null) layer.screenOutline = new ScreenOutline();
+			if (layer.screenOutline.fit == null) layer.screenOutline.fit = OutlineFit.SURROUNDING;
+		}
+		if (fillShape == null) fillShape = defaults.fillShape;
+		if (fillType == null) fillType = defaults.fillType;
+		if (fillDepthTest == null) fillDepthTest = defaults.fillDepthTest;
+		if (fillBlend == null) fillBlend = BlendMode.NORMAL;
+		if (fillScreenOutline == null) fillScreenOutline = new ScreenOutline();
+		if (fillScreenOutline.fit == null) fillScreenOutline.fit = OutlineFit.SURROUNDING;
+		if (crystalHelperLineColor == null) crystalHelperLineColor = defaults.crystalHelperLineColor;
+		if (crystalHelperFillColor == null) crystalHelperFillColor = defaults.crystalHelperFillColor;
+		return this;
+	}
 
-        public Pair<Color, Color> getColors(boolean isCrystalObstructed, Color crystalHelperCol) {
-            return Pair.of(
-                    isCrystalObstructed ? crystalHelperCol : this.rainbowSettings.enabled ? this.rainbowSettings.getRainbowCol(true) : this.col1,
-                    isCrystalObstructed ? crystalHelperCol : this.rainbowSettings.isSecondaryEnabled() ? this.rainbowSettings.getRainbowCol(false) : this.col2
-            );
-        }
+	public static float limitedCut(float set, float other) {
+		return set > 0 && set + other >= MAX_CUTS ? Math.max(MAX_CUTS - set, 0) : other;
+	}
 
-        public ColorSetting(Color col1, Color col2, int alpha, RainbowSettings rainbowSettings) {
-            this.col1 = col1;
-            this.col2 = col2;
-            this.alpha = alpha;
-            this.rainbowSettings = rainbowSettings;
-        }
-    }
+	public LineConfig getLineConfig(int layer) {
+		return switch (layer) {
+			case 0 -> primary;
+			case 1 -> secondary;
+			case 2 -> tertiary;
+			default -> throw new IllegalStateException();
+		};
+	}
 
-    public static class RainbowSettings {
-        public boolean enabled;
-        // null follows enabled, so configs from before per-color rainbow keep both colors in sync
-        public Boolean secondaryEnabled;
-        public int delay;
-        public float saturation;
-        public float brightness;
-        public float speed;
+	public static class ColorSetting {
+		public Color col1;
+		public Color col2;
+		public int alpha = 255;
+		public RainbowSettings rainbowSettings;
+		public Boolean gradient;
 
-        public RainbowSettings(boolean enabled, float speed, int delay, float saturation, float brightness) {
-            this.enabled = enabled;
-            this.speed = speed;
-            this.delay = delay;
-            this.saturation = saturation;
-            this.brightness = brightness;
-        }
+		@SuppressWarnings("unused")
+		private ColorSetting() {
+		}
 
-        public boolean isSecondaryEnabled() {
-            return secondaryEnabled == null ? enabled : secondaryEnabled;
-        }
+		void fixNulls(ColorSetting fallback) {
+			if (col1 == null) col1 = fallback.col1;
+			if (col2 == null) col2 = fallback.col2;
+			if (rainbowSettings == null) rainbowSettings = fallback.rainbowSettings;
+		}
 
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-            this.secondaryEnabled = null;
-        }
+		public boolean isGradient() {
+			return gradient != null ? gradient : !col1.equals(col2) || rainbowSettings.enabled;
+		}
 
-        public Color getRainbowCol(boolean primaryCol) {
-            //? if >1.8.9 {
-            float rainbowState = Mth.ceil((getMillis() + (primaryCol ? 0 : this.delay))) * this.speed / 50;
-            //?} else
-            //float rainbowState = Mth.ceil((Minecraft.getTime() + (primaryCol ? 0 : this.delay))) * this.speed / 50;
-            rainbowState %= 360;
-            return Color.getHSBColor(rainbowState / 360, this.saturation, this.brightness);
-        }
-    }
+		public Pair<Color, Color> getColors(boolean isCrystalObstructed, Color crystalHelperCol) {
+			if (isCrystalObstructed) return Pair.of(crystalHelperCol, crystalHelperCol);
+			Color first = this.rainbowSettings.enabled ? this.rainbowSettings.getRainbowCol(true) : this.col1;
+			if (!isGradient()) return Pair.of(first, first);
+			return Pair.of(first, this.rainbowSettings.enabled ? this.rainbowSettings.getRainbowCol(false) : this.col2);
+		}
 
-    public static class LineConfig {
-        public boolean enabled;
-        public ColorSetting color = new ColorSetting(Color.BLACK, Color.WHITE, 255, new RainbowSettings(false, 5, 250, 1, 1));
-        public float lineWidth = 2.5F;
-        public DepthTestMode lineDepthTest = DepthTestMode.ALWAYS_PASS;
-        public float lineExpandBlocks = 0;
-        public float lineExpandPercentage = 1;
-        public FaceMode outlineType = FaceMode.ALL;
-        public ShapeStyle shapeStyle = ShapeStyle.COLLISION_SHAPE;
-        public float cutFromCenter = 0.25F;
-        public float cutFromCorner = 0;
-        public float innerThicknessMult = 1;
-        public float outerThicknessMult = 1;
+		public ColorSetting(Color col1, Color col2, int alpha, RainbowSettings rainbowSettings) {
+			this.col1 = col1;
+			this.col2 = col2;
+			this.alpha = alpha;
+			this.rainbowSettings = rainbowSettings;
+		}
+	}
 
-        public LineConfig(boolean enabled) {
-            this.enabled = enabled;
-        }
+	public static class RainbowSettings {
+		public boolean enabled;
+		public int delay = 250;
+		public float saturation = 1;
+		public float brightness = 1;
+		public float speed = 5;
 
-        public LineConfig(boolean enabled, ColorSetting color, float lineWidth, DepthTestMode lineDepthTest, float lineExpandBlocks, float lineExpandPercentage, FaceMode outlineType, ShapeStyle shapeStyle, float cutFromCenter, float cutFromCorner, float innerThicknessMult, float outerThicknessMult) {
-            this.enabled = enabled;
-            this.color = color;
-            this.lineWidth = lineWidth;
-            this.lineDepthTest = lineDepthTest;
-            this.lineExpandBlocks = lineExpandBlocks;
-            this.lineExpandPercentage = lineExpandPercentage;
-            this.outlineType = outlineType;
-            this.shapeStyle = shapeStyle;
-            this.cutFromCenter = cutFromCenter;
-            this.cutFromCorner = cutFromCorner;
-            this.innerThicknessMult = innerThicknessMult;
-            this.outerThicknessMult = outerThicknessMult;
-        }
-    }
+		@SuppressWarnings("unused")
+		private RainbowSettings() {
+		}
 
-    public boolean enableModRendering = true;
-    public boolean drawVanillaOutline = false;
+		public RainbowSettings(boolean enabled, float speed, int delay, float saturation, float brightness) {
+			this.enabled = enabled;
+			this.speed = speed;
+			this.delay = delay;
+			this.saturation = saturation;
+			this.brightness = brightness;
+		}
 
-    public LineConfig primary = new LineConfig(true, new ColorSetting(Color.BLACK, Color.BLACK, 128, new RainbowSettings(false, 5, 250, 1, 1)), 2.5F, DepthTestMode.ALWAYS_PASS, 0, 1, FaceMode.ALL, ShapeStyle.COLLISION_SHAPE, 0.25F, 0, 1, 1);
-    public LineConfig secondary = new LineConfig(true, new ColorSetting(Color.BLACK, Color.BLACK, 255, new RainbowSettings(true, 5, 250, 1, 0.75F)), 5F, DepthTestMode.ALWAYS_PASS, 0, 1, FaceMode.ALL, ShapeStyle.COLLISION_SHAPE, 0.25F, 0, 0.5F, 2);
-    public LineConfig tertiary = new LineConfig(false);
+		public Color getRainbowCol(boolean primaryCol) {
+			//? if >1.8.9 {
+			double rainbowState = (getMillis() + (primaryCol ? 0 : this.delay)) * (double) this.speed / 50 % 360;
+			//?} else
+			//double rainbowState = (Minecraft.getTime() + (primaryCol ? 0 : this.delay)) * (double) this.speed / 50 % 360;
+			return Color.getHSBColor((float) (rainbowState / 360), this.saturation, this.brightness);
+		}
+	}
 
-    public List<LineConfig> lineConfigs() {
-        return List.of(primary, secondary, tertiary);
-    }
+	public static class LineConfig {
+		public boolean enabled;
+		public ColorSetting color = new ColorSetting(Color.BLACK, Color.WHITE, 255, new RainbowSettings(false, 5, 250, 1, 1));
+		public float lineWidth = 2.5F;
+		public DepthTestMode lineDepthTest = DepthTestMode.NORMAL;
+		public BlendMode lineBlend = BlendMode.NORMAL;
+		public float lineExpandBlocks = 0;
+		public float lineExpandPercentage = 1;
+		public FaceMode outlineType = FaceMode.ALL;
+		public ShapeStyle shapeStyle = ShapeStyle.COLLISION_SHAPE;
+		public float cutFromCenter = 0.25F;
+		public float cutFromCorner = 0;
+		public float innerThicknessMult = 1;
+		public float outerThicknessMult = 1;
+		public ScreenOutline screenOutline = new ScreenOutline();
 
-    public List<LineConfig> reversedLineConfigs() {
-        return List.of(tertiary, secondary, primary);
-    }
+		@SuppressWarnings("unused")
+		private LineConfig() {
+		}
 
-    //@formatter:off
-    //outline stuff
+		public LineConfig(boolean enabled) {
+			this.enabled = enabled;
+		}
 
-    //fill stuffs
-    public boolean fillEnabled = true;
+		public LineConfig(boolean enabled, ColorSetting color, float lineWidth, DepthTestMode lineDepthTest, float lineExpandBlocks, float lineExpandPercentage, FaceMode outlineType, ShapeStyle shapeStyle, float cutFromCenter, float cutFromCorner, float innerThicknessMult, float outerThicknessMult) {
+			this.enabled = enabled;
+			this.color = color;
+			this.lineWidth = lineWidth;
+			this.lineDepthTest = lineDepthTest;
+			this.lineExpandBlocks = lineExpandBlocks;
+			this.lineExpandPercentage = lineExpandPercentage;
+			this.outlineType = outlineType;
+			this.shapeStyle = shapeStyle;
+			this.cutFromCenter = cutFromCenter;
+			this.cutFromCorner = cutFromCorner;
+			this.innerThicknessMult = innerThicknessMult;
+			this.outerThicknessMult = outerThicknessMult;
+		}
+	}
+
+	public boolean enableModRendering = true;
+	public boolean drawVanillaOutline = false;
+
+	public LineConfig primary = new LineConfig(true, new ColorSetting(Color.BLACK, Color.BLACK, 128, new RainbowSettings(false, 5, 250, 1, 1)), 2.5F, DepthTestMode.NORMAL, 0, 1, FaceMode.ALL, ShapeStyle.COLLISION_SHAPE, 0.25F, 0, 1, 1);
+	public LineConfig secondary = new LineConfig(true, new ColorSetting(Color.BLACK, Color.BLACK, 255, new RainbowSettings(true, 5, 250, 1, 0.75F)), 5F, DepthTestMode.NORMAL, 0, 1, FaceMode.ALL, ShapeStyle.COLLISION_SHAPE, 0.25F, 0, 0.5F, 2);
+	public LineConfig tertiary = new LineConfig(false);
+
+	public List<LineConfig> lineConfigs() {
+		return List.of(primary, secondary, tertiary);
+	}
+
+	//@formatter:off
+
+	public boolean fillEnabled = true;
 		public ColorSetting fillCol = new ColorSetting(Color.CYAN, Color.BLUE, 39, new RainbowSettings(false, 5, 250, 1, 1));
-        public FaceMode fillType = FaceMode.ALL;
-        public float fillExpandBlocks = 0F;
-    public float fillExpandPercent = 1F;
-        public DepthTestMode fillDepthTest = DepthTestMode.HIDDEN_ONLY;
-    //extras
-    public boolean doEasing = true;
-    public float easeSpeed = 35F;
-    public boolean improvedEasing = false;
-    public boolean fadeIn = true;
+		public FaceMode fillType = FaceMode.ALL;
+		public ShapeStyle fillShape = ShapeStyle.COLLISION_SHAPE;
+		public float fillExpandBlocks = 0F;
+	public float fillExpandPercent = 1F;
+		public DepthTestMode fillDepthTest = DepthTestMode.NORMAL;
+		public BlendMode fillBlend = BlendMode.NORMAL;
+		public ScreenOutline fillScreenOutline = new ScreenOutline();
+	public boolean doEasing = true;
+	public float easeSpeed = 35F;
+	public boolean snapWhenFadedOut = true;
+	public boolean unifiedQuads = false;
+	public boolean simpleMode = false;
+	public boolean restyleOtherOutlines = true;
+	public boolean fadeIn = true;
  	public float fadeInSpeed = 15F;
-    public boolean fadeOut = true;
-    public float fadeOutSpeed = 15F;
+	public boolean fadeOut = true;
+	public float fadeOutSpeed = 15F;
  	public boolean scale = true;
  	public float scaleSpeed = 15F;
+	public boolean scaleOut = true;
+	public float scaleOutSpeed = 15F;
 	public boolean animateLineThickness = true;
 	public float lineThicknessAnimationSpeed = 15F;
-//	public boolean animateLineCuts = true;
-//	public float lineCutAnimationSpeed = 15F;
-    public boolean crystalHelper = false;
-    public Color crystalHelperLineColor = Color.RED;
+	public boolean lineThicknessOut = true;
+	public float lineThicknessOutSpeed = 15F;
+	public boolean animateLineCuts = true;
+	public float lineCutSpeed = 15F;
+	public boolean lineCutOut = true;
+	public float lineCutOutSpeed = 15F;
+	public boolean crystalHelper = false;
+	public boolean crystalHelperOnlyWhenHolding = true;
+	public Color crystalHelperLineColor = Color.RED;
  	public Color crystalHelperFillColor = Color.RED;
-    public boolean connectedBlocks = true;
+	public boolean connectedBlocks = true;
  	public boolean updateWhenUnfocused = false;
- 	public boolean allowEntities = true;
+ 	public boolean allowEntities = false;
  	public boolean allowLiquids = true;
+	public boolean highlightBarriers = false;
 	public boolean onlyWhenHoldingAppropriate = true;
 	public boolean onlySourceBlocks = true;
 	public boolean rotations = false;
 	public float rotationSpeed = 20;
 	public boolean showWhenNoHud = false;
 	public boolean showWhenNoInteraction = false;
-	//TODO: exclude barriers and no render when inside of block
-
-    //? if >1.8.9 {
-    static <T> StateManager<T> createInstant(@NotNull T def, @NotNull Supplier<@NotNull T> getter, @NotNull Consumer<@NotNull T> setter) {
-        return new EvilInstantStateManager<>(Binding.generic(def, getter, setter));
-    }
 
 	//@formatter:on
-    @Updatable
-    public static Option<Boolean> o_outlineEnabled = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.enabled"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.main_outline_toggle_desc")))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.primary.enabled, newVal -> ACTIVE_INSTANCE.primary.enabled = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Color> o_lineCol = Option.<Color>createBuilder()
-            .name(Component.translatable("cbh.config.primary"))
-            .stateManager(createInstant(Color.BLACK, () -> ACTIVE_INSTANCE.primary.color.col1, newVal -> ACTIVE_INSTANCE.primary.color.col1 = newVal))
-            .controller(ColorControllerBuilder::create)
-            .build();
-    public static final Option<Color> o_lineCol2 = Option.<Color>createBuilder()
-            .name(Component.translatable("cbh.config.secondary"))
-            .stateManager(createInstant(Color.BLACK, () -> ACTIVE_INSTANCE.primary.color.col2, newVal -> ACTIVE_INSTANCE.primary.color.col2 = newVal))
-            .controller(ColorControllerBuilder::create)
-            .build();
-    public static Option<Integer> o_lineAlpha = Option.<Integer>createBuilder()
-            .name(Component.translatable("cbh.config.opacity"))
-            .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
-            .stateManager(createInstant(128, () -> ACTIVE_INSTANCE.primary.color.alpha, newVal -> ACTIVE_INSTANCE.primary.color.alpha = newVal))
-            .build();
-    @Updatable
-    public static Option<Boolean> o_outlineRainbow = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.setEnabled(newVal)))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Float> o_lineRainbowSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.speed"))
-            .stateManager(createInstant(5F, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.speed, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.speed = newVal))
-            .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 10F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
-            .build();
-    public static Option<Integer> o_lineRainbowDelay = Option.<Integer>createBuilder()
-            .name(Component.translatable("cbh.config.delay"))
-            .stateManager(createInstant(250, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.delay, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.delay = newVal))
-            .description(OptionDescription.of(Component.translatable("cbh.config.delay.description")))
-            .controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.translatable(value + " ms")))
-            .build();
-    public static Option<Float> o_lineSaturation = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.saturation"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.saturation, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.saturation = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_lineBrightness = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.brightness"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.primary.color.rainbowSettings.brightness, newVal -> ACTIVE_INSTANCE.primary.color.rainbowSettings.brightness = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<FaceMode> o_outlineType = Option.<FaceMode>createBuilder()
-            .name(Component.translatable("cbh.config.mode"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
-                    Component.translatable("cbh.config.mode.description.2"),
-                    Component.translatable("cbh.config.mode.description.3"),
-                    Component.translatable("cbh.config.mode.description.4"),
-                    Component.translatable("cbh.config.mode.description.5")
-            ))
-            .stateManager(createInstant(FaceMode.ALL, () -> ACTIVE_INSTANCE.primary.outlineType, newVal -> ACTIVE_INSTANCE.primary.outlineType = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
-            .build();
-    public static Option<DepthTestMode> o_lineDepthTest = Option.<DepthTestMode>createBuilder()
-            .name(Component.translatable("cbh.config.depthTest"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
-            .stateManager(createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.primary.lineDepthTest, newVal -> ACTIVE_INSTANCE.primary.lineDepthTest = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
-            .build();
-    public static Option<Float> o_lineExpand = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.expand_blocks"))
-            .stateManager(createInstant(0F, () -> ACTIVE_INSTANCE.primary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.primary.lineExpandBlocks = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-2F, 1F).step(0.0625F).formatValue(BLOCKS_FORMATTER_THREE_PLACES))
-            .build();
-    public static Option<Float> o_lineExpandPercent = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.expand_percent"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.primary.lineExpandPercentage, newVal -> ACTIVE_INSTANCE.primary.lineExpandPercentage = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<ShapeStyle> o_shapeStyle = Option.<ShapeStyle>createBuilder()
-            .name(Component.translatable("cbh.enum.shape_style"))
-            .description(OptionDescription.of(Component.translatable("cbh.enum.shape_style.description")))
-            .stateManager(createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.primary.shapeStyle, newVal -> ACTIVE_INSTANCE.primary.shapeStyle = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
-            .addListener((option, event) -> refreshAvailability())
-            .build();
 
-    public static Option<Float> o_lineWidth = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.lineWidth"))
-            .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(0.5F, 15F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1f", value) + " px")))
-            .stateManager(createInstant(2.5F, () -> ACTIVE_INSTANCE.primary.lineWidth, newVal -> ACTIVE_INSTANCE.primary.lineWidth = newVal))
-            .build();
-    public static Option<Float> o_cutFromCorner = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.cutFromCorner"))
-            .stateManager(createInstant(0F, () -> ACTIVE_INSTANCE.primary.cutFromCorner, newVal -> ACTIVE_INSTANCE.primary.cutFromCorner = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.99F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_cutFromCenter = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.cutFromCenter"))
-            .stateManager(createInstant(0.25F, () -> ACTIVE_INSTANCE.primary.cutFromCenter, newVal -> ACTIVE_INSTANCE.primary.cutFromCenter = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.99F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_outerThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.outer_thickness_multiplier"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.primary.outerThicknessMult, newVal -> ACTIVE_INSTANCE.primary.outerThicknessMult = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_innerThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.inner_thickness_multiplier"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.primary.innerThicknessMult, newVal -> ACTIVE_INSTANCE.primary.innerThicknessMult = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    @Updatable
-    public static Option<Boolean> o_secondary = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.enabled"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.non_primary_layer_toggle_desc")))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.secondary.enabled, newVal -> ACTIVE_INSTANCE.secondary.enabled = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Color> o_slineCol = Option.<Color>createBuilder()
-            .name(Component.translatable("cbh.config.primary"))
-            .stateManager(createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.secondary.color.col1, newVal -> ACTIVE_INSTANCE.secondary.color.col1 = newVal))
-            .controller(ColorControllerBuilder::create)
-            .build();
-    public static Option<Color> o_slineCol2 = Option.<Color>createBuilder()
-            .name(Component.translatable("cbh.config.secondary"))
-            .stateManager(createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.secondary.color.col2, newVal -> ACTIVE_INSTANCE.secondary.color.col2 = newVal))
-            .controller(ColorControllerBuilder::create)
-            .build();
-    public static Option<Integer> o_slineAlpha = Option.<Integer>createBuilder()
-            .name(Component.translatable("cbh.config.opacity"))
-            .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
-            .stateManager(createInstant(255, () -> ACTIVE_INSTANCE.secondary.color.alpha, newVal -> ACTIVE_INSTANCE.secondary.color.alpha = newVal))
-            .build();
-    @Updatable
-    public static Option<Boolean> o_soutlineRainbow = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.setEnabled(newVal)))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Float> o_slineRainbowSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.speed"))
-            .stateManager(createInstant(5F, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.speed, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.speed = newVal))
-            .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 10F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
-            .build();
-    public static Option<Integer> o_slineRainbowDelay = Option.<Integer>createBuilder()
-            .name(Component.translatable("cbh.config.delay"))
-            .stateManager(createInstant(250, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.delay, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.delay = newVal))
-            .description(OptionDescription.of(Component.translatable("cbh.config.delay.description")))
-            .controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.translatable(value + " ms")))
-            .build();
-    public static Option<Float> o_slineSaturation = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.saturation"))
-            .stateManager(StateManager.createInstant(1F, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.saturation, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.saturation = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_slineBrightness = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.brightness"))
-            .stateManager(createInstant(0.75F, () -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.brightness, newVal -> ACTIVE_INSTANCE.secondary.color.rainbowSettings.brightness = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<DepthTestMode> o_slineDepthTest = Option.<DepthTestMode>createBuilder()
-            .name(Component.translatable("cbh.config.depthTest"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
-            .stateManager(createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.secondary.lineDepthTest, newVal -> ACTIVE_INSTANCE.secondary.lineDepthTest = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
-            .build();
-    public static Option<Float> o_slineWidth = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.lineWidth"))
-            .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1f", value) + " px")))
-            .stateManager(createInstant(5F, () -> ACTIVE_INSTANCE.secondary.lineWidth, newVal -> ACTIVE_INSTANCE.secondary.lineWidth = newVal))
-            .build();
-    public static Option<Float> o_slineExpand = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.expand_blocks"))
-            .stateManager(createInstant(0F, () -> ACTIVE_INSTANCE.secondary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.secondary.lineExpandBlocks = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-2F, 1F).step(0.0625F).formatValue(BLOCKS_FORMATTER_THREE_PLACES))
-            .build();
-    public static Option<Float> o_slineExpandPercent = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.expand_percent"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.secondary.lineExpandPercentage, newVal -> ACTIVE_INSTANCE.secondary.lineExpandPercentage = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<ShapeStyle> o_sshapeStyle = Option.<ShapeStyle>createBuilder()
-            .name(Component.translatable("cbh.enum.shape_style"))
-            .description(OptionDescription.of(Component.translatable("cbh.enum.shape_style.description")))
-            .stateManager(createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.secondary.shapeStyle, newVal -> ACTIVE_INSTANCE.secondary.shapeStyle = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Float> o_scutFromCorner = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.cutFromCorner"))
-            .stateManager(createInstant(0F, () -> ACTIVE_INSTANCE.secondary.cutFromCorner, newVal -> ACTIVE_INSTANCE.secondary.cutFromCorner = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_scutFromCenter = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.cutFromCenter"))
-            .stateManager(createInstant(0.25F, () -> ACTIVE_INSTANCE.secondary.cutFromCenter, newVal -> ACTIVE_INSTANCE.secondary.cutFromCenter = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_souterThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.outer_thickness_multiplier"))
-            .stateManager(createInstant(2F, () -> ACTIVE_INSTANCE.secondary.outerThicknessMult, newVal -> ACTIVE_INSTANCE.secondary.outerThicknessMult = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_sinnerThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.inner_thickness_multiplier"))
-            .stateManager(createInstant(0.5F, () -> ACTIVE_INSTANCE.secondary.innerThicknessMult, newVal -> ACTIVE_INSTANCE.secondary.innerThicknessMult = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<FaceMode> o_soutlineType = Option.<FaceMode>createBuilder()
-            .name(Component.translatable("cbh.config.mode"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
-                    Component.translatable("cbh.config.mode.description.2"),
-                    Component.translatable("cbh.config.mode.description.3"),
-                    Component.translatable("cbh.config.mode.description.4"),
-                    Component.translatable("cbh.config.mode.description.5")
-            ))
-            .stateManager(createInstant(FaceMode.ALL, () -> ACTIVE_INSTANCE.secondary.outlineType, newVal -> ACTIVE_INSTANCE.secondary.outlineType = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
-            .build();
-    @Updatable
-    public static Option<Boolean> o_tertiary = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.enabled"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.non_primary_layer_toggle_desc")))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.tertiary.enabled, newVal -> ACTIVE_INSTANCE.tertiary.enabled = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Color> o_tlineCol = Option.<Color>createBuilder()
-            .name(Component.translatable("cbh.config.primary"))
-            .stateManager(createInstant(new Color(0, 0, 0), () -> ACTIVE_INSTANCE.tertiary.color.col1, newVal -> ACTIVE_INSTANCE.tertiary.color.col1 = newVal))
-            .controller(ColorControllerBuilder::create)
-            .build();
-    public static Option<Color> o_tlineCol2 = Option.<Color>createBuilder()
-            .name(Component.translatable("cbh.config.secondary"))
-            .stateManager(createInstant(new Color(255, 255, 255), () -> ACTIVE_INSTANCE.tertiary.color.col2, newVal -> ACTIVE_INSTANCE.tertiary.color.col2 = newVal))
-            .controller(ColorControllerBuilder::create)
-            .build();
-    public static Option<Integer> o_tlineAlpha = Option.<Integer>createBuilder()
-            .name(Component.translatable("cbh.config.opacity"))
-            .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(0, 255).step(1).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
-            .stateManager(createInstant(255, () -> ACTIVE_INSTANCE.tertiary.color.alpha, newVal -> ACTIVE_INSTANCE.tertiary.color.alpha = newVal))
-            .build();
-    @Updatable
-    public static Option<Boolean> o_toutlineRainbow = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.setEnabled(newVal)))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Float> o_tlineRainbowSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.speed"))
-            .stateManager(createInstant(5F, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.speed, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.speed = newVal))
-            .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 10F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
-            .build();
-    public static Option<Integer> o_tlineRainbowDelay = Option.<Integer>createBuilder()
-            .name(Component.translatable("cbh.config.delay"))
-            .stateManager(createInstant(250, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.delay, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.delay = newVal))
-            .description(OptionDescription.of(Component.translatable("cbh.config.delay.description")))
-            .controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.translatable(value + " ms")))
-            .build();
-    public static Option<Float> o_tlineSaturation = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.saturation"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.saturation, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.saturation = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_tlineBrightness = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.brightness"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.brightness, newVal -> ACTIVE_INSTANCE.tertiary.color.rainbowSettings.brightness = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<FaceMode> o_toutlineType = Option.<FaceMode>createBuilder()
-            .name(Component.translatable("cbh.config.mode"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
-                    Component.translatable("cbh.config.mode.description.2"),
-                    Component.translatable("cbh.config.mode.description.3"),
-                    Component.translatable("cbh.config.mode.description.4"),
-                    Component.translatable("cbh.config.mode.description.5")
-            ))
-            .stateManager(createInstant(FaceMode.ALL, () -> ACTIVE_INSTANCE.tertiary.outlineType, newVal -> ACTIVE_INSTANCE.tertiary.outlineType = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
-            .build();
+	public static void applyActiveToOptions() {
+		ACTIVE_INSTANCE.fixNulls();
+		//? if >1.8.9 {
+		YaclMenu.pushActive();
+		if (FabricLoader.getInstance().isModLoaded("oneconfigv1")) CBHOneConfig.refresh();
+		//?} else
+		//CBHOneConfig.refresh();
+	}
 
-    public static Option<DepthTestMode> o_tlineDepthTest = Option.<DepthTestMode>createBuilder()
-            .name(Component.translatable("cbh.config.depthTest"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
-            .stateManager(createInstant(DepthTestMode.ALWAYS_PASS, () -> ACTIVE_INSTANCE.tertiary.lineDepthTest, newVal -> ACTIVE_INSTANCE.tertiary.lineDepthTest = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
-            .build();
-    public static Option<Float> o_tlineWidth = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.lineWidth"))
-            .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 15F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1f", value) + " px")))
-            .stateManager(createInstant(2.5F, () -> ACTIVE_INSTANCE.tertiary.lineWidth, newVal -> ACTIVE_INSTANCE.tertiary.lineWidth = newVal))
-            .build();
-    public static Option<Float> o_tlineExpand = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.expand_blocks"))
-            .stateManager(createInstant(0F, () -> ACTIVE_INSTANCE.tertiary.lineExpandBlocks, newVal -> ACTIVE_INSTANCE.tertiary.lineExpandBlocks = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-2F, 1F).step(0.0625F).formatValue(BLOCKS_FORMATTER_THREE_PLACES))
-            .build();
-    public static Option<Float> o_tlineExpandPercent = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.expand_percent"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.tertiary.lineExpandPercentage, newVal -> ACTIVE_INSTANCE.tertiary.lineExpandPercentage = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<ShapeStyle> o_tshapeStyle = Option.<ShapeStyle>createBuilder()
-            .name(Component.translatable("cbh.enum.shape_style"))
-            .description(OptionDescription.of(Component.translatable("cbh.enum.shape_style.description")))
-            .stateManager(createInstant(ShapeStyle.COLLISION_SHAPE, () -> ACTIVE_INSTANCE.tertiary.shapeStyle, newVal -> ACTIVE_INSTANCE.tertiary.shapeStyle = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(ShapeStyle.class))
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Float> o_tcutFromCorner = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.cutFromCorner"))
-            .stateManager(createInstant(0F, () -> ACTIVE_INSTANCE.tertiary.cutFromCorner, newVal -> ACTIVE_INSTANCE.tertiary.cutFromCorner = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_tcutFromCenter = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.cutFromCenter"))
-            .stateManager(createInstant(0.25F, () -> ACTIVE_INSTANCE.tertiary.cutFromCenter, newVal -> ACTIVE_INSTANCE.tertiary.cutFromCenter = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 0.95F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_touterThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.outer_thickness_multiplier"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.tertiary.outerThicknessMult, newVal -> ACTIVE_INSTANCE.tertiary.outerThicknessMult = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_tinnerThicknessMult = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.inner_thickness_multiplier"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.tertiary.innerThicknessMult, newVal -> ACTIVE_INSTANCE.tertiary.innerThicknessMult = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.05F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    @Updatable
-    public static Option<Boolean> o_fillEnabled = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.enabled"))
-            .controller(TickBoxControllerBuilder::create)
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.fillEnabled, newVal -> ACTIVE_INSTANCE.fillEnabled = newVal))
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Color> o_fillCol = Option.<Color>createBuilder()
-            .name(Component.translatable("cbh.config.primary"))
-            .stateManager(createInstant(Color.CYAN, () -> ACTIVE_INSTANCE.fillCol.col1, newVal -> ACTIVE_INSTANCE.fillCol.col1 = newVal))
-            .controller(ColorControllerBuilder::create)
-            .build();
-    public static Option<Color> o_fillCol2 = Option.<Color>createBuilder()
-            .name(Component.translatable("cbh.config.secondary"))
-            .stateManager(createInstant(Color.BLUE, () -> ACTIVE_INSTANCE.fillCol.col2, newVal -> ACTIVE_INSTANCE.fillCol.col2 = newVal))
-            .controller(ColorControllerBuilder::create)
-            .build();
-    public static Option<Integer> o_fillOpacity = Option.<Integer>createBuilder()
-            .name(Component.translatable("cbh.config.opacity"))
-            .stateManager(createInstant(39, () -> ACTIVE_INSTANCE.fillCol.alpha, newVal -> ACTIVE_INSTANCE.fillCol.alpha = newVal))
-            .controller(integerOption -> IntegerSliderControllerBuilder.create(integerOption).range(1, 255).step(1).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100 / 255F))) + "%")))
-            .build();
-    @Updatable
-    public static Option<Boolean> o_fillRainbow = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.rainbow"))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.enabled, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.setEnabled(newVal)))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Float> o_fillRainbowSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.speed"))
-            .stateManager(createInstant(5F, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.speed, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.speed = newVal))
-            .controller(integerOption -> FloatSliderControllerBuilder.create(integerOption).range(1F, 10F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
-            .build();
-    public static Option<Integer> o_fillRainbowDelay = Option.<Integer>createBuilder()
-            .name(Component.translatable("cbh.config.delay"))
-            .stateManager(createInstant(250, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.delay, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.delay = newVal))
-            .description(OptionDescription.of(Component.translatable("cbh.config.delay.description")))
-            .controller(floatOption -> IntegerSliderControllerBuilder.create(floatOption).range(-1000, 1000).step(1).formatValue(value -> Component.translatable(value + " ms")))
-            .build();
-    public static Option<Float> o_fillSaturation = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.saturation"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.saturation, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.saturation = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    public static Option<Float> o_fillBrightness = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.brightness"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.fillCol.rainbowSettings.brightness, newVal -> ACTIVE_INSTANCE.fillCol.rainbowSettings.brightness = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 1F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-
-    public static Option<FaceMode> o_fillType = Option.<FaceMode>createBuilder()
-            .name(Component.translatable("cbh.config.mode.unindented"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.mode.description.1"),
-                    Component.translatable("cbh.config.mode.description.2"),
-                    Component.translatable("cbh.config.mode.description.3"),
-                    Component.translatable("cbh.config.mode.description.4"),
-                    Component.translatable("cbh.config.mode.description.5")
-            ))
-            .stateManager(createInstant(FaceMode.ALL, () -> ACTIVE_INSTANCE.fillType, newVal -> ACTIVE_INSTANCE.fillType = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(FaceMode.class))
-            .build();
-    public static Option<DepthTestMode> o_fillDepthTest = Option.<DepthTestMode>createBuilder()
-            .name(Component.translatable("cbh.config.depthTest"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.depthTest.description")))
-            .stateManager(createInstant(DepthTestMode.HIDDEN_ONLY, () -> ACTIVE_INSTANCE.fillDepthTest, newVal -> ACTIVE_INSTANCE.fillDepthTest = newVal))
-            .controller(outlineTypeOption -> EnumControllerBuilder.create(outlineTypeOption).enumClass(DepthTestMode.class))
-            .build();
-    public static Option<Float> o_fillExpandBlocks = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.expand_blocks"))
-            .stateManager(createInstant(0F, () -> ACTIVE_INSTANCE.fillExpandBlocks, newVal -> ACTIVE_INSTANCE.fillExpandBlocks = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(-2F, 1F).step(0.0625F).formatValue(BLOCKS_FORMATTER_THREE_PLACES))
-            .build();
-    public static Option<Float> o_fillExpandPercent = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.expand_percent"))
-            .stateManager(createInstant(1F, () -> ACTIVE_INSTANCE.fillExpandPercent, newVal -> ACTIVE_INSTANCE.fillExpandPercent = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(0F, 2F).step(0.01F).formatValue(value -> Component.translatable(String.format("%d", ((int) (value * 100))) + "%")))
-            .build();
-    @Updatable
-    public static Option<Boolean> o_doEasing = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.enabled_in"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.easing.description")))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.doEasing, newVal -> ACTIVE_INSTANCE.doEasing = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Float> o_easeSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.speed"))
-            .stateManager(createInstant(35F, () -> ACTIVE_INSTANCE.easeSpeed, newVal -> ACTIVE_INSTANCE.easeSpeed = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 100F).step(0.5F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
-            .build();
-    public static Option<Boolean> o_improvedEasing = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.improved_easing"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.improved_easing.description")))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.improvedEasing, newVal -> ACTIVE_INSTANCE.improvedEasing = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .build();
-    public static Option<Boolean> o_fadeIn = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.in"))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.fadeIn, newVal -> ACTIVE_INSTANCE.fadeIn = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Float> o_fadeInSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.speed"))
-            .stateManager(createInstant(15F, () -> ACTIVE_INSTANCE.fadeInSpeed, newVal -> ACTIVE_INSTANCE.fadeInSpeed = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
-            .build();
-    public static Option<Boolean> o_fadeOut = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.out"))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.fadeOut, newVal -> ACTIVE_INSTANCE.fadeOut = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Float> o_fadeOutSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.speed"))
-            .stateManager(createInstant(15F, () -> ACTIVE_INSTANCE.fadeOutSpeed, newVal -> ACTIVE_INSTANCE.fadeOutSpeed = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
-            .build();
-    @Updatable
-    public static Option<Boolean> o_scale = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.enabled_in"))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.scale, newVal -> ACTIVE_INSTANCE.scale = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Float> o_scaleSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.speed"))
-            .stateManager(createInstant(15F, () -> ACTIVE_INSTANCE.scaleSpeed, newVal -> ACTIVE_INSTANCE.scaleSpeed = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
-            .build();
-    @Updatable
-    public static Option<Boolean> o_animateLineThickness = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.enabled_in"))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.animateLineThickness, newVal -> ACTIVE_INSTANCE.animateLineThickness = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Float> o_lineThicknessSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.speed"))
-            .stateManager(createInstant(15F, () -> ACTIVE_INSTANCE.lineThicknessAnimationSpeed, newVal -> ACTIVE_INSTANCE.lineThicknessAnimationSpeed = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 25F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
-            .build();
-    public static Option<Boolean> o_connectedBlocks = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.connected_outlines"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.connected_outlines.description")))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.connectedBlocks, newVal -> ACTIVE_INSTANCE.connectedBlocks = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .build();
-    public static Option<Boolean> o_updateWhenUnfocused = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.update_when_unfocused"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.update_when_unfocused.description")))
-            .stateManager(createInstant(false, () -> getActiveInstance().updateWhenUnfocused, newVal -> getActiveInstance().updateWhenUnfocused = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .build();
-    @Updatable
-    public static Option<Boolean> o_crystalHelper = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.enabled_in"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.crystal_helper.description")))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.crystalHelper, newVal -> ACTIVE_INSTANCE.crystalHelper = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Color> o_crystalHelperLineColor = Option.<Color>createBuilder()
-            .name(Component.translatable("cbh.config.crystal_helper.line_color"))
-            .controller(ColorControllerBuilder::create)
-            .stateManager(createInstant(Color.RED, () -> ACTIVE_INSTANCE.crystalHelperLineColor, color -> ACTIVE_INSTANCE.crystalHelperLineColor = color))
-            .build();
-    public static Option<Color> o_crystalHelperFillColor = Option.<Color>createBuilder()
-            .name(Component.translatable("cbh.config.crystal_helper.fill_color"))
-            .controller(ColorControllerBuilder::create)
-            .stateManager(createInstant(Color.RED, () -> ACTIVE_INSTANCE.crystalHelperFillColor, color -> ACTIVE_INSTANCE.crystalHelperFillColor = color))
-            .build();
-    public static Option<Boolean> o_allowEntities = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.select_entities"))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.allowEntities, newVal -> ACTIVE_INSTANCE.allowEntities = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .build();
-    public static Option<Boolean> o_allowLiquids = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.select_fluids"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.select_fluids.description")))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.allowLiquids, newVal -> ACTIVE_INSTANCE.allowLiquids = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Boolean> o_whenHoldingAppropriate = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.holding_appropriate_item"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.holding_appropriate_item_desc")))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.onlyWhenHoldingAppropriate, newVal -> ACTIVE_INSTANCE.onlyWhenHoldingAppropriate = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .build();
-    public static Option<Boolean> o_onlySourceBlocks = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.only_source_blocks"))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.onlySourceBlocks, newVal -> ACTIVE_INSTANCE.onlySourceBlocks = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .build();
-    public static Option<Boolean> o_rotations = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.rotations"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.rotations.description")))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.rotations, newVal -> ACTIVE_INSTANCE.rotations = newVal))
-            .addListener((option, event) -> refreshAvailability())
-            .controller(TickBoxControllerBuilder::create)
-            .build();
-    public static Option<Float> o_rotationSpeed = Option.<Float>createBuilder()
-            .name(Component.translatable("cbh.config.speed"))
-            .stateManager(createInstant(20F, () -> ACTIVE_INSTANCE.rotationSpeed, newVal -> ACTIVE_INSTANCE.rotationSpeed = newVal))
-            .controller(floatOption -> FloatSliderControllerBuilder.create(floatOption).range(5F, 50F).step(0.1F).formatValue(value -> Component.translatable(String.format("%.1fx", value))))
-            .build();
-    public static Option<Boolean> o_showWhenNoHud = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.show_when_no_hud"))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.showWhenNoHud, newVal -> ACTIVE_INSTANCE.showWhenNoHud = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .build();
-    public static Option<Boolean> o_showWhenNoInteraction = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.show_when_no_interaction"))
-            .description(OptionDescription.of(Component.translatable("cbh.config.show_when_no_interaction.desc")))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.showWhenNoInteraction, newVal -> ACTIVE_INSTANCE.showWhenNoInteraction = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .build();
-    public static Option<Boolean> o_globalModToggle = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.global_toggle"))
-            .stateManager(createInstant(true, () -> ACTIVE_INSTANCE.enableModRendering, newVal -> ACTIVE_INSTANCE.enableModRendering = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .addListener((option, event) -> refreshAvailability())
-            .build();
-    public static Option<Boolean> o_vanillaOutline = Option.<Boolean>createBuilder()
-            .name(Component.translatable("cbh.config.show_vanilla_outline"))
-            .stateManager(createInstant(false, () -> ACTIVE_INSTANCE.drawVanillaOutline, newVal -> ACTIVE_INSTANCE.drawVanillaOutline = newVal))
-            .controller(TickBoxControllerBuilder::create)
-            .build();
-
-    public Screen getConfigScreen(Screen parent) {
-        applyValuesToOptionInstances();
-        var layout = YetAnotherConfigLib.createBuilder()
-                .title(Component.translatable("cbh.config.title"))
-                .category(ConfigCategory.createBuilder()
-                        .name(Component.translatable("cbh.config.outline"))
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.general"))
-                                .option(o_globalModToggle)
-                                .option(o_vanillaOutline)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.outline"))
-                                .option(o_outlineEnabled)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.color"))
-                                .option(o_lineCol)
-                                .option(o_lineCol2)
-                                .option(o_lineAlpha)
-                                .option(o_outlineRainbow)
-                                .option(o_lineRainbowSpeed)
-                                .option(o_lineRainbowDelay)
-                                .option(o_lineSaturation)
-                                .option(o_lineBrightness)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.misc"))
-                                .option(o_shapeStyle)
-                                .option(o_outlineType)
-                                .option(o_lineDepthTest)
-                                .option(o_lineWidth)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.scaling"))
-                                .option(o_lineExpand)
-                                .option(o_lineExpandPercent)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.subdiv"))
-                                .option(o_cutFromCorner)
-                                //? if >=1.21.11
-                                .option(o_outerThicknessMult)
-                                .option(o_cutFromCenter)
-                                //? if >=1.21.11
-                                .option(o_innerThicknessMult)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.secondary_layer"))
-                                .option(o_secondary)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.color"))
-                                .option(o_slineCol)
-                                .option(o_slineCol2)
-                                .option(o_slineAlpha)
-                                .option(o_soutlineRainbow)
-                                .option(o_slineRainbowSpeed)
-                                .option(o_slineRainbowDelay)
-                                .option(o_slineSaturation)
-                                .option(o_slineBrightness)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.misc"))
-                                .option(o_sshapeStyle)
-                                .option(o_soutlineType)
-                                .option(o_slineDepthTest)
-                                .option(o_slineWidth)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.scaling"))
-                                .option(o_slineExpand)
-                                .option(o_slineExpandPercent)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.subdiv"))
-                                .option(o_scutFromCorner)
-                                //? if >=1.21.11
-                                .option(o_souterThicknessMult)
-                                .option(o_scutFromCenter)
-                                //? if >=1.21.11
-                                .option(o_sinnerThicknessMult)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.tertiary_layer"))
-                                .option(o_tertiary)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.color"))
-                                .option(o_tlineCol)
-                                .option(o_tlineCol2)
-                                .option(o_tlineAlpha)
-                                .option(o_toutlineRainbow)
-                                .option(o_tlineRainbowSpeed)
-                                .option(o_tlineRainbowDelay)
-                                .option(o_tlineSaturation)
-                                .option(o_tlineBrightness)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.misc"))
-                                .option(o_tshapeStyle)
-                                .option(o_toutlineType)
-                                .option(o_tlineDepthTest)
-                                .option(o_tlineWidth)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.scaling"))
-                                .option(o_tlineExpand)
-                                .option(o_tlineExpandPercent)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.subdiv"))
-                                .option(o_tcutFromCorner)
-                                //? if >=1.21.11
-                                .option(o_touterThicknessMult)
-                                .option(o_tcutFromCenter)
-                                //? if >=1.21.11
-                                .option(o_tinnerThicknessMult)
-                                .build())
-                        .build())
-                .category(ConfigCategory.createBuilder()
-                        .name(Component.translatable("cbh.config.fill"))
-                        .option(o_fillEnabled)
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.color"))
-                                .option(o_fillCol)
-                                .option(o_fillCol2)
-                                .option(o_fillOpacity)
-                                .option(o_fillRainbow)
-                                .option(o_fillRainbowSpeed)
-                                .option(o_fillRainbowDelay)
-                                .option(o_fillSaturation)
-                                .option(o_fillBrightness)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.scaling"))
-                                .option(o_fillExpandBlocks)
-                                .option(o_fillExpandPercent)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.misc"))
-                                .option(o_fillType)
-                                .option(o_fillDepthTest)
-                                .build())
-                        .build())
-                .category(ConfigCategory.createBuilder()
-                        .name(Component.translatable("cbh.config.extras"))
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.easing"))
-                                .option(o_doEasing)
-                                .option(o_easeSpeed)
-                                .option(o_improvedEasing)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.fade"))
-                                .option(o_fadeIn)
-                                .option(o_fadeInSpeed)
-                                .option(o_fadeOut)
-                                .option(o_fadeOutSpeed)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.scale"))
-                                .option(o_scale)
-                                .option(o_scaleSpeed)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.line_thickness"))
-                                .option(o_animateLineThickness)
-                                .option(o_lineThicknessSpeed)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.crystal_helper"))
-                                .option(o_crystalHelper)
-                                .option(o_crystalHelperLineColor)
-                                .option(o_crystalHelperFillColor)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.render_conditions"))
-                                .option(o_allowEntities)
-                                .option(o_allowLiquids)
-                                .option(o_onlySourceBlocks)
-                                .option(o_whenHoldingAppropriate)
-                                .option(o_showWhenNoHud)
-                                .option(o_showWhenNoInteraction)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config.misc"))
-                                .option(o_connectedBlocks)
-                                .option(o_updateWhenUnfocused)
-                                .option(o_rotations)
-                                .option(o_rotationSpeed)
-                                .build())
-                        .group(OptionGroup.createBuilder()
-                                .name(Component.translatable("cbh.config"))
-                                .option(ButtonOption.createBuilder()
-                                        .name(Component.translatable("cbh.config.copy_to_clipboard"))
-                                        .action((screen, option) -> {
-                                            ConfigManager.save(); // technically unnecessary
-                                            Minecraft.getInstance().keyboardHandler.setClipboard(ConfigManager.GSON.toJson(this));
-                                        })
-                                        .text(Component.translatable("cbh.config.copy"))
-                                        .build())
-                                .option(ButtonOption.createBuilder()
-                                        .name(Component.translatable("cbh.config.load_from_clipboard"))
-                                        .description(OptionDescription.of(Component.translatable("cbh.config.load_from_clipboard.description")))
-                                        .text(Component.translatable("cbh.config.load"))
-                                        .action((screen, option) -> {
-                                            try {
-                                                BlockHighlightConfig yeah = ConfigManager.GSON.fromJson(Minecraft.getInstance().keyboardHandler.getClipboard(), BlockHighlightConfig.class);
-                                                if (yeah == null) {
-                                                    return;
-                                                }
-                                                setActive(yeah);
-                                            } catch (JsonSyntaxException ignored) {
-                                            }
-                                        })
-                                        .build())
-                                .option(ButtonOption.createBuilder()
-                                        .name(Component.translatable("cbh.config.presets"))
-                                        .action((screen, option) -> Minecraft.getInstance().setScreenAndShow(new PresetsScreen(false, screen)))
-                                        .text(Component.translatable("cbh.config.open"))
-                                        .build())
-                                .build())
-                        .build())
-                .save(ConfigManager::save)
-                .build();
-        Screen generatedScreen = layout.generateScreen(parent);
-        Path firstOpenPath = FabricLoader.getInstance().getConfigDir().resolve(".cbh_info"); // im ngl probably have a hidden config option
-        if (Files.notExists(firstOpenPath)) {
-            // presets screen
-            try {
-                Files.createFile(firstOpenPath);
-                if (isWindows()) {
-                    Files.setAttribute(firstOpenPath, "dos:hidden", true, LinkOption.NOFOLLOW_LINKS);
-                }
-            } catch (IOException e) {
-                //NOP
-            }
-            return new PresetsScreen(true, generatedScreen);
-        } else {
-            return generatedScreen;
-        }
-    }
-
-    private static boolean refreshingAvailability;
-
-    public static void refreshAvailability() {
-        if (refreshingAvailability) return;
-        refreshingAvailability = true;
-        try {
-            BlockHighlightConfig c = ACTIVE_INSTANCE;
-            boolean global = c.enableModRendering;
-            available(global, o_outlineEnabled, o_fillEnabled, o_doEasing, o_fadeIn, o_fadeOut, o_scale, o_animateLineThickness,
-                    o_crystalHelper, o_allowLiquids, o_rotations, o_allowEntities, o_showWhenNoInteraction, o_showWhenNoHud,
-                    o_connectedBlocks, o_updateWhenUnfocused);
-            available(global && c.allowLiquids, o_whenHoldingAppropriate, o_onlySourceBlocks);
-
-            boolean primary = global && c.primary.enabled;
-            lineLayer(primary, c.primary, o_lineCol, o_lineCol2, o_outlineRainbow, o_outlineType, o_shapeStyle,
-                    o_lineRainbowSpeed, o_lineRainbowDelay, o_lineSaturation, o_lineBrightness,
-                    o_lineAlpha, o_lineDepthTest, o_lineExpand, o_lineExpandPercent, o_lineWidth, o_cutFromCenter, o_cutFromCorner,
-                    o_innerThicknessMult, o_outerThicknessMult);
-            available(primary, o_secondary, o_tertiary);
-            lineLayer(primary && c.secondary.enabled, c.secondary, o_slineCol, o_slineCol2, o_soutlineRainbow, o_soutlineType, o_sshapeStyle,
-                    o_slineRainbowSpeed, o_slineRainbowDelay, o_slineSaturation, o_slineBrightness,
-                    o_slineAlpha, o_slineDepthTest, o_slineExpand, o_slineExpandPercent, o_slineWidth, o_scutFromCenter, o_scutFromCorner,
-                    o_sinnerThicknessMult, o_souterThicknessMult);
-            lineLayer(primary && c.tertiary.enabled, c.tertiary, o_tlineCol, o_tlineCol2, o_toutlineRainbow, o_toutlineType, o_tshapeStyle,
-                    o_tlineRainbowSpeed, o_tlineRainbowDelay, o_tlineSaturation, o_tlineBrightness,
-                    o_tlineAlpha, o_tlineDepthTest, o_tlineExpand, o_tlineExpandPercent, o_tlineWidth, o_tcutFromCenter, o_tcutFromCorner,
-                    o_tinnerThicknessMult, o_touterThicknessMult);
-
-            boolean fill = global && c.fillEnabled;
-            available(fill, o_fillOpacity, o_fillRainbow, o_fillType, o_fillDepthTest, o_fillExpandBlocks, o_fillExpandPercent);
-            colors(fill, c.fillCol, o_fillCol, o_fillCol2, o_fillRainbowSpeed, o_fillRainbowDelay, o_fillSaturation, o_fillBrightness);
-
-            available(global && c.doEasing, o_easeSpeed, o_improvedEasing);
-            available(global && c.fadeIn, o_fadeInSpeed);
-            available(global && c.fadeOut, o_fadeOutSpeed);
-            available(global && c.scale, o_scaleSpeed);
-            available(global && c.animateLineThickness, o_lineThicknessSpeed);
-            available(global && c.crystalHelper, o_crystalHelperFillColor, o_crystalHelperLineColor);
-            available(global && c.rotations, o_rotationSpeed);
-        } finally {
-            refreshingAvailability = false;
-        }
-    }
-
-    private static void lineLayer(boolean enabled, LineConfig layer, Option<?> col, Option<?> col2, Option<?> rainbow, Option<?> faceMode, Option<?> shapeStyle,
-                                  Option<?> rainbowSpeed, Option<?> rainbowDelay, Option<?> saturation, Option<?> brightness, Option<?>... rest) {
-        available(enabled, rest);
-        available(enabled, rainbow, shapeStyle);
-        available(enabled && layer.shapeStyle == ShapeStyle.CLASSIC_BOX, faceMode);
-        colors(enabled, layer.color, col, col2, rainbowSpeed, rainbowDelay, saturation, brightness);
-    }
-
-    private static void colors(boolean enabled, ColorSetting setting, Option<?> col, Option<?> col2,
-                               Option<?> rainbowSpeed, Option<?> rainbowDelay, Option<?> saturation, Option<?> brightness) {
-        RainbowSettings rainbow = setting.rainbowSettings;
-        available(enabled && !rainbow.enabled, col);
-        available(enabled && !rainbow.isSecondaryEnabled(), col2);
-        available(enabled && (rainbow.enabled || rainbow.isSecondaryEnabled()), rainbowSpeed, rainbowDelay, saturation, brightness);
-    }
-
-    private static void available(boolean available, Option<?>... options) {
-        for (Option<?> option : options) {
-            if (option == null) continue;
-            if (option.available() != available) option.setAvailable(available);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    public BlockHighlightConfig applyValuesToOptionInstances() {
-        Arrays.stream(BlockHighlightConfig.class.getDeclaredFields())
-                .filter(field -> field.getName().startsWith("o_"))
-                .forEach(optionInstanceField -> {
-                    try {
-                        Option<Object> option = (Option<Object>) optionInstanceField.get(this);
-                        if (option == null)
-                            return;
-                        StateManager<Object> stateManager = option.stateManager();
-                        Object correspondingValue = ((ProvidesBindingForDeprecation<Object>) stateManager).getBinding().getValue();
-                        stateManager.set(correspondingValue);
-                        stateManager.apply();
-                    } catch (IllegalAccessException ignored) {
-                    }
-                });
-        refreshAvailability();
-        if (FabricLoader.getInstance().isModLoaded("oneconfigv1")) CBHOneConfig.refresh();
-        return this;
-    }
-    //?} else {
-    /*public BlockHighlightConfig applyValuesToOptionInstances() {
-        CBHOneConfig.refresh();
-        return this;
-    }
-    *///?}
-
-    static {
-        ACTIVE_INSTANCE = ConfigManager.load();
-    }
+	static {
+		ACTIVE_INSTANCE = ConfigManager.load();
+	}
 }

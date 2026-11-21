@@ -2,7 +2,6 @@ package tektonikal.customblockhighlight.legacy.phys;
 
 //? if =1.8.9 {
 /*import org.joml.Vector3f;
-import org.joml.Vector3fc;
 
 public class Vec3 {
 	public static final Vec3 ZERO = new Vec3(0, 0, 0);
@@ -15,10 +14,6 @@ public class Vec3 {
 		this.x = x;
 		this.y = y;
 		this.z = z;
-	}
-
-	public Vec3(Vector3fc vec) {
-		this(vec.x(), vec.y(), vec.z());
 	}
 
 	public static Vec3 atLowerCornerOf(net.minecraft.util.math.BlockPos pos) {

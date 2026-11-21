@@ -45,7 +45,8 @@ public class AABB {
 	}
 
 	public AABB intersect(AABB other) {
-		return new AABB(Math.max(minX, other.minX), Math.max(minY, other.minY), Math.max(minZ, other.minZ), Math.min(maxX, other.maxX), Math.min(maxY, other.maxY), Math.min(maxZ, other.maxZ));
+		double x1 = Math.max(minX, other.minX), y1 = Math.max(minY, other.minY), z1 = Math.max(minZ, other.minZ);
+		return new AABB(x1, y1, z1, Math.max(x1, Math.min(maxX, other.maxX)), Math.max(y1, Math.min(maxY, other.maxY)), Math.max(z1, Math.min(maxZ, other.maxZ)));
 	}
 
 	public AABB minmax(AABB other) {

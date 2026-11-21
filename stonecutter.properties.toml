@@ -1,16 +1,14 @@
 mod.id = "custom-block-highlight"
 mod.name = "Custom Block Highlight"
 mod.archives_name = "blockhighlight"
-mod.group = "tektonikal"
-mod.version = "2.93"
+mod.version = "2.94"
 
 deps.fabric_loader = "0.19.5"
-loomx.loom_version = "1.17-SNAPSHOT"
-deps.oneconfig = "1.4.4"
+loomx.loom_version = "1.19-SNAPSHOT"
+deps.oneconfig = "1.7.0"
 
 ["1.8.9"]
 mod.mc_compat = "1.8.9"
-mod.mc_releases = ["1.8.9"]
 
 deps.feather_build = "2"
 deps.osl_version = "0.21.0"
@@ -18,7 +16,6 @@ deps.joml = "1.10.8"
 
 ["1.21.1"]
 mod.mc_compat = ">=1.21 <=1.21.1"
-mod.mc_releases = ["1.21", "1.21.1"]
 
 deps.fabric_api = "0.116.17+1.21.1"
 deps.yacl = "3.8.2+1.21.1"
@@ -26,7 +23,6 @@ deps.modmenu = "11.0.4"
 
 ["1.21.4"]
 mod.mc_compat = "1.21.4"
-mod.mc_releases = ["1.21.4"]
 
 deps.fabric_api = "0.119.4+1.21.4"
 deps.yacl = "3.8.2+1.21.4"
@@ -34,48 +30,49 @@ deps.modmenu = "13.0.4"
 
 ["1.21.8"]
 mod.mc_compat = ">=1.21.6 <=1.21.8"
-mod.mc_releases = ["1.21.6", "1.21.7", "1.21.8"]
 
 deps.fabric_api = "0.136.1+1.21.8"
+deps.fabric_api_min = "0.128.2"
 deps.yacl = "3.8.2+1.21.6"
 deps.modmenu = "15.0.2"
+deps.iris = "1.9.6+1.21.8-fabric"
 
 ["1.21.10"]
 mod.mc_compat = "1.21.10"
-mod.mc_releases = ["1.21.10"]
 
 deps.fabric_api = "0.138.4+1.21.10"
 deps.yacl = "3.8.2+1.21.10"
 deps.modmenu = "16.0.1"
+deps.iris = "1.9.7+1.21.10-fabric"
 
 ["1.21.11"]
 mod.mc_compat = "1.21.11"
-mod.mc_releases = ["1.21.11"]
 
 deps.fabric_api = "0.141.6+1.21.11"
 deps.yacl = "3.8.2+1.21.11"
 deps.modmenu = "17.0.0"
+deps.iris = "1.10.8+1.21.11-fabric"
 
 ["26.1.x"]
 mod.mc_compat = "~26.1"
-mod.mc_releases = ["26.1", "26.1.1", "26.1.2"]
 
 deps.fabric_api = "0.155.3+26.1.2"
 deps.yacl = "3.9.6+26.1"
 deps.modmenu = "18.0.1"
+deps.iris = "1.11.4+26.1-fabric"
 
 ["26.2.x"]
 mod.mc_compat = "~26.2"
-mod.mc_releases = ["26.2"]
 
 deps.fabric_api = "0.160.0+26.2"
 deps.yacl = "3.9.6+26.2"
 deps.modmenu = "20.0.2"
+deps.iris = "1.11.4+26.2-fabric"
 
 ["26.3.x"]
 mod.mc_compat = "~26.3"
-mod.mc_releases = ["26.3"]
 
 deps.fabric_api = "0.161.0+26.3"
 deps.yacl = "3.9.7+26.3"
 deps.modmenu = "21.0.0"
+deps.iris = "1.11.7+26.3-fabric"
