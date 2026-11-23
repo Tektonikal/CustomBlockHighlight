@@ -77,9 +77,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-//? if >=1.21.5 {
-import static net.minecraft.client.renderer.RenderPipelines.DEBUG_QUADS;
-//?}
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.*;
 import static tektonikal.customblockhighlight.Renderer.mc;
 
@@ -101,8 +98,8 @@ public final class RenderBackend {
 	public static final RenderPipeline FILL_NO_DEPTH = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/evil-fill", DepthTestMode.ALWAYS_PASS, false, BlendFunction.TRANSLUCENT);
 	public static final RenderPipeline LINES_CONCEALED_ONLY = evilPipeline(RenderPipelines.LINES_SNIPPET, "pipeline/eviler-lines", DepthTestMode.HIDDEN_ONLY, true, BlendFunction.TRANSLUCENT);
 	public static final RenderPipeline FILL_CONCEALED_ONLY = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/eviler-fill", DepthTestMode.HIDDEN_ONLY, false, BlendFunction.TRANSLUCENT);
-	//~ if <1.21.11 'DEBUG_QUADS' -> 'RenderPipelines.DEBUG_STRUCTURE_QUADS'
-	private static final RenderPipeline FILL_NORMAL = DEBUG_QUADS;
+	//don't use vanilla quad shader so we don't break other stuff with iris
+	private static final RenderPipeline FILL_NORMAL = evilPipeline(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/evil-fill-normal", DepthTestMode.NORMAL, false, BlendFunction.TRANSLUCENT);
 	//? if >=26.2 {
 	private static final BlendFunction ADDITIVE_BLEND = new BlendFunction(BlendFactor.SRC_ALPHA, BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ONE_MINUS_SRC_ALPHA);
 	private static final BlendFunction MULTIPLY_BLEND = new BlendFunction(BlendFactor.ZERO, BlendFactor.SRC_COLOR, BlendFactor.ZERO, BlendFactor.ONE);
