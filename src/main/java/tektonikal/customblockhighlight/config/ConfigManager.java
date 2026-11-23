@@ -34,16 +34,26 @@ public final class ConfigManager {
 
 	private static final Path DEFAULT_PATH = FabricLoader.getInstance().getConfigDir().resolve("custom-block-highlight.json");
 
+	private static Path path() {
+		//? if =1.8.9 {
+		/*return org.polyfrost.oneconfig.api.config.v1.ConfigManager.active().getFolder().resolve("custom-block-highlight.json");
+		*///?} else {
+		return DEFAULT_PATH;
+		//?}
+	}
+
 	public static void save() {
 		try {
-			Files.writeString(DEFAULT_PATH, GSON.toJson(BlockHighlightConfig.ACTIVE_INSTANCE));
+			Files.writeString(path(), GSON.toJson(BlockHighlightConfig.ACTIVE_INSTANCE));
 		} catch (IOException e) {
 			LOGGER.error("Failed to save config", e);
 		}
 	}
 
 	public static BlockHighlightConfig load() {
-		return loadFromFile(DEFAULT_PATH);
+		Path path = path();
+		if (Files.notExists(path) && Files.exists(DEFAULT_PATH)) return loadFromFile(DEFAULT_PATH);
+		return loadFromFile(path);
 	}
 
 	public static BlockHighlightConfig copy(BlockHighlightConfig config) {
