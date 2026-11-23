@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 //import net.minecraft.client.gui.screen.Screen;
 import org.polyfrost.compose.render.PolyColor;
 import org.polyfrost.oneconfig.api.config.v1.Config;
+import org.polyfrost.oneconfig.api.config.v1.ConfigManager.ProfileChangeListener;
 import org.polyfrost.oneconfig.api.config.v1.Node;
 import org.polyfrost.oneconfig.api.config.v1.Properties;
 import org.polyfrost.oneconfig.api.config.v1.Property;
@@ -30,6 +31,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
+import static org.polyfrost.oneconfig.api.config.v1.ConfigManager.addProfileChangeListener;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
 
 public class CBHOneConfig extends Config {
@@ -48,7 +50,20 @@ public class CBHOneConfig extends Config {
 	}
 
 	public static void init() {
-		if (instance == null) instance = new CBHOneConfig();
+		if (instance != null) return;
+		instance = new CBHOneConfig();
+		addProfileChangeListener(new ProfileChangeListener() {
+			@Override
+			public void onProfileCreated(String profile) {
+				BlockHighlightConfig.ACTIVE_INSTANCE = new BlockHighlightConfig();
+			}
+
+			@Override
+			public void onProfileChanged(String profile) {
+				BlockHighlightConfig.ACTIVE_INSTANCE = ConfigManager.load();
+				refresh();
+			}
+		});
 	}
 
 	public static void refresh() {
