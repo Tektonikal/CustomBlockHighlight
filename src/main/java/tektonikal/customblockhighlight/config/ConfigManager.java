@@ -11,7 +11,6 @@ import net.minecraft.network.chat.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tektonikal.customblockhighlight.config.screenrenderbullshit.PresetsScreen;
-import tektonikal.customblockhighlight.util.ShapeStyle;
 
 import java.awt.Color;
 import java.io.IOException;
@@ -35,11 +34,9 @@ public final class ConfigManager {
 	private static final Path DEFAULT_PATH = FabricLoader.getInstance().getConfigDir().resolve("custom-block-highlight.json");
 
 	private static Path path() {
-		//? if =1.8.9 {
-		/*return org.polyfrost.oneconfig.api.config.v1.ConfigManager.active().getFolder().resolve("custom-block-highlight.json");
-		*///?} else {
-		return DEFAULT_PATH;
-		//?}
+		//? if >1.8.9
+		if (!FabricLoader.getInstance().isModLoaded("oneconfigv1")) return DEFAULT_PATH;
+		return CBHOneConfig.profileFolder().resolve("custom-block-highlight.json");
 	}
 
 	public static void save() {
@@ -108,7 +105,6 @@ public final class ConfigManager {
 	private static BlockHighlightConfig fromJson(JsonObject json) {
 		if (json == null) return null;
 		BlockHighlightConfig config = GSON.fromJson(json, BlockHighlightConfig.class);
-		if (!json.has("fillShape")) config.fillShape = ShapeStyle.CLASSIC_BOX;
 		if (!json.has("crystalHelperOnlyWhenHolding")) config.crystalHelperOnlyWhenHolding = false;
 		if (!json.has("scaleOutSpeed")) config.scaleOutSpeed = config.scaleSpeed;
 		if (!json.has("lineThicknessOutSpeed")) config.lineThicknessOutSpeed = config.lineThicknessAnimationSpeed;

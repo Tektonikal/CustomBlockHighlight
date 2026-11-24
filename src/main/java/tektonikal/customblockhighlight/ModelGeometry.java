@@ -187,7 +187,7 @@ public final class ModelGeometry {
 		//~ if <26.3 'RedstoneWireBlock' -> 'RedStoneWireBlock'
 		return state.getBlock() instanceof RedstoneWireBlock || state.getBlock() instanceof BaseFireBlock;
 		//?} else
-		//return state.getBlock() instanceof net.minecraft.block.RedstoneWireBlock || state.getBlock() instanceof net.minecraft.block.FireBlock;
+		//return state.getBlock() instanceof RedstoneWireBlock || state.getBlock() instanceof FireBlock;
 	}
 
 	private static Vec3 modelOffset(BlockPos pos) {

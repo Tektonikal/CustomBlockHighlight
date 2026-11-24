@@ -175,10 +175,6 @@ public class BlockHighlightConfig {
 		private LineConfig() {
 		}
 
-		public LineConfig(boolean enabled) {
-			this.enabled = enabled;
-		}
-
 		public LineConfig(boolean enabled, ColorSetting color, float lineWidth, DepthTestMode lineDepthTest, float lineExpandBlocks, float lineExpandPercentage, FaceMode outlineType, ShapeStyle shapeStyle, float cutFromCenter, float cutFromCorner, float innerThicknessMult, float outerThicknessMult) {
 			this.enabled = enabled;
 			this.color = color;
@@ -198,9 +194,13 @@ public class BlockHighlightConfig {
 	public boolean enableModRendering = true;
 	public boolean drawVanillaOutline = false;
 
-	public LineConfig primary = new LineConfig(true, new ColorSetting(Color.BLACK, Color.BLACK, 128, new RainbowSettings(false, 5, 250, 1, 1)), 2.5F, DepthTestMode.NORMAL, 0, 1, FaceMode.ALL, ShapeStyle.COLLISION_SHAPE, 0.25F, 0, 1, 1);
-	public LineConfig secondary = new LineConfig(true, new ColorSetting(Color.BLACK, Color.BLACK, 255, new RainbowSettings(true, 5, 250, 1, 0.75F)), 5F, DepthTestMode.NORMAL, 0, 1, FaceMode.ALL, ShapeStyle.COLLISION_SHAPE, 0.25F, 0, 0.5F, 2);
-	public LineConfig tertiary = new LineConfig(false);
+	public LineConfig primary = new LineConfig(true, new ColorSetting(Color.BLACK, Color.BLACK, 103, new RainbowSettings(false, 5, 250, 1, 1)), 2.5F, DepthTestMode.NORMAL, 0, 1, FaceMode.ALL, ShapeStyle.COLLISION_SHAPE, 0, 0, 1, 1);
+	public LineConfig secondary = extraLayer();
+	public LineConfig tertiary = extraLayer();
+
+	private static LineConfig extraLayer() {
+		return new LineConfig(false, new ColorSetting(Color.WHITE, Color.BLACK, 255, new RainbowSettings(false, 5, 250, 1, 1)), 5F, DepthTestMode.ALWAYS_PASS, 0, 1, FaceMode.ALL, ShapeStyle.CLASSIC_BOX, 0, 0, 1, 1);
+	}
 
 	public List<LineConfig> lineConfigs() {
 		return List.of(primary, secondary, tertiary);
@@ -208,36 +208,36 @@ public class BlockHighlightConfig {
 
 	//@formatter:off
 
-	public boolean fillEnabled = true;
-		public ColorSetting fillCol = new ColorSetting(Color.CYAN, Color.BLUE, 39, new RainbowSettings(false, 5, 250, 1, 1));
+	public boolean fillEnabled = false;
+		public ColorSetting fillCol = new ColorSetting(Color.WHITE, Color.BLACK, 128, new RainbowSettings(false, 5, 250, 1, 1));
 		public FaceMode fillType = FaceMode.ALL;
-		public ShapeStyle fillShape = ShapeStyle.COLLISION_SHAPE;
+		public ShapeStyle fillShape = ShapeStyle.CLASSIC_BOX;
 		public float fillExpandBlocks = 0F;
 	public float fillExpandPercent = 1F;
-		public DepthTestMode fillDepthTest = DepthTestMode.NORMAL;
+		public DepthTestMode fillDepthTest = DepthTestMode.HIDDEN_ONLY;
 		public BlendMode fillBlend = BlendMode.NORMAL;
 		public ScreenOutline fillScreenOutline = new ScreenOutline();
-	public boolean doEasing = true;
-	public float easeSpeed = 35F;
-	public boolean snapWhenFadedOut = true;
+	public boolean doEasing = false;
+	public float easeSpeed = 20F;
+	public boolean snapWhenFadedOut = false;
 	public boolean unifiedQuads = false;
 	public boolean simpleMode = false;
 	public boolean restyleOtherOutlines = true;
-	public boolean fadeIn = true;
+	public boolean fadeIn = false;
  	public float fadeInSpeed = 15F;
-	public boolean fadeOut = true;
+	public boolean fadeOut = false;
 	public float fadeOutSpeed = 15F;
- 	public boolean scale = true;
+ 	public boolean scale = false;
  	public float scaleSpeed = 15F;
-	public boolean scaleOut = true;
+	public boolean scaleOut = false;
 	public float scaleOutSpeed = 15F;
-	public boolean animateLineThickness = true;
+	public boolean animateLineThickness = false;
 	public float lineThicknessAnimationSpeed = 15F;
-	public boolean lineThicknessOut = true;
+	public boolean lineThicknessOut = false;
 	public float lineThicknessOutSpeed = 15F;
-	public boolean animateLineCuts = true;
+	public boolean animateLineCuts = false;
 	public float lineCutSpeed = 15F;
-	public boolean lineCutOut = true;
+	public boolean lineCutOut = false;
 	public float lineCutOutSpeed = 15F;
 	public boolean crystalHelper = false;
 	public boolean crystalHelperOnlyWhenHolding = true;
@@ -246,10 +246,10 @@ public class BlockHighlightConfig {
 	public boolean connectedBlocks = true;
  	public boolean updateWhenUnfocused = false;
  	public boolean allowEntities = false;
- 	public boolean allowLiquids = true;
+ 	public boolean allowLiquids = false;
 	public boolean highlightBarriers = false;
-	public boolean onlyWhenHoldingAppropriate = true;
-	public boolean onlySourceBlocks = true;
+	public boolean onlyWhenHoldingAppropriate = false;
+	public boolean onlySourceBlocks = false;
 	public boolean rotations = false;
 	public float rotationSpeed = 20;
 	public boolean showWhenNoHud = false;

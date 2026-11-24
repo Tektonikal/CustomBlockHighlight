@@ -68,6 +68,8 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 //?}
 //? if >1.8.9
 import net.minecraft.resources.Identifier;
+//? if >=26.3
+import net.minecraft.util.profiling.Profiler;
 import net.minecraft.world.phys.*;
 import org.joml.*;
 import tektonikal.customblockhighlight.util.*;
@@ -346,7 +348,7 @@ public final class RenderBackend {
 		if (!testsDepth) return;
 		RenderTarget main = mc.gameRenderer.mainRenderTarget();
 		if (main.getDepthTexture() == null) return;
-		var profiler = net.minecraft.util.profiling.Profiler.get();
+		var profiler = Profiler.get();
 		profiler.push("customBlockHighlight");
 		profiler.push("depthCopy");
 		if (opaqueDepth == null) opaqueDepth = new TextureTarget("CBH opaque depth", main.width, main.height, null, main.getDepthTexture().getFormat());

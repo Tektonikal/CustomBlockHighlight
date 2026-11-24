@@ -24,6 +24,7 @@ import tektonikal.customblockhighlight.util.ScreenOutline;
 import tektonikal.customblockhighlight.util.ShapeStyle;
 
 import java.awt.Color;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
+import static org.polyfrost.oneconfig.api.config.v1.ConfigManager.active;
 import static org.polyfrost.oneconfig.api.config.v1.ConfigManager.addProfileChangeListener;
 import static tektonikal.customblockhighlight.config.BlockHighlightConfig.getActiveInstance;
 
@@ -64,6 +66,10 @@ public class CBHOneConfig extends Config {
 				refresh();
 			}
 		});
+	}
+
+	static Path profileFolder() {
+		return active().getFolder();
 	}
 
 	public static void refresh() {

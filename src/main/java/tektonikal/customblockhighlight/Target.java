@@ -3,6 +3,11 @@ package tektonikal.customblockhighlight;
 //? if =1.8.9 {
 /*import tektonikal.customblockhighlight.legacy.LegacyClient;
 import tektonikal.customblockhighlight.legacy.LegacyWorld;
+import net.minecraft.item.GlassBottleItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.LilyPadItem;
+import net.minecraft.util.math.Vec3d;
 *///?}
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -68,8 +73,8 @@ public record Target(HitResult hit, BlockPos pos, BlockState state, Direction co
 		//? if >1.8.9 {
 		return mc.player.isCreative() && mc.player.getMainHandItem().is(Items.BARRIER);
 		//?} else {
-		/*net.minecraft.item.ItemStack stack = mc.player.getItemInHand();
-		return mc.player.abilities.creativeMode && stack != null && stack.getItem() == net.minecraft.item.Item.byBlock(Blocks.BARRIER);
+		/*ItemStack stack = mc.player.getItemInHand();
+		return mc.player.abilities.creativeMode && stack != null && stack.getItem() == Item.byBlock(Blocks.BARRIER);
 		*///?}
 	}
 
@@ -110,7 +115,7 @@ public record Target(HitResult hit, BlockPos pos, BlockState state, Direction co
 		if (getActiveInstance().allowLiquids && isHoldingValidItem()) {
 			float delta = LegacyClient.tickDelta();
 			HitResult yeah = pick(mc.getCameraEntity(), mc.interactionManager.getReach(), delta);
-			net.minecraft.util.math.Vec3d eye = mc.getCameraEntity().getEyePosition(delta);
+			Vec3d eye = mc.getCameraEntity().getEyePosition(delta);
 			if (yeah instanceof BlockHitResult block && !block.getBlockPos().equals(new BlockPos(eye.x, eye.y, eye.z))) {
 				return yeah;
 			}
@@ -120,9 +125,9 @@ public record Target(HitResult hit, BlockPos pos, BlockState state, Direction co
 
 	public static boolean isHoldingValidItem() {
 		if (!getActiveInstance().onlyWhenHoldingAppropriate) return true;
-		net.minecraft.item.ItemStack stack = mc.player.getItemInHand();
+		ItemStack stack = mc.player.getItemInHand();
 		if (stack == null || stack.getItem() == null) return false;
-		return stack.getItem() == Items.BUCKET || stack.getItem() instanceof net.minecraft.item.GlassBottleItem || stack.getItem() instanceof net.minecraft.item.LilyPadItem || stack.getItem() instanceof BoatItem;
+		return stack.getItem() == Items.BUCKET || stack.getItem() instanceof GlassBottleItem || stack.getItem() instanceof LilyPadItem || stack.getItem() instanceof BoatItem;
 	}
 	*///?}
 
@@ -225,9 +230,9 @@ public record Target(HitResult hit, BlockPos pos, BlockState state, Direction co
 	//?} else {
 	/*public static HitResult pick(Entity e, final double range, final float a) {
 		if (mc.level == null) return null;
-		net.minecraft.util.math.Vec3d from = e.getEyePosition(a);
-		net.minecraft.util.math.Vec3d viewVector = e.getRotationVector(a);
-		net.minecraft.util.math.Vec3d to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
+		Vec3d from = e.getEyePosition(a);
+		Vec3d viewVector = e.getRotationVector(a);
+		Vec3d to = from.add(viewVector.x * range, viewVector.y * range, viewVector.z * range);
 		LegacyWorld.fluidPickThread = getActiveInstance().onlySourceBlocks ? null : Thread.currentThread();
 		try {
 			return HitResult.of(mc.level.rayTrace(from, to, true, false, true));

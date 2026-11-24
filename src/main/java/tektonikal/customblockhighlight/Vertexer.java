@@ -23,6 +23,7 @@ import java.awt.geom.Path2D;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -426,7 +427,7 @@ public final class Vertexer {
 			for (Vector2f p : points) reach[k] = Math.max(reach[k], (p.x - center.x) * n.x + (p.y - center.y) * n.y);
 			farthest = Math.max(farthest, reach[k]);
 		}
-		if (sides >= ScreenOutline.MAX_SIDES) java.util.Arrays.fill(reach, farthest);
+		if (sides >= ScreenOutline.MAX_SIDES) Arrays.fill(reach, farthest);
 		float det = (float) Math.sin(2 * Math.PI / sides);
 		List<Vector2f> corners = new ArrayList<>(sides);
 		for (int k = 0; k < sides; k++) {

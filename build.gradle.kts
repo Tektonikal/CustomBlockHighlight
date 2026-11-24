@@ -42,7 +42,7 @@ repositories {
             content { includeGroup("pl.tomgirl") }
         }
     } else {
-        strictMaven("https://repo.polyfrost.org/releases", "Polyfrost Releases", "org.polyfrost.oneconfig", "com.github.bawnorton.mixinsquared")
+        strictMaven("https://repo.polyfrost.org/releases", "Polyfrost Releases", "org.polyfrost.oneconfig", "org.polyfrost", "com.github.bawnorton.mixinsquared")
     }
     strictMaven("https://repo.hypixel.net/repository/Hypixel/", "Hypixel", "net.hypixel")
     google()
@@ -72,7 +72,7 @@ dependencies {
             exclude(group = "net.fabricmc", module = "fabric-loader")
             exclude(group = "me.djtheredstoner")
         }
-        for (module in arrayOf("commands", "config", "config-impl", "events", "internal", "ui", "utils", "hud", "notifications", "poly-compose")) {
+        for (module in arrayOf("config", "config-impl", "events", "internal", "ui", "utils", "hud", "notifications")) {
             implementation("org.polyfrost.oneconfig:$module:$oneconfig")
         }
         val joml = "org.joml:joml:${property("deps.joml")}"
@@ -84,9 +84,10 @@ dependencies {
         modImplementation("com.terraformersmc:modmenu:${property("deps.modmenu")}")
         findProperty("deps.iris")?.let { modCompileOnly("maven.modrinth:iris:$it") }
         val oneconfig = property("deps.oneconfig") as String
-        for (module in arrayOf("config", "config-impl", "poly-compose")) {
+        for (module in arrayOf("config", "config-impl")) {
             compileOnly("org.polyfrost.oneconfig:$module:$oneconfig") { isTransitive = false }
         }
+        compileOnly("org.polyfrost:polycompose-core:${property("deps.polycompose")}") { isTransitive = false }
         val oneconfigMc = if (sc.current.parsed >= "26.1" && sc.current.parsed < "26.2") "26.1" else sc.current.version
         modLocalRuntime("org.polyfrost.oneconfig:$oneconfigMc-fabric:$oneconfig") {
             exclude(group = "net.fabricmc.fabric-api")

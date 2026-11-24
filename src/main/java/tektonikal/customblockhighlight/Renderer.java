@@ -24,7 +24,14 @@ import net.minecraft.world.level.block.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
-//?}
+//?} else {
+/*import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.profiler.Profiler;
+import net.minecraft.world.WorldSettings;
+*///?}
+//? if >1.8.9 && <1.21.2
+//import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 import org.joml.*;
@@ -73,10 +80,10 @@ public final class Renderer {
 	*///?}
 
 	//? if >1.8.9 && <1.21.2 {
-	/*private static net.minecraft.util.profiling.ProfilerFiller get() { return mc.getProfiler(); }
+	/*private static ProfilerFiller get() { return mc.getProfiler(); }
 	*///?}
 	//? if =1.8.9
-	//private static net.minecraft.util.profiler.Profiler get() { return mc.profiler; }
+	//private static Profiler get() { return mc.profiler; }
 
 	private static final String PROFILED = "customBlockHighlight";
 
@@ -599,13 +606,13 @@ public final class Renderer {
 		return !stack.isEmpty() && (stack.canBreakBlockInAdventureMode(block) || stack.canPlaceOnBlockInAdventureMode(block));
 		//?} else {
 		/*if (mc.player.abilities.canModifyWorld || getActiveInstance().showWhenNoInteraction) return true;
-		if (target.hit() instanceof EntityHitResult) return mc.interactionManager.getGameMode() != net.minecraft.world.WorldSettings.GameMode.SPECTATOR;
+		if (target.hit() instanceof EntityHitResult) return mc.interactionManager.getGameMode() != WorldSettings.GameMode.SPECTATOR;
 		if (target.pos() == null || target.hit().getType() == HitResult.Type.MISS) return false;
 		Block block = target.state().getBlock();
-		if (mc.interactionManager.getGameMode() == net.minecraft.world.WorldSettings.GameMode.SPECTATOR) {
-			return block.hasBlockEntity() && mc.level.getBlockEntity(target.pos()) instanceof net.minecraft.inventory.Inventory;
+		if (mc.interactionManager.getGameMode() == WorldSettings.GameMode.SPECTATOR) {
+			return block.hasBlockEntity() && mc.level.getBlockEntity(target.pos()) instanceof Inventory;
 		}
-		net.minecraft.item.ItemStack stack = mc.player.getItemInHand();
+		ItemStack stack = mc.player.getItemInHand();
 		return stack != null && (stack.hasMineBlockOverride(block) || stack.hasPlaceOnBlockOverride(block));
 		*///?}
 	}

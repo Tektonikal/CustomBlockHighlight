@@ -2,6 +2,7 @@ package tektonikal.customblockhighlight.legacy;
 
 //? if =1.8.9 {
 /*import net.minecraft.client.Minecraft;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 
@@ -25,7 +26,7 @@ public final class Camera {
 	public Vec3 eye() {
 		Entity camera = Minecraft.getInstance().getCameraEntity();
 		if (camera == null) return Vec3.ZERO;
-		net.minecraft.util.math.Vec3d eye = camera.getEyePosition(LegacyClient.tickDelta());
+		Vec3d eye = camera.getEyePosition(LegacyClient.tickDelta());
 		return new Vec3(eye.x, eye.y, eye.z);
 	}
 }
