@@ -47,6 +47,7 @@ import java.awt.*;
 import java.lang.Math;
 import java.util.*;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -161,10 +162,12 @@ public final class Renderer {
 
 	private static void drawBoxFill(PoseStack stack, AABB box, Pair<Color, Color> cols, float[] alpha) {
 		doEvilMatrixPreparations(stack, box, getActiveInstance().fillExpandBlocks, getActiveInstance().fillExpandPercent);
-		pullFill(stack);
-		VertexConsumer buffer = startDrawing(false, getActiveInstance().fillDepthTest, getActiveInstance().fillBlend);
-		Vertexer.vertexBoxQuads(stack.last(), buffer, moveToZero(box), cols, rotateFaceFades(alpha));
-		finishDraw(false, getActiveInstance().fillDepthTest, getActiveInstance().fillBlend);
+		AABB zeroed = moveToZero(box);
+		float[] fades = rotateFaceFades(alpha);
+		Vec3[][] faces = Vertexer.boxQuads(zeroed);
+		drawFillSides(stack, zeroed, cols, side -> {
+			for (int d = 0; d < 6; d++) side.quad(faces[d], Math.round(fades[d]), false);
+		});
 		stack.popPose();
 	}
 
@@ -265,9 +268,34 @@ public final class Renderer {
 		}
 	}
 
-	private static void pullFill(PoseStack stack) {
-		//? if >1.8.9
-		if (getActiveInstance().fillDepthTest != DepthTestMode.ALWAYS_PASS) stack.last().pose().scaleLocal(HIDDEN_PULL);
+	// push back faces away instead of pulling them in, otherwise the fill breaks near the block's edges (doubled on normal, missing on concealed only)
+	private record FillSide(PoseStack.Pose pose, VertexConsumer buffer, Pair<Color, Color> cols, Vec3 zeroMin, float normaliser, Boolean back) {
+		// culled by winding: corners as given show from inside, reordered from outside
+		void quad(Vec3[] corners, int alpha, boolean twoSided) {
+			if (back == null || back && !twoSided) Vertexer.vertexQuad(pose, buffer, cols, alpha, zeroMin, normaliser, corners);
+			if (back == null || back) return;
+			Vertexer.vertexQuad(pose, buffer, cols, alpha, zeroMin, normaliser, corners[0], corners[3], corners[2], corners[1]);
+			if (twoSided) Vertexer.vertexQuad(pose, buffer, cols, alpha, zeroMin, normaliser, corners);
+		}
+	}
+
+	private static final boolean[] FILL_SIDES = {true, false};
+
+	private static void drawFillSides(PoseStack stack, AABB zeroed, Pair<Color, Color> cols, Consumer<FillSide> quads) {
+		BlockHighlightConfig cfg = getActiveInstance();
+		Vec3 zeroMin = zeroed.getMinPosition();
+		float normaliser = (float) zeroMin.distanceTo(zeroed.getMaxPosition());
+		if (cfg.fillDepthTest == DepthTestMode.ALWAYS_PASS) {
+			VertexConsumer buffer = startDrawing(false, cfg.fillDepthTest, cfg.fillBlend);
+			quads.accept(new FillSide(stack.last(), buffer, cols, zeroMin, normaliser, null));
+			finishDraw(false, cfg.fillDepthTest, cfg.fillBlend);
+			return;
+		}
+		for (boolean back : FILL_SIDES) {
+			VertexConsumer buffer = startFillSide(cfg.fillDepthTest, cfg.fillBlend, back);
+			quads.accept(new FillSide(stack.last(), buffer, cols, zeroMin, normaliser, back));
+			finishFillSide(cfg.fillDepthTest, cfg.fillBlend, back);
+		}
 	}
 
 	private static void drawScreenFill(PoseStack stack, Pair<Color, Color> cols) {
@@ -307,20 +335,12 @@ public final class Renderer {
 	private static void drawShapeFill(PoseStack stack, ShapeLayer shape, Pair<Color, Color> cols) {
 		BlockHighlightConfig cfg = getActiveInstance();
 		doEvilMatrixPreparations(stack, easeBox, cfg.fillExpandBlocks, cfg.fillExpandPercent);
-		pullFill(stack);
-		VertexConsumer buffer = startDrawing(false, cfg.fillDepthTest, cfg.fillBlend);
 		float[] fades = rotateFaceFades(sideFades);
-		AABB zeroed = moveToZero(easeBox);
-		Vec3 zeroMin = zeroed.getMinPosition();
-		float normaliser = (float) zeroMin.distanceTo(zeroed.getMaxPosition());
-		for (List<Quad> list : List.of(shape.quads, shape.leavingQuads)) {
-			for (Quad quad : list) {
-				int alpha = Math.round(fades[quad.dir] * quad.alphaMultiplier);
-				if (alpha < 1) continue;
-				Vertexer.vertexQuad(stack.last(), buffer, cols, alpha, zeroMin, normaliser, quad.corners);
+		drawFillSides(stack, moveToZero(easeBox), cols, side -> {
+			for (List<Quad> list : List.of(shape.quads, shape.leavingQuads)) {
+				for (Quad quad : list) side.quad(quad.corners, Math.round(fades[quad.dir] * quad.alphaMultiplier), quad.twoSided);
 			}
-		}
-		finishDraw(false, cfg.fillDepthTest, cfg.fillBlend);
+		});
 		stack.popPose();
 	}
 

@@ -7,6 +7,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
+import tektonikal.customblockhighlight.RenderBackend;
 import tektonikal.customblockhighlight.Renderer;
 import tektonikal.customblockhighlight.util.BlendMode;
 import tektonikal.customblockhighlight.util.DepthTestMode;
@@ -40,7 +41,7 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 	private ByteBuffer uploadBuffer;
 	private int vbo = -1;
 
-	private record Batch(boolean lines, DepthTestMode mode, BlendMode blend, int from, int to) {
+	private record Batch(boolean lines, DepthTestMode mode, BlendMode blend, Boolean back, int from, int to) {
 	}
 
 	@Override
@@ -87,7 +88,11 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 	}
 
 	public void endBatch(DepthTestMode mode, BlendMode blend) {
-		if (vertices > batchStart) batches.add(new Batch(lines, mode, blend, batchStart, vertices));
+		if (vertices > batchStart) batches.add(new Batch(lines, mode, blend, null, batchStart, vertices));
+	}
+
+	public void endFillSide(DepthTestMode mode, BlendMode blend, boolean back) {
+		if (vertices > batchStart) batches.add(new Batch(false, mode, blend, back, batchStart, vertices));
 	}
 
 	public void drawFrame(double x, double y, double z, boolean world) {
@@ -123,6 +128,19 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 			} else {
 				int count = batch.to() - batch.from();
 				count -= count % 4;
+				if (batch.back() != null) {
+					float bias = batch.back() ? -RenderBackend.FILL_BIAS : RenderBackend.FILL_BIAS;
+					// vanilla cracks write depth at -3, concealed front faces must beat them
+					if (!batch.back() && batch.mode() == DepthTestMode.HIDDEN_ONLY) bias = -4F;
+					GlStateManager.enableCull();
+					GlStateManager.enablePolygonOffset();
+					GlStateManager.polygonOffset(bias, bias);
+					if (count > 0) GL11.glDrawArrays(GL11.GL_QUADS, batch.from(), count);
+					GlStateManager.polygonOffset(0F, 0F);
+					GlStateManager.disablePolygonOffset();
+					GlStateManager.disableCull();
+					continue;
+				}
 				boolean pull = world && batch.mode() != DepthTestMode.ALWAYS_PASS;
 				if (pull) pushViewShrink(Renderer.HIDDEN_PULL);
 				if (count > 0) GL11.glDrawArrays(GL11.GL_QUADS, batch.from(), count);
