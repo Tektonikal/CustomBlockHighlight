@@ -62,12 +62,23 @@ public final class Vertexer {
 
 	public static void vertexBoxQuads(PoseStack.Pose pose, VertexConsumer builder, AABB box, Pair<Color, Color> cols, float[] alpha) {
 		float normaliser = (float) box.getMinPosition().distanceTo(box.getMaxPosition());
-		vertexQuad(pose, builder, cols, Math.round(alpha[0]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ));
-		vertexQuad(pose, builder, cols, Math.round(alpha[1]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.minZ));
-		vertexQuad(pose, builder, cols, Math.round(alpha[2]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.minY, (float) box.minZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ));
-		vertexQuad(pose, builder, cols, Math.round(alpha[3]), box.getMinPosition(), normaliser, new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ));
-		vertexQuad(pose, builder, cols, Math.round(alpha[4]), box.getMinPosition(), normaliser, new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.minX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.minX, (float) box.minY, (float) box.minZ));
-		vertexQuad(pose, builder, cols, Math.round(alpha[5]), box.getMinPosition(), normaliser, new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.minZ), new Vec3((float) box.maxX, (float) box.maxY, (float) box.maxZ), new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ));
+		Vec3[][] faces = boxQuads(box);
+		for (int d = 0; d < 6; d++) vertexQuad(pose, builder, cols, Math.round(alpha[d]), box.getMinPosition(), normaliser, faces[d]);
+	}
+
+	public static Vec3[][] boxQuads(AABB box) {
+		Vec3 x1y1z1 = new Vec3((float) box.minX, (float) box.minY, (float) box.minZ), x2y1z1 = new Vec3((float) box.maxX, (float) box.minY, (float) box.minZ);
+		Vec3 x1y1z2 = new Vec3((float) box.minX, (float) box.minY, (float) box.maxZ), x2y1z2 = new Vec3((float) box.maxX, (float) box.minY, (float) box.maxZ);
+		Vec3 x1y2z1 = new Vec3((float) box.minX, (float) box.maxY, (float) box.minZ), x2y2z1 = new Vec3((float) box.maxX, (float) box.maxY, (float) box.minZ);
+		Vec3 x1y2z2 = new Vec3((float) box.minX, (float) box.maxY, (float) box.maxZ), x2y2z2 = new Vec3((float) box.maxX, (float) box.maxY, (float) box.maxZ);
+		return new Vec3[][]{
+				{x1y1z1, x2y1z1, x2y1z2, x1y1z2},
+				{x1y2z2, x2y2z2, x2y2z1, x1y2z1},
+				{x1y1z1, x1y2z1, x2y2z1, x2y1z1},
+				{x2y1z2, x2y2z2, x1y2z2, x1y1z2},
+				{x1y1z2, x1y2z2, x1y2z1, x1y1z1},
+				{x2y1z1, x2y2z1, x2y2z2, x2y1z2}
+		};
 	}
 
 	public static void vertexQuad(PoseStack.Pose pose, VertexConsumer builder, Pair<Color, Color> cols, int alpha, Vec3 minPos, float normaliser, Vec3... vecs) {

@@ -86,6 +86,9 @@ public final class RenderBackend {
 	private RenderBackend() {
 	}
 
+	//~ if <26.2 '= 1F' -> '= -1F'
+	public static final float FILL_BIAS = 1F;
+
 	public static <T> T cached(T[] cache, int i, Supplier<T> create) {
 		if (cache[i] == null) cache[i] = create.get();
 		return cache[i];
@@ -122,23 +125,26 @@ public final class RenderBackend {
 		return (blend.ordinal() * DepthTestMode.values().length + mode.ordinal()) * 2 + (lines ? 1 : 0);
 	}
 
+	private static BlendFunction blendFunction(BlendMode blend) {
+		return switch (blend) {
+			case NORMAL -> BlendFunction.TRANSLUCENT;
+			case ADDITIVE -> ADDITIVE_BLEND;
+			case MULTIPLY -> MULTIPLY_BLEND;
+			case SCREEN -> SCREEN_BLEND;
+			case INVERT -> INVERT_BLEND;
+			//? if >=26.2 {
+			case SUBTRACT -> SUBTRACT_BLEND;
+			case LIGHTEN -> LIGHTEN_BLEND;
+			case DARKEN -> DARKEN_BLEND;
+			//?}
+		};
+	}
+
 	private static RenderPipeline[] blendedPipelines() {
 		RenderPipeline[] pipelines = new RenderPipeline[BlendMode.values().length * DepthTestMode.values().length * 2];
 		for (BlendMode blend : BlendMode.values()) {
 			if (blend == BlendMode.NORMAL) continue;
-			BlendFunction function = switch (blend) {
-				//unreachable but i don't want a default branch
-				case NORMAL -> BlendFunction.TRANSLUCENT;
-				case ADDITIVE -> ADDITIVE_BLEND;
-				case MULTIPLY -> MULTIPLY_BLEND;
-				case SCREEN -> SCREEN_BLEND;
-				case INVERT -> INVERT_BLEND;
-				//? if >=26.2 {
-				case SUBTRACT -> SUBTRACT_BLEND;
-				case LIGHTEN -> LIGHTEN_BLEND;
-				case DARKEN -> DARKEN_BLEND;
-				//?}
-			};
+			BlendFunction function = blendFunction(blend);
 			String suffix = blend.name().toLowerCase(Locale.ROOT);
 			for (DepthTestMode mode : DepthTestMode.values()) {
 				String name = mode.name().toLowerCase(Locale.ROOT) + "-" + suffix;
@@ -149,6 +155,27 @@ public final class RenderBackend {
 		return pipelines;
 	}
 
+	// the lines slot holds back faces
+	private static final RenderPipeline[] FILL_SIDE_PIPELINES = fillSidePipelines();
+
+	private static RenderPipeline[] fillSidePipelines() {
+		RenderPipeline[] pipelines = new RenderPipeline[BLENDED_PIPELINES.length];
+		for (BlendMode blend : BlendMode.values()) {
+			for (DepthTestMode mode : DepthTestMode.values()) {
+				if (mode == DepthTestMode.ALWAYS_PASS) continue;
+				for (boolean back : new boolean[]{false, true}) {
+					String name = (back ? "back-" : "front-") + mode.name().toLowerCase(Locale.ROOT) + "-" + blend.name().toLowerCase(Locale.ROOT);
+					pipelines[pipelineIndex(mode, back, blend)] = register(withDepth(builder(RenderPipelines.DEBUG_FILLED_SNIPPET, "pipeline/evil-fill-" + name, blendFunction(blend)).withCull(true), mode, false, back ? -FILL_BIAS : FILL_BIAS));
+				}
+			}
+		}
+		return pipelines;
+	}
+
+	static RenderPipeline fillSidePipeline(DepthTestMode mode, BlendMode blend, boolean back) {
+		return FILL_SIDE_PIPELINES[pipelineIndex(mode, back, blend)];
+	}
+
 	static {
 		IrisCompat.assign(LINE_NO_DEPTH, true);
 		IrisCompat.assign(LINES_CONCEALED_ONLY, true);
@@ -156,19 +183,26 @@ public final class RenderBackend {
 		IrisCompat.assign(FILL_CONCEALED_ONLY, false);
 		for (int i = 0; i < BLENDED_PIPELINES.length; i++) {
 			if (BLENDED_PIPELINES[i] != null) IrisCompat.assign(BLENDED_PIPELINES[i], i % 2 == 1);
+			if (FILL_SIDE_PIPELINES[i] != null) IrisCompat.assign(FILL_SIDE_PIPELINES[i], false);
 		}
 		IrisCompat.assign(FILL_NORMAL, false);
 	}
 
 	private static RenderPipeline evilPipeline(RenderPipeline.Snippet snippet, String path, DepthTestMode mode, boolean writeDepth, BlendFunction blend) {
-		RenderPipeline.Builder builder = RenderPipeline.builder(snippet)
+		return register(withDepth(builder(snippet, path, blend).withCull(false), mode, writeDepth, 0));
+	}
+
+	private static RenderPipeline.Builder builder(RenderPipeline.Snippet snippet, String path, BlendFunction blend) {
+		return RenderPipeline.builder(snippet)
 				.withLocation(Identifier.fromNamespaceAndPath("custom-block-highlight", path))
 				//? if >=26.1 {
-				.withColorTargetState(new ColorTargetState(blend))
+				.withColorTargetState(new ColorTargetState(blend));
 				//?} else
-				//.withBlend(blend)
-				.withCull(false);
-		return RenderPipelines.register(withDepth(builder, mode, writeDepth).build());
+				//.withBlend(blend);
+	}
+
+	private static RenderPipeline register(RenderPipeline.Builder builder) {
+		return RenderPipelines.register(builder.build());
 	}
 
 	public static RenderPipeline getPipeline(DepthTestMode mode, boolean lines, BlendMode blend) {
@@ -196,17 +230,17 @@ public final class RenderBackend {
 	*///?}
 
 	//? if >=26.1 {
-	private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, DepthTestMode mode, boolean writeDepth) {
+	private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, DepthTestMode mode, boolean writeDepth, float bias) {
 		//26.2+ uses reverse-z
 		//~ if <26.2 'LESS_THAN' -> 'GREATER_THAN'
 		CompareOp concealed = CompareOp.LESS_THAN;
 		//~ if <26.2 'GREATER_THAN_OR_EQUAL' -> 'LESS_THAN_OR_EQUAL'
 		CompareOp visible = CompareOp.GREATER_THAN_OR_EQUAL;
-		return builder.withDepthStencilState(new DepthStencilState(mode == DepthTestMode.ALWAYS_PASS ? CompareOp.ALWAYS_PASS : mode == DepthTestMode.HIDDEN_ONLY ? concealed : visible, writeDepth));
+		return builder.withDepthStencilState(new DepthStencilState(mode == DepthTestMode.ALWAYS_PASS ? CompareOp.ALWAYS_PASS : mode == DepthTestMode.HIDDEN_ONLY ? concealed : visible, writeDepth, bias, bias));
 	}
 	//?} elif >=1.21.5 {
-	/*private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, DepthTestMode mode, boolean writeDepth) {
-		return builder.withDepthTestFunction(mode == DepthTestMode.ALWAYS_PASS ? DepthTestFunction.NO_DEPTH_TEST : mode == DepthTestMode.HIDDEN_ONLY ? DepthTestFunction.GREATER_DEPTH_TEST : DepthTestFunction.LEQUAL_DEPTH_TEST).withDepthWrite(writeDepth);
+	/*private static RenderPipeline.Builder withDepth(RenderPipeline.Builder builder, DepthTestMode mode, boolean writeDepth, float bias) {
+		return builder.withDepthTestFunction(mode == DepthTestMode.ALWAYS_PASS ? DepthTestFunction.NO_DEPTH_TEST : mode == DepthTestMode.HIDDEN_ONLY ? DepthTestFunction.GREATER_DEPTH_TEST : DepthTestFunction.LEQUAL_DEPTH_TEST).withDepthWrite(writeDepth).withDepthBias(bias, bias);
 	}
 	*///?} elif >1.8.9 {
 	/*public static void applyBlend(BlendMode blend) {
@@ -333,6 +367,18 @@ public final class RenderBackend {
 		pendingDraws.add(new PendingDraw(currentDraw, getPipeline(mode, lines, blend)));
 	}
 
+	private static final RenderType[] worldFillSideTypes = new RenderType[BLENDED_PIPELINES.length];
+
+	public static VertexConsumer startFillSide(DepthTestMode mode, BlendMode blend, boolean back) {
+		if (featureSink == null) return startDrawing(false, mode, blend);
+		return featureSink.apply(cached(worldFillSideTypes, pipelineIndex(mode, back, blend), () -> RenderType.create(typeName(back ? "cbh_world_fill_back_" : "cbh_world_fill_front_", mode, blend),
+				RenderSetup.builder(fillSidePipeline(mode, blend, back)).sortOnUpload().createRenderSetup())));
+	}
+
+	static void finishFillSide(DepthTestMode mode, BlendMode blend, boolean back) {
+		if (featureSink == null) pendingDraws.add(new PendingDraw(currentDraw, fillSidePipeline(mode, blend, back)));
+	}
+
 	//? if >=26.3 {
 	private static TextureTarget opaqueDepth;
 	private static boolean opaqueDepthCopied;
@@ -413,6 +459,15 @@ public final class RenderBackend {
 		pendingDraws.add(new PendingDraw(builtBuffer, getPipeline(mode, lines, blend), lines ? currentLineWidth : 1F));
 	}
 
+	public static VertexConsumer startFillSide(DepthTestMode mode, BlendMode blend, boolean back) {
+		return startDrawing(false, mode, blend);
+	}
+
+	static void finishFillSide(DepthTestMode mode, BlendMode blend, boolean back) {
+		MeshData builtBuffer = currentDraw.build();
+		if (builtBuffer != null) pendingDraws.add(new PendingDraw(builtBuffer, fillSidePipeline(mode, blend, back), 1F));
+	}
+
 	static void flushDraws() {
 		if (pendingDraws.isEmpty()) return;
 		try {
@@ -469,13 +524,30 @@ public final class RenderBackend {
 	}
 
 	static void finishDraw(boolean lines, DepthTestMode mode, BlendMode blend) {
+		draw(lines, mode, blend, false);
+	}
+
+	public static VertexConsumer startFillSide(DepthTestMode mode, BlendMode blend, boolean back) {
+		return startDrawing(false, mode, blend);
+	}
+
+	static void finishFillSide(DepthTestMode mode, BlendMode blend, boolean back) {
+		RenderSystem.enablePolygonOffset();
+		RenderSystem.polygonOffset(back ? -FILL_BIAS : FILL_BIAS, back ? -FILL_BIAS : FILL_BIAS);
+		draw(false, mode, blend, true);
+		RenderSystem.polygonOffset(0F, 0F);
+		RenderSystem.disablePolygonOffset();
+	}
+
+	private static void draw(boolean lines, DepthTestMode mode, BlendMode blend, boolean cull) {
 		MeshData builtBuffer = currentDraw.build();
 		if (builtBuffer == null) return;
 		setDrawShader(lines);
 		RenderSystem.lineWidth(lines ? currentLineWidth : 1F);
 		RenderSystem.enableBlend();
 		applyBlend(blend);
-		RenderSystem.disableCull();
+		if (cull) RenderSystem.enableCull();
+		else RenderSystem.disableCull();
 		applyDepth(mode);
 		RenderSystem.depthMask(lines);
 		BufferUploader.drawWithShader(builtBuffer);
@@ -494,6 +566,14 @@ public final class RenderBackend {
 
 	static void finishDraw(boolean lines, DepthTestMode mode, BlendMode blend) {
 		legacyBuffer.endBatch(mode, blend);
+	}
+
+	public static VertexConsumer startFillSide(DepthTestMode mode, BlendMode blend, boolean back) {
+		return legacyBuffer.beginBatch(false);
+	}
+
+	static void finishFillSide(DepthTestMode mode, BlendMode blend, boolean back) {
+		legacyBuffer.endFillSide(mode, blend, back);
 	}
 	*///?}
 }

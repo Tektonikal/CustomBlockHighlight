@@ -15,6 +15,7 @@ public class Quad {
 	public int dir;
 	public final int[] edgeMasks = new int[4];
 	public float alphaMultiplier = 1;
+	public boolean twoSided;
 
 	public Quad(Vec3[] corners, int dir) {
 		this.corners = corners;
@@ -29,6 +30,7 @@ public class Quad {
 		Quad quad = new Quad(corners.clone(), dir);
 		System.arraycopy(edgeMasks, 0, quad.edgeMasks, 0, 4);
 		quad.alphaMultiplier = alphaMultiplier;
+		quad.twoSided = twoSided;
 		return quad;
 	}
 
@@ -42,6 +44,7 @@ public class Quad {
 			changed = true;
 		}
 		dir = target.dir;
+		twoSided = target.twoSided;
 		System.arraycopy(target.edgeMasks, 0, edgeMasks, 0, 4);
 		return changed;
 	}

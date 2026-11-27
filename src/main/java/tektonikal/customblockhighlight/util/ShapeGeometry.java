@@ -74,14 +74,19 @@ public record ShapeGeometry(List<Line> lines, List<Quad> quads) {
 
 	public static ShapeGeometry ofQuads(List<Vec3[]> raw) {
 		List<Quad> quads = new ArrayList<>();
-		Set<Set<List<Long>>> seen = new HashSet<>();
+		Map<Set<List<Long>>, Integer> seen = new HashMap<>();
 		Map<Set<List<Long>>, List<int[]>> byEdge = new HashMap<>();
 		for (Vec3[] corners : raw) {
 			Set<List<Long>> key = new HashSet<>();
 			for (Vec3 corner : corners) key.add(key(corner));
-			if (!seen.add(key)) continue;
 			int dir = direction(corners);
 			if (dir < 0) continue;
+			Integer kept = seen.putIfAbsent(key, quads.size());
+			if (kept != null) {
+				// the block draws this face from both sides, so the fill can't push it away
+				if (quads.get(kept).dir != dir) quads.get(kept).twoSided = true;
+				continue;
+			}
 			Quad quad = new Quad(corners.clone(), dir);
 			for (int e = 0; e < 4; e++) {
 				Set<List<Long>> edge = edgeKey(corners[e], corners[(e + 1) % 4]);
