@@ -37,7 +37,7 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 	private ByteBuffer uploadBuffer;
 	private int vbo = -1;
 
-	private record Batch(boolean lines, DepthTestMode mode, BlendMode blend, int from, int to) {
+	private record Batch(boolean lines, DepthTestMode mode, BlendMode blend, float fillDepthScale, int from, int to) {
 	}
 
 	@Override
@@ -84,7 +84,11 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 	}
 
 	public void endBatch(DepthTestMode mode, BlendMode blend) {
-		if (vertices > batchStart) batches.add(new Batch(lines, mode, blend, batchStart, vertices));
+		endBatch(mode, blend, Renderer.HIDDEN_PULL);
+	}
+
+	public void endBatch(DepthTestMode mode, BlendMode blend, float fillDepthScale) {
+		if (vertices > batchStart) batches.add(new Batch(lines, mode, blend, fillDepthScale, batchStart, vertices));
 	}
 
 	public void drawFrame(double x, double y, double z, boolean world) {
@@ -120,10 +124,10 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 			} else {
 				int count = batch.to() - batch.from();
 				count -= count % 4;
-				boolean pull = world && batch.mode() != DepthTestMode.ALWAYS_PASS;
-				if (pull) pushViewShrink(Renderer.HIDDEN_PULL);
+				boolean scaled = world && batch.mode() != DepthTestMode.ALWAYS_PASS;
+				if (scaled) pushViewShrink(batch.fillDepthScale());
 				if (count > 0) GL11.glDrawArrays(GL11.GL_QUADS, batch.from(), count);
-				if (pull) popViewShrink();
+				if (scaled) popViewShrink();
 			}
 		}
 		GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);

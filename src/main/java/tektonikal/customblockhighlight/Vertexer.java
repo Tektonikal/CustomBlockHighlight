@@ -151,6 +151,8 @@ public final class Vertexer {
 		viewProjection.invert(inverseViewProjection);
 		updateOrigin();
 		originToEye.set(originToCamera).sub(eyeFromCamera(Renderer.lastModMat));
+		//? if =1.8.9
+		//screenMatricesStale = false;
 	}
 
 	private static final Vector3f originToCamera = new Vector3f();
@@ -159,6 +161,19 @@ public final class Vertexer {
 	static Vector3f eyeFromCamera(Matrix4f view) {
 		return view.invert(new Matrix4f()).getTranslation(new Vector3f());
 	}
+
+	//? if =1.8.9 {
+	/*private static boolean screenMatricesStale = true;
+
+	static void markScreenMatricesStale() {
+		screenMatricesStale = true;
+	}
+
+	static Vector3f eyeFromOrigin() {
+		if (screenMatricesStale) updateScreenMatrices();
+		return originToEye.negate(new Vector3f());
+	}
+	*///?}
 
 	private static void updateOrigin() {
 		Vec3 offset = Renderer.renderOrigin().subtract(Renderer.camera.position());
