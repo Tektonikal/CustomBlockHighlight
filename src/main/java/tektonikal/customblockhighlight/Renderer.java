@@ -151,6 +151,8 @@ public final class Renderer {
 	public static final Matrix4f lastModMat = new Matrix4f();
 
 	public static final float HIDDEN_PULL = 1F - 1F / 64F;
+	//? if =1.8.9
+	//private static final float BACK_FACE_PUSH = 1F + 1F / 256F;
 
 	private static final List<LineState> lineStates = List.of(new LineState(), new LineState(), new LineState());
 
@@ -160,13 +162,50 @@ public final class Renderer {
 	*///?}
 
 	private static void drawBoxFill(PoseStack stack, AABB box, Pair<Color, Color> cols, float[] alpha) {
-		doEvilMatrixPreparations(stack, box, getActiveInstance().fillExpandBlocks, getActiveInstance().fillExpandPercent);
+		BlockHighlightConfig cfg = getActiveInstance();
+		doEvilMatrixPreparations(stack, box, cfg.fillExpandBlocks, cfg.fillExpandPercent);
 		pullFill(stack);
-		VertexConsumer buffer = startDrawing(false, getActiveInstance().fillDepthTest, getActiveInstance().fillBlend);
-		Vertexer.vertexBoxQuads(stack.last(), buffer, moveToZero(box), cols, rotateFaceFades(alpha));
-		finishDraw(false, getActiveInstance().fillDepthTest, getActiveInstance().fillBlend);
+		VertexConsumer buffer = startDrawing(false, cfg.fillDepthTest, cfg.fillBlend);
+		AABB zeroed = moveToZero(box);
+		float[] fades = rotateFaceFades(alpha);
+		//? if >1.8.9 {
+		Vertexer.vertexBoxQuads(stack.last(), buffer, zeroed, cols, fades);
+		//?} else {
+		/*Vector3f eye = localEye(stack.last());
+		float[] away = new float[6];
+		float[] toward = new float[6];
+		for (Direction dir : DIRECTIONS) {
+			double x = dir.getStepX() > 0 ? zeroed.maxX : zeroed.minX;
+			double y = dir.getStepY() > 0 ? zeroed.maxY : zeroed.minY;
+			double z = dir.getStepZ() > 0 ? zeroed.maxZ : zeroed.minZ;
+			(facesEye(dir, x, y, z, eye) ? toward : away)[dir.ordinal()] = fades[dir.ordinal()];
+		}
+		Vertexer.vertexBoxQuads(stack.last(), buffer, zeroed, cols, away);
+		buffer = pullFollowingQuads(cfg);
+		Vertexer.vertexBoxQuads(stack.last(), buffer, zeroed, cols, toward);
+		*///?}
+		finishDraw(false, cfg.fillDepthTest, cfg.fillBlend);
 		stack.popPose();
 	}
+
+	private static final Direction[] DIRECTIONS = Direction.values();
+
+	private static boolean facesEye(Direction d, double x, double y, double z, Vector3f eye) {
+		return d.getStepX() * (eye.x - x) + d.getStepY() * (eye.y - y) + d.getStepZ() * (eye.z - z) > 0;
+	}
+
+	//? if =1.8.9 {
+	/*private static Vector3f localEye(PoseStack.Pose pose) {
+		return pose.pose().invert(new Matrix4f()).transformPosition(Vertexer.eyeFromOrigin());
+	}
+
+	// Terrain culls back faces, so a back-facing fill quad at or in front of the surface bleeds through the target's front faces at shared edges.
+	// Emit back-facing quads pushed behind the surface, then only camera-facing quads after this call.
+	private static VertexConsumer pullFollowingQuads(BlockHighlightConfig cfg) {
+		legacyBuffer.endBatch(cfg.fillDepthTest, cfg.fillBlend, BACK_FACE_PUSH);
+		return legacyBuffer.beginBatch(false);
+	}
+	*///?}
 
 	private static final float[] rotatedFaceFades = new float[6];
 
@@ -313,15 +352,28 @@ public final class Renderer {
 		AABB zeroed = moveToZero(easeBox);
 		Vec3 zeroMin = zeroed.getMinPosition();
 		float normaliser = (float) zeroMin.distanceTo(zeroed.getMaxPosition());
+		//? if >1.8.9 {
+		vertexShapeFill(stack.last(), buffer, shape, cols, fades, zeroMin, normaliser, null, false);
+		//?} else {
+		/*Vector3f eye = localEye(stack.last());
+		vertexShapeFill(stack.last(), buffer, shape, cols, fades, zeroMin, normaliser, eye, false);
+		buffer = pullFollowingQuads(cfg);
+		vertexShapeFill(stack.last(), buffer, shape, cols, fades, zeroMin, normaliser, eye, true);
+		*///?}
+		finishDraw(false, cfg.fillDepthTest, cfg.fillBlend);
+		stack.popPose();
+	}
+
+	private static void vertexShapeFill(PoseStack.Pose pose, VertexConsumer buffer, ShapeLayer shape, Pair<Color, Color> cols, float[] fades, Vec3 zeroMin, float normaliser, Vector3f eye, boolean towardEye) {
 		for (List<Quad> list : List.of(shape.quads, shape.leavingQuads)) {
 			for (Quad quad : list) {
 				int alpha = Math.round(fades[quad.dir] * quad.alphaMultiplier);
 				if (alpha < 1) continue;
-				Vertexer.vertexQuad(stack.last(), buffer, cols, alpha, zeroMin, normaliser, quad.corners);
+				Vec3 corner = quad.corners[0];
+				if (eye != null && facesEye(DIRECTIONS[quad.dir], corner.x, corner.y, corner.z, eye) != towardEye) continue;
+				Vertexer.vertexQuad(pose, buffer, cols, alpha, zeroMin, normaliser, quad.corners);
 			}
 		}
-		finishDraw(false, cfg.fillDepthTest, cfg.fillBlend);
-		stack.popPose();
 	}
 
 	private static List<Line> syncLines(List<Line> current, List<Line> targets, Vec3 center, List<Line> leaving, ShapeSync.UnifiedEdges edges) {
@@ -414,6 +466,7 @@ public final class Renderer {
 			double ox = Math.floor(cam.x), oy = Math.floor(cam.y), oz = Math.floor(cam.z);
 			if (ox != legacyOrigin.x || oy != legacyOrigin.y || oz != legacyOrigin.z) legacyOrigin = new Vec3(ox, oy, oz);
 			legacyBuffer.beginFrame();
+			Vertexer.markScreenMatricesStale();
 			*///?}
 			draw(c.poseStack(), Target.isCrystalObstructed(evilHitResult));
 			//? if =1.8.9 {

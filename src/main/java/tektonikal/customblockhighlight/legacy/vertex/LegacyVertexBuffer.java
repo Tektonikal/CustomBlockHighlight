@@ -3,7 +3,6 @@ package tektonikal.customblockhighlight.legacy.vertex;
 //? if =1.8.9 {
 /*import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.platform.MemoryTracker;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
@@ -13,7 +12,6 @@ import tektonikal.customblockhighlight.util.DepthTestMode;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +21,6 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 	private static final int STRIDE = 8;
 	private static final int X = 0, Y = 1, Z = 2, R = 3, G = 4, B = 5, A = 6, WIDTH = 7;
 	private static final float VIEW_SHRINK = 1F - 1F / 256F;
-	private static final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
 
 	private static final int PACKED_STRIDE = 4;
 	private static final boolean LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
@@ -40,7 +37,7 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 	private ByteBuffer uploadBuffer;
 	private int vbo = -1;
 
-	private record Batch(boolean lines, DepthTestMode mode, BlendMode blend, int from, int to) {
+	private record Batch(boolean lines, DepthTestMode mode, BlendMode blend, float fillDepthScale, int from, int to) {
 	}
 
 	@Override
@@ -87,7 +84,11 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 	}
 
 	public void endBatch(DepthTestMode mode, BlendMode blend) {
-		if (vertices > batchStart) batches.add(new Batch(lines, mode, blend, batchStart, vertices));
+		endBatch(mode, blend, Renderer.HIDDEN_PULL);
+	}
+
+	public void endBatch(DepthTestMode mode, BlendMode blend, float fillDepthScale) {
+		if (vertices > batchStart) batches.add(new Batch(lines, mode, blend, fillDepthScale, batchStart, vertices));
 	}
 
 	public void drawFrame(double x, double y, double z, boolean world) {
@@ -119,14 +120,14 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 			if (batch.lines()) {
 				pushViewShrink(batch.mode() == DepthTestMode.HIDDEN_ONLY ? VIEW_SHRINK * Renderer.HIDDEN_PULL : VIEW_SHRINK);
 				drawLineRuns(batch.from(), batch.to());
-				GL11.glPopMatrix();
+				popViewShrink();
 			} else {
 				int count = batch.to() - batch.from();
 				count -= count % 4;
-				boolean pull = world && batch.mode() != DepthTestMode.ALWAYS_PASS;
-				if (pull) pushViewShrink(Renderer.HIDDEN_PULL);
+				boolean scaled = world && batch.mode() != DepthTestMode.ALWAYS_PASS;
+				if (scaled) pushViewShrink(batch.fillDepthScale());
 				if (count > 0) GL11.glDrawArrays(GL11.GL_QUADS, batch.from(), count);
-				if (pull) GL11.glPopMatrix();
+				if (scaled) popViewShrink();
 			}
 		}
 		GL11.glDisableClientState(GL11.GL_VERTEX_ARRAY);
@@ -184,12 +185,16 @@ public final class LegacyVertexBuffer implements VertexConsumer {
 	}
 
 	private static void pushViewShrink(float shrink) {
-		GL11.glMatrixMode(GL11.GL_MODELVIEW);
-		GL11.glGetFloatv(GL11.GL_MODELVIEW_MATRIX, modelView);
+		GL11.glMatrixMode(GL11.GL_PROJECTION);
 		GL11.glPushMatrix();
-		GL11.glLoadIdentity();
 		GL11.glScalef(shrink, shrink, shrink);
-		GL11.glMultMatrixf(modelView);
+		GL11.glMatrixMode(GL11.GL_MODELVIEW);
+	}
+
+	private static void popViewShrink() {
+		GL11.glMatrixMode(GL11.GL_PROJECTION);
+		GL11.glPopMatrix();
+		GL11.glMatrixMode(GL11.GL_MODELVIEW);
 	}
 
 	private void drawLineRuns(int from, int to) {
